@@ -14,6 +14,15 @@ A modern Islamic companion mobile app built with Expo and React Native.
 
 ## Run locally
 
-```bash
 npm install
 npm start
+
+## Web Build
+
+npm run build:web
+
+## Platforms
+
+The primary target is Android and iOS.
+
+The web version is maintained separately for preview purposes.
