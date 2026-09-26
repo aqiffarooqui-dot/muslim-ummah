@@ -9,14 +9,42 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SURAHS, Surah } from './src/QuranData';
+import { parseQuranText, QuranSurah } from './src/quranParser';
 
 type QuranScreenProps = {
   onBack?: () => void;
 };
 
+const quranText = require('./src/data/quran-uthmani.txt');
+
 export default function QuranScreen({ onBack }: QuranScreenProps) {
   const [search, setSearch] = useState('');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
+
+  const quranSurahs = useMemo<QuranSurah[]>(() => {
+    try {
+      const rawText =
+        typeof quranText === 'string'
+          ? quranText
+          : quranText?.default ?? '';
+
+      return parseQuranText(rawText);
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const selectedQuranSurah = useMemo(() => {
+    if (!selectedSurah) {
+      return null;
+    }
+
+    return (
+      quranSurahs.find(
+        (surah) => surah.number === selectedSurah.number
+      ) ?? null
+    );
+  }, [quranSurahs, selectedSurah]);
 
   const filteredSurahs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -94,41 +122,49 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
             </View>
           </View>
 
-          <View style={styles.noticeCard}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color="#D7B56D"
-            />
+          {selectedQuranSurah?.ayahs.length ? (
+            <View style={styles.ayahList}>
+              {selectedQuranSurah.ayahs.map((ayah) => (
+                <View key={ayah.number} style={styles.ayahCard}>
+                  <View style={styles.ayahTopRow}>
+                    <View style={styles.ayahNumber}>
+                      <Text style={styles.ayahNumberText}>
+                        {ayah.number}
+                      </Text>
+                    </View>
 
-            <Text style={styles.noticeText}>
-              Verified Quran text and translations will be connected from
-              trusted sources in the next Quran data step.
-            </Text>
-          </View>
+                    <Pressable style={styles.ayahBookmark}>
+                      <Ionicons
+                        name="bookmark-outline"
+                        size={18}
+                        color="#737C89"
+                      />
+                    </Pressable>
+                  </View>
 
-          <View style={styles.bismillahCard}>
-            <Text style={styles.bismillah}>
-              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-            </Text>
-          </View>
+                  <Text style={styles.ayahArabic}>
+                    {ayah.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyReader}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={38}
+                color="#D7B56D"
+              />
 
-          <View style={styles.emptyReader}>
-            <Ionicons
-              name="book-outline"
-              size={38}
-              color="#D7B56D"
-            />
+              <Text style={styles.emptyTitle}>
+                Quran text unavailable
+              </Text>
 
-            <Text style={styles.emptyTitle}>
-              Quran reader ready
-            </Text>
-
-            <Text style={styles.emptyText}>
-              {selectedSurah.name} is ready for the verified Ayah text,
-              translation, audio and bookmark system.
-            </Text>
-          </View>
+              <Text style={styles.emptyText}>
+                The Arabic Quran data could not be loaded for this Surah.
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </View>
     );
@@ -155,7 +191,10 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
           </Pressable>
         </View>
 
-        <View style={styles.continueCard}>
+        <Pressable
+          style={styles.continueCard}
+          onPress={() => setSelectedSurah(SURAHS[0])}
+        >
           <View style={styles.continueIcon}>
             <Ionicons
               name="book-outline"
@@ -175,7 +214,7 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
             size={22}
             color="#9CA3AF"
           />
-        </View>
+        </Pressable>
 
         <View style={styles.searchBox}>
           <Ionicons
@@ -206,6 +245,7 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>All Surahs</Text>
+
             <Text style={styles.sectionSubtitle}>
               {filteredSurahs.length} of {SURAHS.length} Surahs
             </Text>
@@ -227,11 +267,15 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
               onPress={() => setSelectedSurah(surah)}
             >
               <View style={styles.numberBox}>
-                <Text style={styles.numberText}>{surah.number}</Text>
+                <Text style={styles.numberText}>
+                  {surah.number}
+                </Text>
               </View>
 
               <View style={styles.surahInfo}>
-                <Text style={styles.surahName}>{surah.name}</Text>
+                <Text style={styles.surahName}>
+                  {surah.name}
+                </Text>
 
                 <Text style={styles.surahMeta}>
                   {surah.englishName} • {surah.revelation}
@@ -283,7 +327,7 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
           />
 
           <Text style={styles.footerText}>
-            Quran content will be connected from verified sources.
+            Quran Arabic text: Tanzil Uthmani.
           </Text>
         </View>
       </ScrollView>
@@ -620,38 +664,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  noticeCard: {
+  ayahList: {
+    gap: 12,
+  },
+
+  ayahCard: {
+    backgroundColor: '#11171F',
+    borderWidth: 1,
+    borderColor: '#202832',
+    borderRadius: 22,
+    padding: 18,
+  },
+
+  ayahTopRow: {
     flexDirection: 'row',
-    backgroundColor: '#141A1D',
-    borderWidth: 1,
-    borderColor: '#30332F',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 15,
-  },
-
-  noticeText: {
-    flex: 1,
-    color: '#8E969F',
-    fontSize: 12,
-    lineHeight: 18,
-    marginLeft: 10,
-  },
-
-  bismillahCard: {
-    backgroundColor: '#10161D',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#202833',
-    padding: 22,
     alignItems: 'center',
-    marginBottom: 15,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
 
-  bismillah: {
-    color: '#E3D2A9',
+  ayahNumber: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#1B222C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ayahNumberText: {
+    color: '#D7B56D',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  ayahBookmark: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#171E27',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ayahArabic: {
+    color: '#F3EBDD',
     fontSize: 25,
-    textAlign: 'center',
+    lineHeight: 48,
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 
   emptyReader: {
