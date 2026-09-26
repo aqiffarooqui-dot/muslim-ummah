@@ -10,75 +10,116 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SURAHS, Surah } from './src/QuranData';
+import { SURAHS } from './src/QuranData';
 import { parseQuranText, QuranSurah } from './src/quranParser';
-
-type QuranScreenProps = {
-  onBack?: () => void;
-};
+import {
+  QuranLanguage,
+  getTranslation,
+  TranslationMap,
+} from './src/quranTranslation';
+import {
+  DEFAULT_QURAN_LANGUAGE,
+  QURAN_LANGUAGES,
+  TRANSLATION_FILE_URLS,
+} from './src/quranTranslations';
+import { parseTranslationText } from './src/quranTranslationParser';
 
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
-export default function QuranScreen({ onBack }: QuranScreenProps) {
+export default function QuranScreen() {
+  const [quran, setQuran] = useState<QuranSurah[]>([]);
+  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
+  const [language, setLanguage] =
+    useState<QuranLanguage>(DEFAULT_QURAN_LANGUAGE);
+
+  const [translation, setTranslation] = useState<TranslationMap>({});
+  const [loading, setLoading] = useState(true);
+  const [translationLoading, setTranslationLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [translationError, setTranslationError] = useState('');
   const [search, setSearch] = useState('');
-  const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
-  const [quranSurahs, setQuranSurahs] = useState<QuranSurah[]>([]);
-  const [loadingQuran, setLoadingQuran] = useState(true);
-  const [quranError, setQuranError] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const loadQuran = async () => {
-      try {
-        setLoadingQuran(true);
-        setQuranError(false);
-
-        const response = await fetch(QURAN_TEXT_URL, {
-          cache: 'no-store',
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Unable to load Quran text: ${response.status}`
-          );
-        }
-
-        const text = await response.text();
-
-        if (!text.trim()) {
-          throw new Error('Quran text file is empty');
-        }
-
-        const parsed = parseQuranText(text);
-
-        if (parsed.length !== 114) {
-          throw new Error(
-            `Expected 114 Surahs but loaded ${parsed.length}`
-          );
-        }
-
-        if (mounted) {
-          setQuranSurahs(parsed);
-          setLoadingQuran(false);
-        }
-      } catch (error) {
-        console.error('Quran loading error:', error);
-
-        if (mounted) {
-          setQuranSurahs([]);
-          setQuranError(true);
-          setLoadingQuran(false);
-        }
-      }
-    };
-
     loadQuran();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    if (language !== 'arabic') {
+      loadTranslation(language);
+    } else {
+      setTranslation({});
+      setTranslationError('');
+    }
+  }, [language]);
+
+  async function loadQuran() {
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await fetch(QURAN_TEXT_URL, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Quran file returned ${response.status}`);
+      }
+
+      const text = await response.text();
+      const parsed = parseQuranText(text);
+
+      if (parsed.length !== 114) {
+        throw new Error(
+          `Expected 114 Surahs but received ${parsed.length}`
+        );
+      }
+
+      setQuran(parsed);
+    } catch (err) {
+      console.error('Quran loading error:', err);
+      setError('Unable to load Quran. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadTranslation(selectedLanguage: QuranLanguage) {
+    if (selectedLanguage === 'arabic') {
+      return;
+    }
+
+    const url = TRANSLATION_FILE_URLS[selectedLanguage];
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      setTranslationLoading(true);
+      setTranslationError('');
+
+      const response = await fetch(url, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Translation file returned ${response.status}`);
+      }
+
+      const text = await response.text();
+      const parsed = parseTranslationText(text);
+
+      setTranslation(parsed);
+    } catch (err) {
+      console.error('Translation loading error:', err);
+      setTranslation({});
+      setTranslationError(
+        'This translation is not available yet. Arabic Quran remains available.'
+      );
+    } finally {
+      setTranslationLoading(false);
+    }
+  }
 
   const filteredSurahs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -87,181 +128,186 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
       return SURAHS;
     }
 
-    return SURAHS.filter((surah) => {
-      return (
+    return SURAHS.filter(
+      (surah) =>
         surah.name.toLowerCase().includes(query) ||
         surah.englishName.toLowerCase().includes(query) ||
-        surah.arabicName.includes(search.trim()) ||
         String(surah.number).includes(query)
-      );
-    });
+    );
   }, [search]);
 
-  const selectedQuranSurah = useMemo(() => {
-    if (!selectedSurah) {
-      return null;
-    }
+  const currentSurah = quran.find(
+    (surah) => surah.number === selectedSurah
+  );
 
+  const selectedLanguage = QURAN_LANGUAGES.find(
+    (item) => item.id === language
+  );
+
+  if (loading) {
     return (
-      quranSurahs.find(
-        (surah) => surah.number === selectedSurah.number
-      ) ?? null
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingText}>Loading Quran...</Text>
+      </View>
     );
-  }, [quranSurahs, selectedSurah]);
+  }
 
-  if (selectedSurah) {
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>{error}</Text>
+
+        <Pressable style={styles.retryButton} onPress={loadQuran}>
+          <Text style={styles.retryText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (currentSurah) {
     return (
       <View style={styles.container}>
-        <View style={styles.readerHeader}>
-          <Pressable
-            style={styles.iconButton}
-            onPress={() => setSelectedSurah(null)}
-          >
-            <Ionicons
-              name="arrow-back"
-              size={22}
-              color="#FFFFFF"
-            />
-          </Pressable>
-
-          <View style={styles.readerTitle}>
-            <Text style={styles.readerSurahName}>
-              {selectedSurah.name}
-            </Text>
-
-            <Text style={styles.readerSubtitle}>
-              Surah {selectedSurah.number} •{' '}
-              {selectedSurah.ayahCount} Ayahs
-            </Text>
-          </View>
-
-          <Pressable style={styles.iconButton}>
-            <Ionicons
-              name="bookmark-outline"
-              size={22}
-              color="#FFFFFF"
-            />
-          </Pressable>
-        </View>
-
         <ScrollView
-          style={styles.readerScroll}
           contentContainerStyle={styles.readerContent}
           showsVerticalScrollIndicator={false}
         >
+          <Pressable
+            style={styles.backButton}
+            onPress={() => setSelectedSurah(null)}
+          >
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+            <Text style={styles.backText}>Quran</Text>
+          </Pressable>
+
           <View style={styles.readerHero}>
-            <Text style={styles.readerArabicName}>
-              {selectedSurah.arabicName}
+            <Text style={styles.surahNumber}>
+              SURAH {currentSurah.number}
             </Text>
 
-            <Text style={styles.readerEnglishName}>
-              {selectedSurah.englishName}
+            <Text style={styles.arabicSurahName}>
+              {currentSurah.arabicName}
             </Text>
 
-            <View style={styles.metaRow}>
-              <View style={styles.metaPill}>
-                <Text style={styles.metaText}>
-                  {selectedSurah.revelation}
-                </Text>
-              </View>
+            <Text style={styles.surahEnglishName}>
+              {currentSurah.englishName}
+            </Text>
 
-              <View style={styles.metaPill}>
-                <Text style={styles.metaText}>
-                  {selectedSurah.ayahCount} Ayahs
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.surahMeta}>
+              {currentSurah.revelation} • {currentSurah.ayahCount} Ayahs
+            </Text>
           </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.languageRow}
+          >
+            {QURAN_LANGUAGES.map((item) => {
+              const active = item.id === language;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[
+                    styles.languageChip,
+                    active && styles.languageChipActive,
+                  ]}
+                  onPress={() => setLanguage(item.id)}
+                >
+                  <Text
+                    style={[
+                      styles.languageChipText,
+                      active && styles.languageChipTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
           <View style={styles.sourceCard}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={19}
-              color="#D7B56D"
-            />
+            <Text style={styles.sourceTitle}>
+              {selectedLanguage?.nativeLabel}
+            </Text>
 
             <Text style={styles.sourceText}>
-              Arabic Quran text • Tanzil Uthmani
+              Arabic text is preserved from the existing Uthmani Quran
+              source. Translation layers are loaded separately.
             </Text>
           </View>
 
-          {loadingQuran ? (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator
-                size="small"
-                color="#D7B56D"
-              />
-
-              <Text style={styles.loadingTitle}>
-                Loading Quran...
-              </Text>
-
-              <Text style={styles.loadingText}>
-                Preparing the Arabic Ayahs.
+          {translationLoading && language !== 'arabic' && (
+            <View style={styles.translationLoading}>
+              <ActivityIndicator size="small" />
+              <Text style={styles.translationLoadingText}>
+                Loading translation...
               </Text>
             </View>
-          ) : quranError ? (
-            <View style={styles.emptyReader}>
+          )}
+
+          {translationError && language !== 'arabic' && (
+            <View style={styles.translationNotice}>
               <Ionicons
-                name="alert-circle-outline"
-                size={40}
-                color="#D7B56D"
+                name="information-circle-outline"
+                size={20}
+                color="#F4C76B"
               />
 
-              <Text style={styles.emptyTitle}>
-                Quran text could not be loaded
-              </Text>
-
-              <Text style={styles.emptyText}>
-                Please check the Quran text file and try again.
+              <Text style={styles.translationNoticeText}>
+                {translationError}
               </Text>
             </View>
-          ) : selectedQuranSurah?.ayahs.length ? (
-            <View style={styles.ayahList}>
-              {selectedQuranSurah.ayahs.map((ayah) => (
-                <View
-                  key={`${selectedSurah.number}-${ayah.number}`}
-                  style={styles.ayahCard}
-                >
-                  <View style={styles.ayahTopRow}>
+          )}
+
+          {currentSurah.ayahs.map((ayah) => {
+            const translatedText =
+              language === 'arabic'
+                ? ''
+                : getTranslation(
+                    translation,
+                    currentSurah.number,
+                    ayah.number
+                  );
+
+            return (
+              <View key={`${currentSurah.number}-${ayah.number}`}>
+                <View style={styles.ayahCard}>
+                  <View style={styles.ayahHeader}>
                     <View style={styles.ayahNumber}>
                       <Text style={styles.ayahNumberText}>
                         {ayah.number}
                       </Text>
                     </View>
 
-                    <Pressable style={styles.ayahBookmark}>
-                      <Ionicons
-                        name="bookmark-outline"
-                        size={18}
-                        color="#737C89"
-                      />
-                    </Pressable>
+                    <Ionicons
+                      name="bookmark-outline"
+                      size={21}
+                      color="#8D91A3"
+                    />
                   </View>
 
-                  <Text style={styles.ayahArabic}>
-                    {ayah.text}
-                  </Text>
+                  <Text style={styles.arabicText}>{ayah.text}</Text>
+
+                  {language !== 'arabic' && translatedText ? (
+                    <View style={styles.translationBox}>
+                      <Text
+                        style={[
+                          styles.translationText,
+                          language === 'urdu' &&
+                            styles.urduTranslationText,
+                        ]}
+                      >
+                        {translatedText}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyReader}>
-              <Ionicons
-                name="book-outline"
-                size={40}
-                color="#D7B56D"
-              />
-
-              <Text style={styles.emptyTitle}>
-                Ayahs not found
-              </Text>
-
-              <Text style={styles.emptyText}>
-                No Arabic Ayahs were found for this Surah.
-              </Text>
-            </View>
-          )}
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
     );
@@ -270,179 +316,85 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
   return (
     <View style={styles.container}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <View>
-            <Text style={styles.eyebrow}>
-              THE HOLY QURAN
-            </Text>
+        <View style={styles.hero}>
+          <Text style={styles.eyebrow}>THE HOLY QURAN</Text>
 
-            <Text style={styles.title}>
-              Quran
-            </Text>
-          </View>
+          <Text style={styles.title}>Quran</Text>
 
-          <Pressable style={styles.topIcon}>
-            <Ionicons
-              name="bookmark-outline"
-              size={22}
-              color="#FFFFFF"
-            />
-          </Pressable>
+          <Text style={styles.subtitle}>
+            Read, reflect and continue your journey with the words of Allah.
+          </Text>
         </View>
 
-        <Pressable
-          style={styles.continueCard}
-          onPress={() => setSelectedSurah(SURAHS[0])}
-        >
+        <View style={styles.continueCard}>
           <View style={styles.continueIcon}>
-            <Ionicons
-              name="book-outline"
-              size={24}
-              color="#D7B56D"
-            />
+            <Ionicons name="book-outline" size={25} color="#FFFFFF" />
           </View>
 
-          <View style={styles.continueText}>
-            <Text style={styles.continueLabel}>
-              CONTINUE READING
-            </Text>
-
-            <Text style={styles.continueTitle}>
-              Al-Fatihah
-            </Text>
-
-            <Text style={styles.continueMeta}>
-              Ayah 1 • Last read
-            </Text>
+          <View style={styles.continueTextContainer}>
+            <Text style={styles.continueLabel}>CONTINUE READING</Text>
+            <Text style={styles.continueTitle}>Al-Fatihah</Text>
+            <Text style={styles.continueMeta}>Ayah 1</Text>
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={22}
-            color="#9CA3AF"
-          />
-        </Pressable>
+          <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
+        </View>
 
-        <View style={styles.searchBox}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color="#8E96A3"
-          />
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#8D91A3" />
 
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search Surah"
-            placeholderTextColor="#727986"
+            placeholder="Search Surah..."
+            placeholderTextColor="#777B8A"
             style={styles.searchInput}
           />
-
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color="#727986"
-              />
-            </Pressable>
-          )}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>
-              All Surahs
-            </Text>
+        <Text style={styles.sectionTitle}>All Surahs</Text>
 
-            <Text style={styles.sectionSubtitle}>
-              {filteredSurahs.length} of {SURAHS.length} Surahs
-            </Text>
-          </View>
-
-          <View style={styles.totalBadge}>
-            <Text style={styles.totalBadgeText}>
-              114
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.list}>
+        <View style={styles.surahList}>
           {filteredSurahs.map((surah) => (
             <Pressable
               key={surah.number}
-              style={({ pressed }) => [
-                styles.surahCard,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => setSelectedSurah(surah)}
+              style={styles.surahCard}
+              onPress={() => setSelectedSurah(surah.number)}
             >
-              <View style={styles.numberBox}>
-                <Text style={styles.numberText}>
+              <View style={styles.surahNumberBox}>
+                <Text style={styles.surahNumberText}>
                   {surah.number}
                 </Text>
               </View>
 
               <View style={styles.surahInfo}>
-                <Text style={styles.surahName}>
-                  {surah.name}
+                <Text style={styles.surahName}>{surah.name}</Text>
+
+                <Text style={styles.surahEnglish}>
+                  {surah.englishName}
                 </Text>
 
-                <Text style={styles.surahMeta}>
-                  {surah.englishName} • {surah.revelation}
-                </Text>
-
-                <Text style={styles.ayahCount}>
-                  {surah.ayahCount} Ayahs
+                <Text style={styles.surahDetails}>
+                  {surah.revelation} • {surah.ayahCount} Ayahs
                 </Text>
               </View>
 
-              <View style={styles.arabicSide}>
-                <Text style={styles.arabicName}>
+              <View style={styles.surahArabicContainer}>
+                <Text style={styles.surahArabic}>
                   {surah.arabicName}
                 </Text>
 
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color="#6F7785"
+                  color="#6F7382"
                 />
               </View>
             </Pressable>
           ))}
-        </View>
-
-        {filteredSurahs.length === 0 && (
-          <View style={styles.noResults}>
-            <Ionicons
-              name="search-outline"
-              size={36}
-              color="#6F7785"
-            />
-
-            <Text style={styles.noResultsTitle}>
-              No Surah found
-            </Text>
-
-            <Text style={styles.noResultsText}>
-              Try another Surah name or number.
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.footerNote}>
-          <Ionicons
-            name="shield-checkmark-outline"
-            size={18}
-            color="#D7B56D"
-          />
-
-          <Text style={styles.footerText}>
-            Quran Arabic text: Tanzil Uthmani.
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -452,444 +404,400 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#080B10',
+    backgroundColor: '#080A0F',
   },
 
   content: {
-    padding: 20,
-    paddingBottom: 110,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 40,
   },
 
-  topBar: {
-    flexDirection: 'row',
+  readerContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 50,
+  },
+
+  center: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 22,
+    justifyContent: 'center',
+    backgroundColor: '#080A0F',
+    padding: 24,
+  },
+
+  loadingText: {
+    color: '#B9BDC9',
+    marginTop: 12,
+    fontSize: 15,
+  },
+
+  errorText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+
+  retryButton: {
+    marginTop: 18,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 20,
+    backgroundColor: '#D8B36A',
+  },
+
+  retryText: {
+    color: '#111111',
+    fontWeight: '700',
+  },
+
+  hero: {
+    marginBottom: 24,
   },
 
   eyebrow: {
-    color: '#8D96A5',
+    color: '#D8B36A',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 2,
-    marginBottom: 5,
+    marginBottom: 7,
   },
 
   title: {
     color: '#FFFFFF',
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: '800',
   },
 
-  topIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#151A22',
-    alignItems: 'center',
-    justifyContent: 'center',
+  subtitle: {
+    color: '#969BAA',
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
+    maxWidth: 360,
   },
 
   continueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121820',
-    borderWidth: 1,
-    borderColor: '#242C38',
+    backgroundColor: '#151922',
     borderRadius: 22,
     padding: 16,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#252A36',
   },
 
   continueIcon: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#1D252D',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
+    backgroundColor: '#B18B45',
   },
 
-  continueText: {
+  continueTextContainer: {
     flex: 1,
+    marginLeft: 13,
   },
 
   continueLabel: {
-    color: '#89919E',
+    color: '#858A9A',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.3,
-    marginBottom: 4,
   },
 
   continueTitle: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
-  },
-
-  continueMeta: {
-    color: '#858D99',
-    fontSize: 12,
+    fontSize: 18,
+    fontWeight: '700',
     marginTop: 3,
   },
 
-  searchBox: {
-    height: 52,
-    borderRadius: 17,
-    backgroundColor: '#121820',
-    borderWidth: 1,
-    borderColor: '#242C38',
+  continueMeta: {
+    color: '#9B9FAC',
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  searchContainer: {
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#12151D',
+    borderRadius: 16,
     paddingHorizontal: 15,
-    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#242833',
   },
 
   searchInput: {
     flex: 1,
     color: '#FFFFFF',
-    fontSize: 15,
-    marginLeft: 10,
-    paddingVertical: 0,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 13,
+    fontSize: 14,
+    marginLeft: 9,
   },
 
   sectionTitle: {
     color: '#FFFFFF',
     fontSize: 21,
     fontWeight: '800',
+    marginTop: 28,
+    marginBottom: 13,
   },
 
-  sectionSubtitle: {
-    color: '#747D8A',
-    fontSize: 12,
-    marginTop: 3,
-  },
-
-  totalBadge: {
-    minWidth: 42,
-    height: 32,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    backgroundColor: '#1B2527',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  totalBadgeText: {
-    color: '#D7B56D',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  list: {
+  surahList: {
     gap: 10,
   },
 
   surahCard: {
-    minHeight: 92,
-    backgroundColor: '#11171F',
-    borderWidth: 1,
-    borderColor: '#202832',
-    borderRadius: 20,
-    padding: 13,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#11141B',
+    borderRadius: 19,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#202530',
   },
 
-  pressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.99 }],
-  },
-
-  numberBox: {
+  surahNumberBox: {
     width: 42,
     height: 42,
     borderRadius: 13,
-    backgroundColor: '#1B222C',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    backgroundColor: '#1C2029',
   },
 
-  numberText: {
-    color: '#D7B56D',
+  surahNumberText: {
+    color: '#D8B36A',
     fontSize: 13,
     fontWeight: '800',
   },
 
   surahInfo: {
     flex: 1,
+    marginLeft: 12,
   },
 
   surahName: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 
-  surahMeta: {
-    color: '#858D99',
-    fontSize: 11,
+  surahEnglish: {
+    color: '#9DA1AE',
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  surahDetails: {
+    color: '#666B79',
+    fontSize: 10,
     marginTop: 4,
   },
 
-  ayahCount: {
-    color: '#626B78',
-    fontSize: 11,
-    marginTop: 3,
-  },
-
-  arabicSide: {
+  surahArabicContainer: {
     alignItems: 'flex-end',
     marginLeft: 8,
-    maxWidth: 110,
   },
 
-  arabicName: {
-    color: '#D7B56D',
-    fontSize: 18,
+  surahArabic: {
+    color: '#E9E1D2',
+    fontSize: 20,
     marginBottom: 5,
   },
 
-  noResults: {
-    alignItems: 'center',
-    paddingVertical: 50,
-  },
-
-  noResultsTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
-    marginTop: 12,
-  },
-
-  noResultsText: {
-    color: '#737C89',
-    fontSize: 13,
-    marginTop: 5,
-  },
-
-  footerNote: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 25,
-    paddingHorizontal: 15,
+    marginBottom: 20,
   },
 
-  footerText: {
-    color: '#69727F',
-    fontSize: 11,
-    marginLeft: 7,
-    textAlign: 'center',
-  },
-
-  readerHeader: {
-    height: 76,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1C232D',
-  },
-
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#151B23',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  readerTitle: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  readerSurahName: {
+  backText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
-  },
-
-  readerSubtitle: {
-    color: '#747D8A',
-    fontSize: 11,
-    marginTop: 3,
-  },
-
-  readerScroll: {
-    flex: 1,
-  },
-
-  readerContent: {
-    padding: 20,
-    paddingBottom: 80,
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
   },
 
   readerHero: {
-    backgroundColor: '#111820',
-    borderWidth: 1,
-    borderColor: '#242D38',
-    borderRadius: 24,
-    padding: 28,
     alignItems: 'center',
-    marginBottom: 15,
+    backgroundColor: '#11141B',
+    borderRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: '#252A36',
   },
 
-  readerArabicName: {
-    color: '#D7B56D',
-    fontSize: 38,
-    marginBottom: 9,
+  surahNumber: {
+    color: '#D8B36A',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
 
-  readerEnglishName: {
+  arabicSurahName: {
+    color: '#F0E7D7',
+    fontSize: 34,
+    marginTop: 10,
+  },
+
+  surahEnglishName: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 19,
+    fontWeight: '700',
+    marginTop: 5,
+  },
+
+  surahMeta: {
+    color: '#8E93A1',
+    fontSize: 12,
+    marginTop: 7,
+  },
+
+  languageRow: {
+    gap: 9,
+    paddingVertical: 18,
+  },
+
+  languageChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: '#141821',
+    borderWidth: 1,
+    borderColor: '#282D38',
+  },
+
+  languageChipActive: {
+    backgroundColor: '#D8B36A',
+    borderColor: '#D8B36A',
+  },
+
+  languageChipText: {
+    color: '#A2A6B3',
+    fontSize: 13,
     fontWeight: '700',
   },
 
-  metaRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
-  },
-
-  metaPill: {
-    backgroundColor: '#1B232C',
-    borderRadius: 14,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-  },
-
-  metaText: {
-    color: '#8D96A3',
-    fontSize: 11,
-    fontWeight: '700',
+  languageChipTextActive: {
+    color: '#101114',
   },
 
   sourceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#141A1D',
-    borderWidth: 1,
-    borderColor: '#30332F',
+    backgroundColor: '#11141B',
     borderRadius: 17,
-    padding: 13,
-    marginBottom: 15,
+    padding: 15,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#202530',
+  },
+
+  sourceTitle: {
+    color: '#D8B36A',
+    fontSize: 13,
+    fontWeight: '800',
   },
 
   sourceText: {
-    color: '#929AA3',
-    fontSize: 12,
-    marginLeft: 9,
-  },
-
-  loadingCard: {
-    backgroundColor: '#11171F',
-    borderWidth: 1,
-    borderColor: '#202832',
-    borderRadius: 22,
-    padding: 32,
-    alignItems: 'center',
-  },
-
-  loadingTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
-    marginTop: 13,
-  },
-
-  loadingText: {
-    color: '#78818E',
-    fontSize: 13,
+    color: '#858A99',
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: 6,
   },
 
-  ayahList: {
-    gap: 12,
+  translationLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+
+  translationLoadingText: {
+    color: '#999EAC',
+    fontSize: 12,
+    marginLeft: 8,
+  },
+
+  translationNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#171710',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  translationNoticeText: {
+    flex: 1,
+    color: '#C1B891',
+    fontSize: 12,
+    lineHeight: 18,
+    marginLeft: 8,
   },
 
   ayahCard: {
-    backgroundColor: '#11171F',
+    backgroundColor: '#10131A',
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#202832',
-    borderRadius: 22,
-    padding: 18,
+    borderColor: '#202530',
   },
 
-  ayahTopRow: {
+  ayahHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 13,
   },
 
   ayahNumber: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#1B222C',
+    width: 31,
+    height: 31,
+    borderRadius: 10,
+    backgroundColor: '#1B1F28',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   ayahNumberText: {
-    color: '#D7B56D',
+    color: '#D8B36A',
     fontSize: 11,
     fontWeight: '800',
   },
 
-  ayahBookmark: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#171E27',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  ayahArabic: {
-    color: '#F3EBDD',
+  arabicText: {
+    color: '#F2EBDD',
     fontSize: 25,
     lineHeight: 48,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
 
-  emptyReader: {
-    backgroundColor: '#11171F',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#202832',
-    padding: 30,
-    alignItems: 'center',
+  translationBox: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#272C37',
   },
 
-  emptyTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 13,
-    textAlign: 'center',
+  translationText: {
+    color: '#C5C8D1',
+    fontSize: 15,
+    lineHeight: 25,
   },
 
-  emptyText: {
-    color: '#78818E',
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginTop: 8,
+  urduTranslationText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    fontSize: 17,
+    lineHeight: 30,
   },
 });
