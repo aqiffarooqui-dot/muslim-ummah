@@ -1,4 +1,3 @@
-```tsx
 import React from 'react';
 import {
   Pressable,
@@ -509,4 +508,3 @@ const styles = StyleSheet.create({
     height: 90,
   },
 });
-```
