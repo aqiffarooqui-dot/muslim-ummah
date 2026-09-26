@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import QuranScreen from './QuranScreen';
 
 type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
 
@@ -50,7 +51,6 @@ export default function App() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
     >
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>ASSALAMU ALAIKUM</Text>
@@ -62,7 +62,6 @@ export default function App() {
         </Pressable>
       </View>
 
-      {/* Hero */}
       <View style={styles.heroCard}>
         <View style={styles.heroGlowOne} />
         <View style={styles.heroGlowTwo} />
@@ -92,11 +91,12 @@ export default function App() {
         </Pressable>
       </View>
 
-      {/* Next Prayer */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>Next Prayer</Text>
-          <Text style={styles.sectionSubtitle}>Your daily prayer schedule</Text>
+          <Text style={styles.sectionSubtitle}>
+            Your daily prayer schedule
+          </Text>
         </View>
 
         <Ionicons name="location-outline" size={19} color="#8C938D" />
@@ -129,11 +129,12 @@ export default function App() {
         ))}
       </ScrollView>
 
-      {/* Continue Quran */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>Continue Quran</Text>
-          <Text style={styles.sectionSubtitle}>Pick up where you left off</Text>
+          <Text style={styles.sectionSubtitle}>
+            Pick up where you left off
+          </Text>
         </View>
 
         <Pressable onPress={() => setActiveTab('Quran')}>
@@ -151,7 +152,9 @@ export default function App() {
 
         <View style={styles.quranInfo}>
           <Text style={styles.quranSurah}>Surah Al-Baqarah</Text>
-          <Text style={styles.quranAyah}>Ayah 255 • Ayat-ul-Kursi</Text>
+          <Text style={styles.quranAyah}>
+            Ayah 255 • Ayat-ul-Kursi
+          </Text>
 
           <View style={styles.progressTrack}>
             <View style={styles.progressFill} />
@@ -163,11 +166,12 @@ export default function App() {
         <Ionicons name="play-circle" size={34} color="#D9C77A" />
       </Pressable>
 
-      {/* Daily Content */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>For Your Day</Text>
-          <Text style={styles.sectionSubtitle}>Small reminders, every day</Text>
+          <Text style={styles.sectionSubtitle}>
+            Small reminders, every day
+          </Text>
         </View>
       </View>
 
@@ -205,11 +209,12 @@ export default function App() {
         </View>
       </ScrollView>
 
-      {/* Explore */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>Explore</Text>
-          <Text style={styles.sectionSubtitle}>Everything you need in one place</Text>
+          <Text style={styles.sectionSubtitle}>
+            Everything you need in one place
+          </Text>
         </View>
       </View>
 
@@ -219,9 +224,17 @@ export default function App() {
             key={item.title}
             style={styles.exploreCard}
             onPress={() => {
-              if (item.title === 'Quran') setActiveTab('Quran');
-              if (item.title === 'Hadith') setActiveTab('Hadith');
-              if (item.title === 'Prayer') setActiveTab('Prayer');
+              if (item.title === 'Quran') {
+                setActiveTab('Quran');
+              }
+
+              if (item.title === 'Hadith') {
+                setActiveTab('Hadith');
+              }
+
+              if (item.title === 'Prayer') {
+                setActiveTab('Prayer');
+              }
             }}
           >
             <View style={styles.exploreIcon}>
@@ -243,9 +256,7 @@ export default function App() {
       <View style={styles.placeholderIcon}>
         <Ionicons
           name={
-            activeTab === 'Quran'
-              ? 'book-outline'
-              : activeTab === 'Hadith'
+            activeTab === 'Hadith'
               ? 'library-outline'
               : activeTab === 'Prayer'
               ? 'time-outline'
@@ -271,13 +282,24 @@ export default function App() {
     </View>
   );
 
+  const renderContent = () => {
+    if (activeTab === 'Quran') {
+      return <QuranScreen onBack={() => setActiveTab('Home')} />;
+    }
+
+    if (activeTab === 'Home') {
+      return renderHome();
+    }
+
+    return renderPlaceholder();
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {activeTab === 'Home' ? renderHome() : renderPlaceholder()}
+      {renderContent()}
 
-      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <NavItem
           label="Home"
@@ -325,7 +347,12 @@ type NavItemProps = {
   onPress: () => void;
 };
 
-function NavItem({ label, icon, active, onPress }: NavItemProps) {
+function NavItem({
+  label,
+  icon,
+  active,
+  onPress,
+}: NavItemProps) {
   return (
     <Pressable style={styles.navItem} onPress={onPress}>
       <Ionicons
@@ -333,6 +360,7 @@ function NavItem({ label, icon, active, onPress }: NavItemProps) {
         size={21}
         color={active ? '#D9C77A' : '#6F7771'}
       />
+
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>
         {label}
       </Text>
