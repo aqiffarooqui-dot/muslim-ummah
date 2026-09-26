@@ -1,4 +1,3 @@
-```tsx
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -1125,4 +1124,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-```
