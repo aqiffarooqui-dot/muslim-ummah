@@ -23,25 +23,51 @@ import {
   TRANSLATION_FILE_URLS,
 } from './src/quranTranslations';
 import { parseTranslationText } from './src/quranTranslationParser';
-import QuranArabicText from './src/QuranArabicText';
+
+import QuranLanguageSelector from './src/QuranLanguageSelector';
+import QuranAyahCard from './src/QuranAyahCard';
+
+import {
+  getBookmarks,
+  initializeBookmarks,
+  toggleBookmark,
+} from './src/quranBookmarks';
 
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
+
+function getBookmarkKey(
+  surahNumber: number,
+  ayahNumber: number
+): string {
+  return `${surahNumber}:${ayahNumber}`;
+}
 
 export default function QuranScreen() {
   const [quran, setQuran] = useState<QuranSurah[]>([]);
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
+
   const [language, setLanguage] =
     useState<QuranLanguage>(DEFAULT_QURAN_LANGUAGE);
 
-  const [translation, setTranslation] = useState<TranslationMap>({});
+  const [translation, setTranslation] =
+    useState<TranslationMap>({});
+
   const [loading, setLoading] = useState(true);
-  const [translationLoading, setTranslationLoading] = useState(false);
+  const [translationLoading, setTranslationLoading] =
+    useState(false);
+
   const [error, setError] = useState('');
-  const [translationError, setTranslationError] = useState('');
+  const [translationError, setTranslationError] =
+    useState('');
+
   const [search, setSearch] = useState('');
+
+  const [bookmarkKeys, setBookmarkKeys] =
+    useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadQuran();
+    initializeBookmarkState();
   }, []);
 
   useEffect(() => {
@@ -53,6 +79,64 @@ export default function QuranScreen() {
     }
   }, [language]);
 
+  async function initializeBookmarkState() {
+    try {
+      await initializeBookmarks();
+
+      const storedBookmarks = getBookmarks();
+
+      const keys = new Set(
+        storedBookmarks.map((bookmark) =>
+          getBookmarkKey(
+            bookmark.surahNumber,
+            bookmark.ayahNumber
+          )
+        )
+      );
+
+      setBookmarkKeys(keys);
+    } catch (err) {
+      console.error(
+        'Bookmark initialization error:',
+        err
+      );
+    }
+  }
+
+  async function handleBookmarkPress(
+    surahNumber: number,
+    ayahNumber: number
+  ) {
+    try {
+      const bookmarked = await toggleBookmark(
+        surahNumber,
+        ayahNumber
+      );
+
+      const key = getBookmarkKey(
+        surahNumber,
+        ayahNumber
+      );
+
+      setBookmarkKeys((previous) => {
+        const next = new Set(previous);
+
+        if (bookmarked) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
+
+        return next;
+      });
+    } catch (err) {
+      console.error(
+        'Bookmark update error:',
+        err
+      );
+    }
+  }
+
   async function loadQuran() {
     try {
       setLoading(true);
@@ -63,7 +147,9 @@ export default function QuranScreen() {
       });
 
       if (!response.ok) {
-        throw new Error(`Quran file returned ${response.status}`);
+        throw new Error(
+          `Quran file returned ${response.status}`
+        );
       }
 
       const text = await response.text();
@@ -77,19 +163,28 @@ export default function QuranScreen() {
 
       setQuran(parsed);
     } catch (err) {
-      console.error('Quran loading error:', err);
-      setError('Unable to load Quran. Please try again.');
+      console.error(
+        'Quran loading error:',
+        err
+      );
+
+      setError(
+        'Unable to load Quran. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadTranslation(selectedLanguage: QuranLanguage) {
+  async function loadTranslation(
+    selectedLanguage: QuranLanguage
+  ) {
     if (selectedLanguage === 'arabic') {
       return;
     }
 
-    const url = TRANSLATION_FILE_URLS[selectedLanguage];
+    const url =
+      TRANSLATION_FILE_URLS[selectedLanguage];
 
     if (!url) {
       return;
@@ -104,7 +199,9 @@ export default function QuranScreen() {
       });
 
       if (!response.ok) {
-        throw new Error(`Translation file returned ${response.status}`);
+        throw new Error(
+          `Translation file returned ${response.status}`
+        );
       }
 
       const text = await response.text();
@@ -112,8 +209,13 @@ export default function QuranScreen() {
 
       setTranslation(parsed);
     } catch (err) {
-      console.error('Translation loading error:', err);
+      console.error(
+        'Translation loading error:',
+        err
+      );
+
       setTranslation({});
+
       setTranslationError(
         'This translation is not available yet. Arabic Quran remains available.'
       );
@@ -131,8 +233,12 @@ export default function QuranScreen() {
 
     return SURAHS.filter(
       (surah) =>
-        surah.name.toLowerCase().includes(query) ||
-        surah.englishName.toLowerCase().includes(query) ||
+        surah.name
+          .toLowerCase()
+          .includes(query) ||
+        surah.englishName
+          .toLowerCase()
+          .includes(query) ||
         String(surah.number).includes(query)
     );
   }, [search]);
@@ -141,15 +247,14 @@ export default function QuranScreen() {
     (surah) => surah.number === selectedSurah
   );
 
-  const selectedLanguage = QURAN_LANGUAGES.find(
-    (item) => item.id === language
-  );
-
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>Loading Quran...</Text>
+
+        <Text style={styles.loadingText}>
+          Loading Quran...
+        </Text>
       </View>
     );
   }
@@ -157,10 +262,17 @@ export default function QuranScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
 
-        <Pressable style={styles.retryButton} onPress={loadQuran}>
-          <Text style={styles.retryText}>Retry</Text>
+        <Pressable
+          style={styles.retryButton}
+          onPress={loadQuran}
+        >
+          <Text style={styles.retryText}>
+            Retry
+          </Text>
         </Pressable>
       </View>
     );
@@ -170,15 +282,26 @@ export default function QuranScreen() {
     return (
       <View style={styles.container}>
         <ScrollView
-          contentContainerStyle={styles.readerContent}
+          contentContainerStyle={
+            styles.readerContent
+          }
           showsVerticalScrollIndicator={false}
         >
           <Pressable
             style={styles.backButton}
-            onPress={() => setSelectedSurah(null)}
+            onPress={() =>
+              setSelectedSurah(null)
+            }
           >
-            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-            <Text style={styles.backText}>Quran</Text>
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#FFFFFF"
+            />
+
+            <Text style={styles.backText}>
+              Quran
+            </Text>
           </Pressable>
 
           <View style={styles.readerHero}>
@@ -186,132 +309,130 @@ export default function QuranScreen() {
               SURAH {currentSurah.number}
             </Text>
 
-            <Text style={styles.arabicSurahName}>
+            <Text
+              style={styles.arabicSurahName}
+            >
               {currentSurah.arabicName}
             </Text>
 
-            <Text style={styles.surahEnglishName}>
+            <Text
+              style={styles.surahEnglishName}
+            >
               {currentSurah.englishName}
             </Text>
 
             <Text style={styles.surahMeta}>
-              {currentSurah.revelation} • {currentSurah.ayahCount} Ayahs
+              {currentSurah.revelation} •{' '}
+              {currentSurah.ayahCount} Ayahs
             </Text>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.languageRow}
-          >
-            {QURAN_LANGUAGES.map((item) => {
-              const active = item.id === language;
-
-              return (
-                <Pressable
-                  key={item.id}
-                  style={[
-                    styles.languageChip,
-                    active && styles.languageChipActive,
-                  ]}
-                  onPress={() => setLanguage(item.id)}
-                >
-                  <Text
-                    style={[
-                      styles.languageChipText,
-                      active && styles.languageChipTextActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <QuranLanguageSelector
+            selectedLanguage={language}
+            onLanguageChange={setLanguage}
+          />
 
           <View style={styles.sourceCard}>
             <Text style={styles.sourceTitle}>
-              {selectedLanguage?.nativeLabel}
+              {
+                QURAN_LANGUAGES.find(
+                  (item) =>
+                    item.id === language
+                )?.nativeLabel
+              }
             </Text>
 
             <Text style={styles.sourceText}>
-              Arabic text is preserved from the existing Uthmani Quran
-              source. Translation layers are loaded separately.
+              Arabic text is preserved from
+              the existing Uthmani Quran
+              source. Translation layers are
+              loaded separately.
             </Text>
           </View>
 
-          {translationLoading && language !== 'arabic' && (
-            <View style={styles.translationLoading}>
-              <ActivityIndicator size="small" />
-              <Text style={styles.translationLoadingText}>
-                Loading translation...
-              </Text>
-            </View>
-          )}
-
-          {translationError && language !== 'arabic' && (
-            <View style={styles.translationNotice}>
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color="#F4C76B"
-              />
-
-              <Text style={styles.translationNoticeText}>
-                {translationError}
-              </Text>
-            </View>
-          )}
-
-          {currentSurah.ayahs.map((ayah) => {
-            const translatedText =
-              language === 'arabic'
-                ? ''
-                : getTranslation(
-                    translation,
-                    currentSurah.number,
-                    ayah.number
-                  );
-
-            return (
+          {translationLoading &&
+            language !== 'arabic' && (
               <View
-                key={`${currentSurah.number}-${ayah.number}`}
-                style={styles.ayahCard}
+                style={
+                  styles.translationLoading
+                }
               >
-                <View style={styles.ayahHeader}>
-                  <View style={styles.ayahNumber}>
-                    <Text style={styles.ayahNumberText}>
-                      {ayah.number}
-                    </Text>
-                  </View>
+                <ActivityIndicator size="small" />
 
-                  <Ionicons
-                    name="bookmark-outline"
-                    size={21}
-                    color="#8D91A3"
-                  />
-                </View>
-
-                <QuranArabicText style={styles.arabicText}>
-                  {ayah.text}
-                </QuranArabicText>
-
-                {language !== 'arabic' && translatedText ? (
-                  <View style={styles.translationBox}>
-                    <Text
-                      style={[
-                        styles.translationText,
-                        language === 'urdu' &&
-                          styles.urduTranslationText,
-                      ]}
-                    >
-                      {translatedText}
-                    </Text>
-                  </View>
-                ) : null}
+                <Text
+                  style={
+                    styles.translationLoadingText
+                  }
+                >
+                  Loading translation...
+                </Text>
               </View>
-            );
-          })}
+            )}
+
+          {translationError &&
+            language !== 'arabic' && (
+              <View
+                style={
+                  styles.translationNotice
+                }
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#F4C76B"
+                />
+
+                <Text
+                  style={
+                    styles.translationNoticeText
+                  }
+                >
+                  {translationError}
+                </Text>
+              </View>
+            )}
+
+          {currentSurah.ayahs.map(
+            (ayah) => {
+              const translatedText =
+                language === 'arabic'
+                  ? ''
+                  : getTranslation(
+                      translation,
+                      currentSurah.number,
+                      ayah.number
+                    );
+
+              const bookmarkKey =
+                getBookmarkKey(
+                  currentSurah.number,
+                  ayah.number
+                );
+
+              return (
+                <QuranAyahCard
+                  key={`${currentSurah.number}-${ayah.number}`}
+                  ayahNumber={ayah.number}
+                  arabicText={ayah.text}
+                  translation={
+                    translatedText || undefined
+                  }
+                  isUrdu={
+                    language === 'urdu'
+                  }
+                  bookmarked={bookmarkKeys.has(
+                    bookmarkKey
+                  )}
+                  onBookmarkPress={() =>
+                    handleBookmarkPress(
+                      currentSurah.number,
+                      ayah.number
+                    )
+                  }
+                />
+              );
+            }
+          )}
         </ScrollView>
       </View>
     );
@@ -324,31 +445,64 @@ export default function QuranScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Text style={styles.eyebrow}>THE HOLY QURAN</Text>
+          <Text style={styles.eyebrow}>
+            THE HOLY QURAN
+          </Text>
 
-          <Text style={styles.title}>Quran</Text>
+          <Text style={styles.title}>
+            Quran
+          </Text>
 
           <Text style={styles.subtitle}>
-            Read, reflect and continue your journey with the words of Allah.
+            Read, reflect and continue your
+            journey with the words of Allah.
           </Text>
         </View>
 
         <View style={styles.continueCard}>
           <View style={styles.continueIcon}>
-            <Ionicons name="book-outline" size={25} color="#FFFFFF" />
+            <Ionicons
+              name="book-outline"
+              size={25}
+              color="#FFFFFF"
+            />
           </View>
 
-          <View style={styles.continueTextContainer}>
-            <Text style={styles.continueLabel}>CONTINUE READING</Text>
-            <Text style={styles.continueTitle}>Al-Fatihah</Text>
-            <Text style={styles.continueMeta}>Ayah 1</Text>
+          <View
+            style={
+              styles.continueTextContainer
+            }
+          >
+            <Text
+              style={styles.continueLabel}
+            >
+              CONTINUE READING
+            </Text>
+
+            <Text
+              style={styles.continueTitle}
+            >
+              Al-Fatihah
+            </Text>
+
+            <Text style={styles.continueMeta}>
+              Ayah 1
+            </Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
+          <Ionicons
+            name="chevron-forward"
+            size={22}
+            color="#FFFFFF"
+          />
         </View>
 
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#8D91A3" />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#8D91A3"
+          />
 
           <TextInput
             value={search}
@@ -359,35 +513,66 @@ export default function QuranScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>All Surahs</Text>
+        <Text style={styles.sectionTitle}>
+          All Surahs
+        </Text>
 
         <View style={styles.surahList}>
           {filteredSurahs.map((surah) => (
             <Pressable
               key={surah.number}
               style={styles.surahCard}
-              onPress={() => setSelectedSurah(surah.number)}
+              onPress={() =>
+                setSelectedSurah(
+                  surah.number
+                )
+              }
             >
-              <View style={styles.surahNumberBox}>
-                <Text style={styles.surahNumberText}>
+              <View
+                style={styles.surahNumberBox}
+              >
+                <Text
+                  style={
+                    styles.surahNumberText
+                  }
+                >
                   {surah.number}
                 </Text>
               </View>
 
               <View style={styles.surahInfo}>
-                <Text style={styles.surahName}>{surah.name}</Text>
+                <Text
+                  style={styles.surahName}
+                >
+                  {surah.name}
+                </Text>
 
-                <Text style={styles.surahEnglish}>
+                <Text
+                  style={
+                    styles.surahEnglish
+                  }
+                >
                   {surah.englishName}
                 </Text>
 
-                <Text style={styles.surahDetails}>
-                  {surah.revelation} • {surah.ayahCount} Ayahs
+                <Text
+                  style={
+                    styles.surahDetails
+                  }
+                >
+                  {surah.revelation} •{' '}
+                  {surah.ayahCount} Ayahs
                 </Text>
               </View>
 
-              <View style={styles.surahArabicContainer}>
-                <Text style={styles.surahArabic}>
+              <View
+                style={
+                  styles.surahArabicContainer
+                }
+              >
+                <Text
+                  style={styles.surahArabic}
+                >
                   {surah.arabicName}
                 </Text>
 
@@ -666,35 +851,6 @@ const styles = StyleSheet.create({
     marginTop: 7,
   },
 
-  languageRow: {
-    gap: 9,
-    paddingVertical: 18,
-  },
-
-  languageChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: '#141821',
-    borderWidth: 1,
-    borderColor: '#282D38',
-  },
-
-  languageChipActive: {
-    backgroundColor: '#D8B36A',
-    borderColor: '#D8B36A',
-  },
-
-  languageChipText: {
-    color: '#A2A6B3',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  languageChipTextActive: {
-    color: '#101114',
-  },
-
   sourceCard: {
     backgroundColor: '#11141B',
     borderRadius: 17,
@@ -746,63 +902,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  ayahCard: {
-    backgroundColor: '#10131A',
-    borderRadius: 20,
-    padding: 17,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#202530',
-  },
-
-  ayahHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 13,
-  },
-
-  ayahNumber: {
-    width: 31,
-    height: 31,
-    borderRadius: 10,
-    backgroundColor: '#1B1F28',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  ayahNumberText: {
-    color: '#D8B36A',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-
-  arabicText: {
-    color: '#F2EBDD',
-    fontSize: 25,
-    lineHeight: 48,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-
-  translationBox: {
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#272C37',
-  },
-
-  translationText: {
-    color: '#C5C8D1',
-    fontSize: 15,
-    lineHeight: 25,
-  },
-
-  urduTranslationText: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    fontSize: 17,
-    lineHeight: 30,
+  searchInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 9,
   },
 
   surahArabic: {
