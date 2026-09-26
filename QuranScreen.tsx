@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Asset } from 'expo-asset';
+
 import { SURAHS, Surah } from './src/QuranData';
 import { parseQuranText, QuranSurah } from './src/quranParser';
 
@@ -15,36 +18,70 @@ type QuranScreenProps = {
   onBack?: () => void;
 };
 
-const quranText = require('./src/data/quran-uthmani.txt');
+const quranTextAsset = require('./src/data/quran-uthmani.txt');
 
 export default function QuranScreen({ onBack }: QuranScreenProps) {
   const [search, setSearch] = useState('');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
+  const [quranSurahs, setQuranSurahs] = useState<QuranSurah[]>([]);
+  const [loadingQuran, setLoadingQuran] = useState(true);
+  const [quranError, setQuranError] = useState(false);
 
-  const quranSurahs = useMemo<QuranSurah[]>(() => {
-    try {
-      const rawText =
-        typeof quranText === 'string'
-          ? quranText
-          : quranText?.default ?? '';
+  useEffect(() => {
+    let mounted = true;
 
-      return parseQuranText(rawText);
-    } catch {
-      return [];
-    }
+    const loadQuran = async () => {
+      try {
+        setLoadingQuran(true);
+        setQuranError(false);
+
+        const asset = Asset.fromModule(quranTextAsset);
+
+        await asset.downloadAsync();
+
+        const uri = asset.localUri ?? asset.uri;
+
+        if (!uri) {
+          throw new Error('Quran text asset URI not available');
+        }
+
+        const response = await fetch(uri);
+
+        if (!response.ok) {
+          throw new Error(
+            `Unable to load Quran text: ${response.status}`
+          );
+        }
+
+        const text = await response.text();
+
+        const parsed = parseQuranText(text);
+
+        if (!parsed.length) {
+          throw new Error('Quran parser returned no Surahs');
+        }
+
+        if (mounted) {
+          setQuranSurahs(parsed);
+          setLoadingQuran(false);
+        }
+      } catch (error) {
+        console.error('Quran loading error:', error);
+
+        if (mounted) {
+          setQuranSurahs([]);
+          setQuranError(true);
+          setLoadingQuran(false);
+        }
+      }
+    };
+
+    loadQuran();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
-
-  const selectedQuranSurah = useMemo(() => {
-    if (!selectedSurah) {
-      return null;
-    }
-
-    return (
-      quranSurahs.find(
-        (surah) => surah.number === selectedSurah.number
-      ) ?? null
-    );
-  }, [quranSurahs, selectedSurah]);
 
   const filteredSurahs = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -63,6 +100,18 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
     });
   }, [search]);
 
+  const selectedQuranSurah = useMemo(() => {
+    if (!selectedSurah) {
+      return null;
+    }
+
+    return (
+      quranSurahs.find(
+        (surah) => surah.number === selectedSurah.number
+      ) ?? null
+    );
+  }, [quranSurahs, selectedSurah]);
+
   if (selectedSurah) {
     return (
       <View style={styles.container}>
@@ -71,7 +120,11 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
             style={styles.iconButton}
             onPress={() => setSelectedSurah(null)}
           >
-            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color="#FFFFFF"
+            />
           </Pressable>
 
           <View style={styles.readerTitle}>
@@ -80,7 +133,8 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
             </Text>
 
             <Text style={styles.readerSubtitle}>
-              Surah {selectedSurah.number} • {selectedSurah.ayahCount} Ayahs
+              Surah {selectedSurah.number} •{' '}
+              {selectedSurah.ayahCount} Ayahs
             </Text>
           </View>
 
@@ -122,10 +176,56 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
             </View>
           </View>
 
-          {selectedQuranSurah?.ayahs.length ? (
+          <View style={styles.sourceCard}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={19}
+              color="#D7B56D"
+            />
+
+            <Text style={styles.sourceText}>
+              Arabic Quran text • Tanzil Uthmani
+            </Text>
+          </View>
+
+          {loadingQuran ? (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator
+                size="small"
+                color="#D7B56D"
+              />
+
+              <Text style={styles.loadingTitle}>
+                Loading Quran...
+              </Text>
+
+              <Text style={styles.loadingText}>
+                Preparing the Arabic Ayahs.
+              </Text>
+            </View>
+          ) : quranError ? (
+            <View style={styles.emptyReader}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={40}
+                color="#D7B56D"
+              />
+
+              <Text style={styles.emptyTitle}>
+                Quran text could not be loaded
+              </Text>
+
+              <Text style={styles.emptyText}>
+                Please check the Quran text asset and try again.
+              </Text>
+            </View>
+          ) : selectedQuranSurah?.ayahs.length ? (
             <View style={styles.ayahList}>
               {selectedQuranSurah.ayahs.map((ayah) => (
-                <View key={ayah.number} style={styles.ayahCard}>
+                <View
+                  key={`${selectedSurah.number}-${ayah.number}`}
+                  style={styles.ayahCard}
+                >
                   <View style={styles.ayahTopRow}>
                     <View style={styles.ayahNumber}>
                       <Text style={styles.ayahNumberText}>
@@ -151,17 +251,17 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
           ) : (
             <View style={styles.emptyReader}>
               <Ionicons
-                name="alert-circle-outline"
-                size={38}
+                name="book-outline"
+                size={40}
                 color="#D7B56D"
               />
 
               <Text style={styles.emptyTitle}>
-                Quran text unavailable
+                Ayahs not found
               </Text>
 
               <Text style={styles.emptyText}>
-                The Arabic Quran data could not be loaded for this Surah.
+                No Arabic Ayahs were found for this Surah.
               </Text>
             </View>
           )}
@@ -178,8 +278,13 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
       >
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.eyebrow}>THE HOLY QURAN</Text>
-            <Text style={styles.title}>Quran</Text>
+            <Text style={styles.eyebrow}>
+              THE HOLY QURAN
+            </Text>
+
+            <Text style={styles.title}>
+              Quran
+            </Text>
           </View>
 
           <Pressable style={styles.topIcon}>
@@ -204,9 +309,17 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
           </View>
 
           <View style={styles.continueText}>
-            <Text style={styles.continueLabel}>CONTINUE READING</Text>
-            <Text style={styles.continueTitle}>Al-Fatihah</Text>
-            <Text style={styles.continueMeta}>Ayah 1 • Last read</Text>
+            <Text style={styles.continueLabel}>
+              CONTINUE READING
+            </Text>
+
+            <Text style={styles.continueTitle}>
+              Al-Fatihah
+            </Text>
+
+            <Text style={styles.continueMeta}>
+              Ayah 1 • Last read
+            </Text>
           </View>
 
           <Ionicons
@@ -244,7 +357,9 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>All Surahs</Text>
+            <Text style={styles.sectionTitle}>
+              All Surahs
+            </Text>
 
             <Text style={styles.sectionSubtitle}>
               {filteredSurahs.length} of {SURAHS.length} Surahs
@@ -252,7 +367,9 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
           </View>
 
           <View style={styles.totalBadge}>
-            <Text style={styles.totalBadgeText}>114</Text>
+            <Text style={styles.totalBadgeText}>
+              114
+            </Text>
           </View>
         </View>
 
@@ -664,6 +781,45 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  sourceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#141A1D',
+    borderWidth: 1,
+    borderColor: '#30332F',
+    borderRadius: 17,
+    padding: 13,
+    marginBottom: 15,
+  },
+
+  sourceText: {
+    color: '#929AA3',
+    fontSize: 12,
+    marginLeft: 9,
+  },
+
+  loadingCard: {
+    backgroundColor: '#11171F',
+    borderWidth: 1,
+    borderColor: '#202832',
+    borderRadius: 22,
+    padding: 32,
+    alignItems: 'center',
+  },
+
+  loadingTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
+    marginTop: 13,
+  },
+
+  loadingText: {
+    color: '#78818E',
+    fontSize: 13,
+    marginTop: 6,
+  },
+
   ayahList: {
     gap: 12,
   },
@@ -729,6 +885,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     marginTop: 13,
+    textAlign: 'center',
   },
 
   emptyText: {
