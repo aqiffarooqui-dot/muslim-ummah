@@ -23,6 +23,7 @@ import {
   TRANSLATION_FILE_URLS,
 } from './src/quranTranslations';
 import { parseTranslationText } from './src/quranTranslationParser';
+import QuranArabicText from './src/QuranArabicText';
 
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
@@ -273,38 +274,41 @@ export default function QuranScreen() {
                   );
 
             return (
-              <View key={`${currentSurah.number}-${ayah.number}`}>
-                <View style={styles.ayahCard}>
-                  <View style={styles.ayahHeader}>
-                    <View style={styles.ayahNumber}>
-                      <Text style={styles.ayahNumberText}>
-                        {ayah.number}
-                      </Text>
-                    </View>
-
-                    <Ionicons
-                      name="bookmark-outline"
-                      size={21}
-                      color="#8D91A3"
-                    />
+              <View
+                key={`${currentSurah.number}-${ayah.number}`}
+                style={styles.ayahCard}
+              >
+                <View style={styles.ayahHeader}>
+                  <View style={styles.ayahNumber}>
+                    <Text style={styles.ayahNumberText}>
+                      {ayah.number}
+                    </Text>
                   </View>
 
-                  <Text style={styles.arabicText}>{ayah.text}</Text>
-
-                  {language !== 'arabic' && translatedText ? (
-                    <View style={styles.translationBox}>
-                      <Text
-                        style={[
-                          styles.translationText,
-                          language === 'urdu' &&
-                            styles.urduTranslationText,
-                        ]}
-                      >
-                        {translatedText}
-                      </Text>
-                    </View>
-                  ) : null}
+                  <Ionicons
+                    name="bookmark-outline"
+                    size={21}
+                    color="#8D91A3"
+                  />
                 </View>
+
+                <QuranArabicText style={styles.arabicText}>
+                  {ayah.text}
+                </QuranArabicText>
+
+                {language !== 'arabic' && translatedText ? (
+                  <View style={styles.translationBox}>
+                    <Text
+                      style={[
+                        styles.translationText,
+                        language === 'urdu' &&
+                          styles.urduTranslationText,
+                      ]}
+                    >
+                      {translatedText}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             );
           })}
@@ -799,5 +803,11 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     fontSize: 17,
     lineHeight: 30,
+  },
+
+  surahArabic: {
+    color: '#E9E1D2',
+    fontSize: 20,
+    marginBottom: 5,
   },
 });
