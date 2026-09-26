@@ -1,3 +1,4 @@
+```tsx
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -9,6 +10,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import QuranScreen from './QuranScreen';
+import AboutScreen from './AboutScreen';
 
 type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
 
@@ -45,6 +47,15 @@ const quickItems = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('Home');
+  const [showAbout, setShowAbout] = useState(false);
+
+  const openAbout = () => {
+    setShowAbout(true);
+  };
+
+  const closeAbout = () => {
+    setShowAbout(false);
+  };
 
   const renderHome = () => (
     <ScrollView
@@ -152,6 +163,7 @@ export default function App() {
 
         <View style={styles.quranInfo}>
           <Text style={styles.quranSurah}>Surah Al-Baqarah</Text>
+
           <Text style={styles.quranAyah}>
             Ayah 255 • Ayat-ul-Kursi
           </Text>
@@ -282,13 +294,139 @@ export default function App() {
     </View>
   );
 
+  const renderMore = () => (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.moreContent}
+    >
+      <View style={styles.moreHeader}>
+        <View>
+          <Text style={styles.eyebrow}>MUSLIM UMMAH</Text>
+          <Text style={styles.moreTitle}>More</Text>
+        </View>
+
+        <View style={styles.moreHeaderIcon}>
+          <Ionicons name="grid-outline" size={21} color="#D9C77A" />
+        </View>
+      </View>
+
+      <View style={styles.moreHero}>
+        <View style={styles.moreHeroIcon}>
+          <Ionicons name="moon-outline" size={30} color="#D9C77A" />
+        </View>
+
+        <View style={styles.moreHeroInfo}>
+          <Text style={styles.moreHeroTitle}>Muslim Ummah</Text>
+
+          <Text style={styles.moreHeroText}>
+            Your modern Islamic companion
+          </Text>
+        </View>
+      </View>
+
+      <Text style={styles.moreSectionTitle}>App</Text>
+
+      <Pressable style={styles.moreItem} onPress={openAbout}>
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="information-circle-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>About Muslim Ummah</Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            Features, developer and app information
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </Pressable>
+
+      <View style={styles.moreItem}>
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>Privacy</Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            Your privacy and app data information
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </View>
+
+      <View style={styles.moreItem}>
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="settings-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>Settings</Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            App preferences and customization
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </View>
+
+      <View style={styles.moreVersionCard}>
+        <Text style={styles.moreVersionLabel}>APP VERSION</Text>
+
+        <Text style={styles.moreVersion}>1.0.0</Text>
+
+        <Text style={styles.moreVersionText}>
+          Muslim Ummah • Free Islamic Companion
+        </Text>
+      </View>
+
+      <View style={styles.moreBottomSpace} />
+    </ScrollView>
+  );
+
   const renderContent = () => {
+    if (showAbout) {
+      return <AboutScreen onBack={closeAbout} />;
+    }
+
     if (activeTab === 'Quran') {
       return <QuranScreen onBack={() => setActiveTab('Home')} />;
     }
 
     if (activeTab === 'Home') {
       return renderHome();
+    }
+
+    if (activeTab === 'More') {
+      return renderMore();
     }
 
     return renderPlaceholder();
@@ -300,42 +438,44 @@ export default function App() {
 
       {renderContent()}
 
-      <View style={styles.bottomNav}>
-        <NavItem
-          label="Home"
-          icon="home"
-          active={activeTab === 'Home'}
-          onPress={() => setActiveTab('Home')}
-        />
+      {!showAbout && (
+        <View style={styles.bottomNav}>
+          <NavItem
+            label="Home"
+            icon="home"
+            active={activeTab === 'Home'}
+            onPress={() => setActiveTab('Home')}
+          />
 
-        <NavItem
-          label="Quran"
-          icon="book-outline"
-          active={activeTab === 'Quran'}
-          onPress={() => setActiveTab('Quran')}
-        />
+          <NavItem
+            label="Quran"
+            icon="book-outline"
+            active={activeTab === 'Quran'}
+            onPress={() => setActiveTab('Quran')}
+          />
 
-        <NavItem
-          label="Hadith"
-          icon="library-outline"
-          active={activeTab === 'Hadith'}
-          onPress={() => setActiveTab('Hadith')}
-        />
+          <NavItem
+            label="Hadith"
+            icon="library-outline"
+            active={activeTab === 'Hadith'}
+            onPress={() => setActiveTab('Hadith')}
+          />
 
-        <NavItem
-          label="Prayer"
-          icon="time-outline"
-          active={activeTab === 'Prayer'}
-          onPress={() => setActiveTab('Prayer')}
-        />
+          <NavItem
+            label="Prayer"
+            icon="time-outline"
+            active={activeTab === 'Prayer'}
+            onPress={() => setActiveTab('Prayer')}
+          />
 
-        <NavItem
-          label="More"
-          icon="grid-outline"
-          active={activeTab === 'More'}
-          onPress={() => setActiveTab('More')}
-        />
-      </View>
+          <NavItem
+            label="More"
+            icon="grid-outline"
+            active={activeTab === 'More'}
+            onPress={() => setActiveTab('More')}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -756,6 +896,154 @@ const styles = StyleSheet.create({
     height: 80,
   },
 
+  moreContent: {
+    paddingTop: 58,
+    paddingHorizontal: 18,
+    paddingBottom: 30,
+  },
+
+  moreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 22,
+  },
+
+  moreTitle: {
+    color: '#F0F0E7',
+    fontSize: 27,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  moreHeaderIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 22,
+    backgroundColor: '#111B17',
+    borderWidth: 1,
+    borderColor: '#29372F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  moreHero: {
+    minHeight: 96,
+    borderRadius: 23,
+    backgroundColor: '#13251E',
+    borderWidth: 1,
+    borderColor: '#294239',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  moreHeroIcon: {
+    width: 57,
+    height: 57,
+    borderRadius: 19,
+    backgroundColor: '#1D3027',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  moreHeroInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  moreHeroTitle: {
+    color: '#EDEDE5',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  moreHeroText: {
+    color: '#7F8A83',
+    fontSize: 10,
+    marginTop: 4,
+  },
+
+  moreSectionTitle: {
+    color: '#EDEDE5',
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 27,
+    marginBottom: 10,
+  },
+
+  moreItem: {
+    minHeight: 75,
+    borderRadius: 19,
+    backgroundColor: '#101A16',
+    borderWidth: 1,
+    borderColor: '#24322C',
+    padding: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 9,
+  },
+
+  moreItemIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    backgroundColor: '#1A2C24',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  moreItemInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  moreItemTitle: {
+    color: '#E4E7E0',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  moreItemSubtitle: {
+    color: '#707B74',
+    fontSize: 9,
+    marginTop: 4,
+  },
+
+  moreVersionCard: {
+    marginTop: 13,
+    borderRadius: 20,
+    backgroundColor: '#0D1713',
+    borderWidth: 1,
+    borderColor: '#202E27',
+    padding: 18,
+    alignItems: 'center',
+  },
+
+  moreVersionLabel: {
+    color: '#66726B',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+
+  moreVersion: {
+    color: '#D9C77A',
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 5,
+  },
+
+  moreVersionText: {
+    color: '#68736C',
+    fontSize: 9,
+    marginTop: 4,
+  },
+
+  moreBottomSpace: {
+    height: 90,
+  },
+
   bottomNav: {
     position: 'absolute',
     left: 10,
@@ -837,3 +1125,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+```
