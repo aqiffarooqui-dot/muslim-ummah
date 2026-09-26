@@ -1,9 +1,14 @@
+import {
+  loadBookmarks,
+  saveBookmarks,
+} from './quranBookmarkStorage';
+
 export type QuranBookmark = {
   surahNumber: number;
   ayahNumber: number;
 };
 
-const bookmarks = new Set<string>();
+let bookmarks: QuranBookmark[] = [];
 
 function getBookmarkKey(
   surahNumber: number,
@@ -12,34 +17,20 @@ function getBookmarkKey(
   return `${surahNumber}:${ayahNumber}`;
 }
 
+export async function initializeBookmarks(): Promise<void> {
+  try {
+    bookmarks = await loadBookmarks();
+  } catch (error) {
+    console.error(
+      'Failed to initialize Quran bookmarks:',
+      error
+    );
+
+    bookmarks = [];
+  }
+}
+
 export function isBookmarked(
-  surahNumber: number,
-  ayahNumber: number
-): boolean {
-  return bookmarks.has(
-    getBookmarkKey(surahNumber, ayahNumber)
-  );
-}
-
-export function addBookmark(
-  surahNumber: number,
-  ayahNumber: number
-): void {
-  bookmarks.add(
-    getBookmarkKey(surahNumber, ayahNumber)
-  );
-}
-
-export function removeBookmark(
-  surahNumber: number,
-  ayahNumber: number
-): void {
-  bookmarks.delete(
-    getBookmarkKey(surahNumber, ayahNumber)
-  );
-}
-
-export function toggleBookmark(
   surahNumber: number,
   ayahNumber: number
 ): boolean {
@@ -48,28 +39,83 @@ export function toggleBookmark(
     ayahNumber
   );
 
-  if (bookmarks.has(key)) {
-    bookmarks.delete(key);
+  return bookmarks.some(
+    (bookmark) =>
+      getBookmarkKey(
+        bookmark.surahNumber,
+        bookmark.ayahNumber
+      ) === key
+  );
+}
+
+export async function addBookmark(
+  surahNumber: number,
+  ayahNumber: number
+): Promise<void> {
+  if (
+    isBookmarked(
+      surahNumber,
+      ayahNumber
+    )
+  ) {
+    return;
+  }
+
+  bookmarks.push({
+    surahNumber,
+    ayahNumber,
+  });
+
+  await saveBookmarks(bookmarks);
+}
+
+export async function removeBookmark(
+  surahNumber: number,
+  ayahNumber: number
+): Promise<void> {
+  bookmarks = bookmarks.filter(
+    (bookmark) =>
+      !(
+        bookmark.surahNumber === surahNumber &&
+        bookmark.ayahNumber === ayahNumber
+      )
+  );
+
+  await saveBookmarks(bookmarks);
+}
+
+export async function toggleBookmark(
+  surahNumber: number,
+  ayahNumber: number
+): Promise<boolean> {
+  if (
+    isBookmarked(
+      surahNumber,
+      ayahNumber
+    )
+  ) {
+    await removeBookmark(
+      surahNumber,
+      ayahNumber
+    );
+
     return false;
   }
 
-  bookmarks.add(key);
+  await addBookmark(
+    surahNumber,
+    ayahNumber
+  );
+
   return true;
 }
 
 export function getBookmarks(): QuranBookmark[] {
-  return Array.from(bookmarks).map((key) => {
-    const [surahNumber, ayahNumber] = key
-      .split(':')
-      .map(Number);
-
-    return {
-      surahNumber,
-      ayahNumber,
-    };
-  });
+  return [...bookmarks];
 }
 
-export function clearBookmarks(): void {
-  bookmarks.clear();
+export async function clearBookmarks(): Promise<void> {
+  bookmarks = [];
+
+  await saveBookmarks(bookmarks);
 }
