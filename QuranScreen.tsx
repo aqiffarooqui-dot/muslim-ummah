@@ -8,70 +8,11 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SURAHS, Surah } from './src/QuranData';
 
 type QuranScreenProps = {
-  onBack: () => void;
+  onBack?: () => void;
 };
-
-type Surah = {
-  number: number;
-  name: string;
-  englishName: string;
-  translation: string;
-  ayahs: number;
-  revelation: 'Meccan' | 'Medinan';
-};
-
-const surahs: Surah[] = [
-  {
-    number: 1,
-    name: 'الفاتحة',
-    englishName: 'Al-Fatihah',
-    translation: 'The Opening',
-    ayahs: 7,
-    revelation: 'Meccan',
-  },
-  {
-    number: 2,
-    name: 'البقرة',
-    englishName: 'Al-Baqarah',
-    translation: 'The Cow',
-    ayahs: 286,
-    revelation: 'Medinan',
-  },
-  {
-    number: 3,
-    name: 'آل عمران',
-    englishName: 'Aal-E-Imran',
-    translation: 'The Family of Imran',
-    ayahs: 200,
-    revelation: 'Medinan',
-  },
-  {
-    number: 4,
-    name: 'النساء',
-    englishName: 'An-Nisa',
-    translation: 'The Women',
-    ayahs: 176,
-    revelation: 'Medinan',
-  },
-  {
-    number: 5,
-    name: 'المائدة',
-    englishName: 'Al-Maidah',
-    translation: 'The Table Spread',
-    ayahs: 120,
-    revelation: 'Medinan',
-  },
-  {
-    number: 6,
-    name: 'الأنعام',
-    englishName: 'Al-Anam',
-    translation: 'The Cattle',
-    ayahs: 165,
-    revelation: 'Meccan',
-  },
-];
 
 export default function QuranScreen({ onBack }: QuranScreenProps) {
   const [search, setSearch] = useState('');
@@ -81,93 +22,113 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
     const query = search.trim().toLowerCase();
 
     if (!query) {
-      return surahs;
+      return SURAHS;
     }
 
-    return surahs.filter(
-      (surah) =>
+    return SURAHS.filter((surah) => {
+      return (
+        surah.name.toLowerCase().includes(query) ||
         surah.englishName.toLowerCase().includes(query) ||
-        surah.translation.toLowerCase().includes(query) ||
-        surah.name.includes(search.trim()) ||
-        String(surah.number) === query,
-    );
+        surah.arabicName.includes(search.trim()) ||
+        String(surah.number).includes(query)
+      );
+    });
   }, [search]);
 
   if (selectedSurah) {
     return (
       <View style={styles.container}>
         <View style={styles.readerHeader}>
-          <Pressable style={styles.backButton} onPress={() => setSelectedSurah(null)}>
-            <Ionicons name="arrow-back" size={21} color="#E9EAE3" />
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => setSelectedSurah(null)}
+          >
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
           </Pressable>
 
-          <View style={styles.readerTitleWrap}>
-            <Text style={styles.readerTitle}>{selectedSurah.englishName}</Text>
+          <View style={styles.readerTitle}>
+            <Text style={styles.readerSurahName}>
+              {selectedSurah.name}
+            </Text>
+
             <Text style={styles.readerSubtitle}>
-              Surah {selectedSurah.number} • {selectedSurah.ayahs} Ayahs
+              Surah {selectedSurah.number} • {selectedSurah.ayahCount} Ayahs
             </Text>
           </View>
 
-          <Pressable style={styles.actionButton}>
-            <Ionicons name="bookmark-outline" size={20} color="#D9C77A" />
+          <Pressable style={styles.iconButton}>
+            <Ionicons
+              name="bookmark-outline"
+              size={22}
+              color="#FFFFFF"
+            />
           </Pressable>
         </View>
 
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          style={styles.readerScroll}
           contentContainerStyle={styles.readerContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.surahHero}>
-            <Text style={styles.surahArabicLarge}>{selectedSurah.name}</Text>
+          <View style={styles.readerHero}>
+            <Text style={styles.readerArabicName}>
+              {selectedSurah.arabicName}
+            </Text>
 
-            <Text style={styles.surahEnglishLarge}>
+            <Text style={styles.readerEnglishName}>
               {selectedSurah.englishName}
             </Text>
 
-            <Text style={styles.surahTranslation}>
-              {selectedSurah.translation}
-            </Text>
-
-            <View style={styles.surahMetaRow}>
+            <View style={styles.metaRow}>
               <View style={styles.metaPill}>
-                <Text style={styles.metaText}>{selectedSurah.revelation}</Text>
+                <Text style={styles.metaText}>
+                  {selectedSurah.revelation}
+                </Text>
               </View>
 
               <View style={styles.metaPill}>
                 <Text style={styles.metaText}>
-                  {selectedSurah.ayahs} Ayahs
+                  {selectedSurah.ayahCount} Ayahs
                 </Text>
               </View>
             </View>
           </View>
 
+          <View style={styles.noticeCard}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={20}
+              color="#D7B56D"
+            />
+
+            <Text style={styles.noticeText}>
+              Verified Quran text and translations will be connected from
+              trusted sources in the next Quran data step.
+            </Text>
+          </View>
+
           <View style={styles.bismillahCard}>
-            <Text style={styles.bismillah}>بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</Text>
-          </View>
-
-          <View style={styles.comingSoonCard}>
-            <View style={styles.comingSoonIcon}>
-              <Ionicons name="book-outline" size={24} color="#D9C77A" />
-            </View>
-
-            <Text style={styles.comingSoonTitle}>Quran reader is next</Text>
-
-            <Text style={styles.comingSoonText}>
-              The complete verified Quran text, translations, bookmarks and
-              reading progress will be connected in the next Quran data step.
+            <Text style={styles.bismillah}>
+              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </Text>
           </View>
 
-          <View style={styles.readerNote}>
-            <Ionicons name="shield-checkmark-outline" size={18} color="#8E9A92" />
+          <View style={styles.emptyReader}>
+            <Ionicons
+              name="book-outline"
+              size={38}
+              color="#D7B56D"
+            />
 
-            <Text style={styles.readerNoteText}>
-              Quran content will be added from a verified source. We will not
-              generate Quran verses with AI.
+            <Text style={styles.emptyTitle}>
+              Quran reader ready
+            </Text>
+
+            <Text style={styles.emptyText}>
+              {selectedSurah.name} is ready for the verified Ayah text,
+              translation, audio and bookmark system.
             </Text>
           </View>
-
-          <View style={styles.bottomReaderSpace} />
         </ScrollView>
       </View>
     );
@@ -177,68 +138,82 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.content}
       >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable style={styles.backButton} onPress={onBack}>
-              <Ionicons name="arrow-back" size={21} color="#E9EAE3" />
-            </Pressable>
-
-            <View>
-              <Text style={styles.eyebrow}>THE HOLY QURAN</Text>
-              <Text style={styles.title}>Quran</Text>
-            </View>
+        <View style={styles.topBar}>
+          <View>
+            <Text style={styles.eyebrow}>THE HOLY QURAN</Text>
+            <Text style={styles.title}>Quran</Text>
           </View>
 
-          <Pressable style={styles.actionButton}>
-            <Ionicons name="bookmark-outline" size={20} color="#D9C77A" />
+          <Pressable style={styles.topIcon}>
+            <Ionicons
+              name="bookmark-outline"
+              size={22}
+              color="#FFFFFF"
+            />
           </Pressable>
         </View>
 
         <View style={styles.continueCard}>
           <View style={styles.continueIcon}>
-            <Ionicons name="play" size={19} color="#101512" />
+            <Ionicons
+              name="book-outline"
+              size={24}
+              color="#D7B56D"
+            />
           </View>
 
-          <View style={styles.continueInfo}>
+          <View style={styles.continueText}>
             <Text style={styles.continueLabel}>CONTINUE READING</Text>
-            <Text style={styles.continueTitle}>Al-Baqarah • Ayah 255</Text>
-            <Text style={styles.continueSubtitle}>Ayat-ul-Kursi</Text>
+            <Text style={styles.continueTitle}>Al-Fatihah</Text>
+            <Text style={styles.continueMeta}>Ayah 1 • Last read</Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={20} color="#737D77" />
+          <Ionicons
+            name="chevron-forward"
+            size={22}
+            color="#9CA3AF"
+          />
         </View>
 
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={19} color="#6F7973" />
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color="#8E96A3"
+          />
 
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search Surah..."
-            placeholderTextColor="#68736C"
+            placeholder="Search Surah"
+            placeholderTextColor="#727986"
             style={styles.searchInput}
-            autoCapitalize="none"
-            autoCorrect={false}
           />
 
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={19} color="#6F7973" />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color="#727986"
+              />
             </Pressable>
           )}
         </View>
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Surahs</Text>
+            <Text style={styles.sectionTitle}>All Surahs</Text>
             <Text style={styles.sectionSubtitle}>
-              114 chapters of the Holy Quran
+              {filteredSurahs.length} of {SURAHS.length} Surahs
             </Text>
           </View>
 
-          <Text style={styles.surahCount}>114</Text>
+          <View style={styles.totalBadge}>
+            <Text style={styles.totalBadgeText}>114</Text>
+          </View>
         </View>
 
         <View style={styles.list}>
@@ -247,7 +222,7 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
               key={surah.number}
               style={({ pressed }) => [
                 styles.surahCard,
-                pressed && styles.surahCardPressed,
+                pressed && styles.pressed,
               ]}
               onPress={() => setSelectedSurah(surah)}
             >
@@ -256,46 +231,61 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
               </View>
 
               <View style={styles.surahInfo}>
-                <Text style={styles.englishName}>{surah.englishName}</Text>
+                <Text style={styles.surahName}>{surah.name}</Text>
 
-                <Text style={styles.translation}>{surah.translation}</Text>
+                <Text style={styles.surahMeta}>
+                  {surah.englishName} • {surah.revelation}
+                </Text>
 
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoText}>{surah.revelation}</Text>
-                  <View style={styles.dot} />
-                  <Text style={styles.infoText}>{surah.ayahs} Ayahs</Text>
-                </View>
+                <Text style={styles.ayahCount}>
+                  {surah.ayahCount} Ayahs
+                </Text>
               </View>
 
-              <View style={styles.arabicWrap}>
-                <Text style={styles.arabicName}>{surah.name}</Text>
+              <View style={styles.arabicSide}>
+                <Text style={styles.arabicName}>
+                  {surah.arabicName}
+                </Text>
 
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color="#59645E"
-                  style={styles.chevron}
+                  color="#6F7785"
                 />
               </View>
             </Pressable>
           ))}
-
-          {filteredSurahs.length === 0 && (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="search-outline" size={25} color="#D9C77A" />
-              </View>
-
-              <Text style={styles.emptyTitle}>No Surah found</Text>
-
-              <Text style={styles.emptyText}>
-                Try searching by Surah name or number.
-              </Text>
-            </View>
-          )}
         </View>
 
-        <View style={styles.bottomSpace} />
+        {filteredSurahs.length === 0 && (
+          <View style={styles.noResults}>
+            <Ionicons
+              name="search-outline"
+              size={36}
+              color="#6F7785"
+            />
+
+            <Text style={styles.noResultsTitle}>
+              No Surah found
+            </Text>
+
+            <Text style={styles.noResultsText}>
+              Try another Surah name or number.
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.footerNote}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={18}
+            color="#D7B56D"
+          />
+
+          <Text style={styles.footerText}>
+            Quran content will be connected from verified sources.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -304,171 +294,160 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07100D',
+    backgroundColor: '#080B10',
   },
 
-  scrollContent: {
-    paddingTop: 55,
-    paddingHorizontal: 18,
-    paddingBottom: 30,
+  content: {
+    padding: 20,
+    paddingBottom: 110,
   },
 
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 22,
   },
 
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-  },
-
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#111B17',
-    borderWidth: 1,
-    borderColor: '#29372F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  actionButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#111B17',
-    borderWidth: 1,
-    borderColor: '#29372F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   eyebrow: {
-    color: '#89938D',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.8,
+    color: '#8D96A5',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 5,
   },
 
   title: {
-    color: '#F0F0E7',
-    fontSize: 27,
-    fontWeight: '700',
-    marginTop: 2,
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
+  },
+
+  topIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#151A22',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   continueCard: {
-    minHeight: 92,
-    borderRadius: 22,
-    backgroundColor: '#13251E',
-    borderWidth: 1,
-    borderColor: '#294239',
-    padding: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    backgroundColor: '#121820',
+    borderWidth: 1,
+    borderColor: '#242C38',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 18,
   },
 
   continueIcon: {
     width: 48,
     height: 48,
-    borderRadius: 17,
-    backgroundColor: '#D9C77A',
+    borderRadius: 16,
+    backgroundColor: '#1D252D',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 13,
   },
 
-  continueInfo: {
+  continueText: {
     flex: 1,
-    marginLeft: 13,
   },
 
   continueLabel: {
-    color: '#89968E',
-    fontSize: 8,
+    color: '#89919E',
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.4,
+    letterSpacing: 1.3,
+    marginBottom: 4,
   },
 
   continueTitle: {
-    color: '#E9EAE3',
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 5,
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
   },
 
-  continueSubtitle: {
-    color: '#758078',
-    fontSize: 10,
+  continueMeta: {
+    color: '#858D99',
+    fontSize: 12,
     marginTop: 3,
   },
 
   searchBox: {
     height: 52,
-    borderRadius: 18,
-    backgroundColor: '#101A16',
+    borderRadius: 17,
+    backgroundColor: '#121820',
     borderWidth: 1,
-    borderColor: '#25342C',
-    paddingHorizontal: 15,
+    borderColor: '#242C38',
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 15,
+    marginBottom: 25,
   },
 
   searchInput: {
     flex: 1,
-    color: '#E9EAE3',
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 15,
     marginLeft: 10,
     paddingVertical: 0,
   },
 
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 27,
+    alignItems: 'center',
     marginBottom: 13,
   },
 
   sectionTitle: {
-    color: '#EDEDE5',
-    fontSize: 20,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 21,
+    fontWeight: '800',
   },
 
   sectionSubtitle: {
-    color: '#737D77',
-    fontSize: 10,
-    marginTop: 4,
+    color: '#747D8A',
+    fontSize: 12,
+    marginTop: 3,
   },
 
-  surahCount: {
-    color: '#D9C77A',
-    fontSize: 12,
+  totalBadge: {
+    minWidth: 42,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    backgroundColor: '#1B2527',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  totalBadgeText: {
+    color: '#D7B56D',
+    fontSize: 13,
     fontWeight: '800',
   },
 
   list: {
-    gap: 9,
+    gap: 10,
   },
 
   surahCard: {
     minHeight: 92,
-    borderRadius: 20,
-    backgroundColor: '#101A16',
+    backgroundColor: '#11171F',
     borderWidth: 1,
-    borderColor: '#24322C',
+    borderColor: '#202832',
+    borderRadius: 20,
     padding: 13,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  surahCardPressed: {
+  pressed: {
     opacity: 0.72,
     transform: [{ scale: 0.99 }],
   },
@@ -476,259 +455,226 @@ const styles = StyleSheet.create({
   numberBox: {
     width: 42,
     height: 42,
-    borderRadius: 14,
-    backgroundColor: '#1A2C24',
+    borderRadius: 13,
+    backgroundColor: '#1B222C',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
 
   numberText: {
-    color: '#D9C77A',
-    fontSize: 12,
+    color: '#D7B56D',
+    fontSize: 13,
     fontWeight: '800',
   },
 
   surahInfo: {
     flex: 1,
-    marginLeft: 12,
   },
 
-  englishName: {
-    color: '#E7E9E2',
-    fontSize: 14,
-    fontWeight: '700',
+  surahName: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
   },
 
-  translation: {
-    color: '#78847D',
-    fontSize: 10,
-    marginTop: 3,
-  },
-
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 7,
-  },
-
-  infoText: {
-    color: '#5F6B64',
-    fontSize: 8,
-  },
-
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#59645E',
-    marginHorizontal: 6,
-  },
-
-  arabicWrap: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    minWidth: 83,
-  },
-
-  arabicName: {
-    color: '#D8DCCF',
-    fontSize: 19,
-    fontWeight: '500',
-  },
-
-  chevron: {
-    marginTop: 7,
-  },
-
-  emptyState: {
-    minHeight: 220,
-    borderRadius: 22,
-    backgroundColor: '#101A16',
-    borderWidth: 1,
-    borderColor: '#24322C',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 25,
-  },
-
-  emptyIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: '#1A2C24',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 13,
-  },
-
-  emptyTitle: {
-    color: '#E9EAE3',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-
-  emptyText: {
-    color: '#737D77',
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 7,
-  },
-
-  readerHeader: {
-    paddingTop: 55,
-    paddingHorizontal: 18,
-    paddingBottom: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-
-  readerTitleWrap: {
-    flex: 1,
-  },
-
-  readerTitle: {
-    color: '#EDEDE5',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  readerSubtitle: {
-    color: '#737D77',
-    fontSize: 9,
-    marginTop: 3,
-  },
-
-  readerContent: {
-    paddingHorizontal: 18,
-    paddingBottom: 30,
-  },
-
-  surahHero: {
-    minHeight: 205,
-    borderRadius: 25,
-    backgroundColor: '#13251E',
-    borderWidth: 1,
-    borderColor: '#294239',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-
-  surahArabicLarge: {
-    color: '#E5E2D0',
-    fontSize: 34,
-    textAlign: 'center',
-    marginBottom: 13,
-  },
-
-  surahEnglishLarge: {
-    color: '#F0F0E7',
-    fontSize: 21,
-    fontWeight: '700',
-  },
-
-  surahTranslation: {
-    color: '#87928B',
+  surahMeta: {
+    color: '#858D99',
     fontSize: 11,
     marginTop: 4,
   },
 
-  surahMetaRow: {
+  ayahCount: {
+    color: '#626B78',
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  arabicSide: {
+    alignItems: 'flex-end',
+    marginLeft: 8,
+    maxWidth: 110,
+  },
+
+  arabicName: {
+    color: '#D7B56D',
+    fontSize: 18,
+    marginBottom: 5,
+  },
+
+  noResults: {
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+
+  noResultsTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
+    marginTop: 12,
+  },
+
+  noResultsText: {
+    color: '#737C89',
+    fontSize: 13,
+    marginTop: 5,
+  },
+
+  footerNote: {
     flexDirection: 'row',
-    gap: 7,
-    marginTop: 16,
-  },
-
-  metaPill: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#1D3027',
-  },
-
-  metaText: {
-    color: '#AAB4AD',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-
-  bismillahCard: {
-    marginTop: 13,
-    minHeight: 72,
-    borderRadius: 20,
-    backgroundColor: '#101A16',
-    borderWidth: 1,
-    borderColor: '#24322C',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 25,
     paddingHorizontal: 15,
   },
 
-  bismillah: {
-    color: '#D9C77A',
-    fontSize: 21,
+  footerText: {
+    color: '#69727F',
+    fontSize: 11,
+    marginLeft: 7,
     textAlign: 'center',
   },
 
-  comingSoonCard: {
-    marginTop: 13,
-    borderRadius: 22,
-    backgroundColor: '#101A16',
-    borderWidth: 1,
-    borderColor: '#24322C',
-    padding: 20,
+  readerHeader: {
+    height: 76,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C232D',
   },
 
-  comingSoonIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: '#1A2C24',
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#151B23',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 13,
   },
 
-  comingSoonTitle: {
-    color: '#E9EAE3',
+  readerTitle: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  readerSurahName: {
+    color: '#FFFFFF',
     fontSize: 17,
+    fontWeight: '800',
+  },
+
+  readerSubtitle: {
+    color: '#747D8A',
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  readerScroll: {
+    flex: 1,
+  },
+
+  readerContent: {
+    padding: 20,
+    paddingBottom: 80,
+  },
+
+  readerHero: {
+    backgroundColor: '#111820',
+    borderWidth: 1,
+    borderColor: '#242D38',
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+
+  readerArabicName: {
+    color: '#D7B56D',
+    fontSize: 38,
+    marginBottom: 9,
+  },
+
+  readerEnglishName: {
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: '700',
   },
 
-  comingSoonText: {
-    color: '#737D77',
+  metaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+
+  metaPill: {
+    backgroundColor: '#1B232C',
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+
+  metaText: {
+    color: '#8D96A3',
     fontSize: 11,
+    fontWeight: '700',
+  },
+
+  noticeCard: {
+    flexDirection: 'row',
+    backgroundColor: '#141A1D',
+    borderWidth: 1,
+    borderColor: '#30332F',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 15,
+  },
+
+  noticeText: {
+    flex: 1,
+    color: '#8E969F',
+    fontSize: 12,
     lineHeight: 18,
+    marginLeft: 10,
+  },
+
+  bismillahCard: {
+    backgroundColor: '#10161D',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#202833',
+    padding: 22,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+
+  bismillah: {
+    color: '#E3D2A9',
+    fontSize: 25,
+    textAlign: 'center',
+  },
+
+  emptyReader: {
+    backgroundColor: '#11171F',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#202832',
+    padding: 30,
+    alignItems: 'center',
+  },
+
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 13,
+  },
+
+  emptyText: {
+    color: '#78818E',
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
     marginTop: 8,
-  },
-
-  readerNote: {
-    marginTop: 13,
-    borderRadius: 18,
-    backgroundColor: '#0D1713',
-    borderWidth: 1,
-    borderColor: '#202E27',
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 9,
-  },
-
-  readerNoteText: {
-    flex: 1,
-    color: '#68736C',
-    fontSize: 10,
-    lineHeight: 16,
-  },
-
-  bottomSpace: {
-    height: 80,
-  },
-
-  bottomReaderSpace: {
-    height: 80,
   },
 });
