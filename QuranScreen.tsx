@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Asset } from 'expo-asset';
 
 import { SURAHS, Surah } from './src/QuranData';
 import { parseQuranText, QuranSurah } from './src/quranParser';
@@ -18,7 +17,7 @@ type QuranScreenProps = {
   onBack?: () => void;
 };
 
-const quranTextAsset = require('./src/data/quran-uthmani.txt');
+const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
 export default function QuranScreen({ onBack }: QuranScreenProps) {
   const [search, setSearch] = useState('');
@@ -35,17 +34,9 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
         setLoadingQuran(true);
         setQuranError(false);
 
-        const asset = Asset.fromModule(quranTextAsset);
-
-        await asset.downloadAsync();
-
-        const uri = asset.localUri ?? asset.uri;
-
-        if (!uri) {
-          throw new Error('Quran text asset URI not available');
-        }
-
-        const response = await fetch(uri);
+        const response = await fetch(QURAN_TEXT_URL, {
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           throw new Error(
@@ -55,10 +46,16 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
 
         const text = await response.text();
 
+        if (!text.trim()) {
+          throw new Error('Quran text file is empty');
+        }
+
         const parsed = parseQuranText(text);
 
-        if (!parsed.length) {
-          throw new Error('Quran parser returned no Surahs');
+        if (parsed.length !== 114) {
+          throw new Error(
+            `Expected 114 Surahs but loaded ${parsed.length}`
+          );
         }
 
         if (mounted) {
@@ -216,7 +213,7 @@ export default function QuranScreen({ onBack }: QuranScreenProps) {
               </Text>
 
               <Text style={styles.emptyText}>
-                Please check the Quran text asset and try again.
+                Please check the Quran text file and try again.
               </Text>
             </View>
           ) : selectedQuranSurah?.ayahs.length ? (
