@@ -9,7 +9,7 @@
     "scheme": "muslimummah",
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "single"
     },
     "android": {
       "package": "com.aqiffarooqui.muslimummah"
