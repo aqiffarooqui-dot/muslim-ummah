@@ -433,8 +433,6 @@ export default function QuranBookmarksScreen({
               ))}
             </View>
             )}
-            </View>
-            )}
           </>
         )}
 
