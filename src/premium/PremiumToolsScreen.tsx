@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 import { usePremium } from './PremiumProvider';
 import { getBookmarks } from '../quranBookmarks';
@@ -109,6 +111,8 @@ const features: Array<{
 ];
 
 export default function PremiumToolsScreen({
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   onBack,
 }: {
   onBack: () => void;
@@ -666,6 +670,8 @@ function FeatureCard({
   icon: keyof typeof Ionicons.glyphMap;
   state: FeatureState;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   const stateLabel =
     state === 'active'
       ? 'ACTIVE'
@@ -734,6 +740,8 @@ function Stat({
   label: string;
   value: number;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   return (
     <View style={styles.stat}>
       <Ionicons
@@ -753,7 +761,7 @@ function Stat({
   );
 }
 
-const styles = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   container: {
     flex: 1,
     backgroundColor: '#080A0F',
