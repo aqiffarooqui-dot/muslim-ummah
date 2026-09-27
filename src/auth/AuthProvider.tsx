@@ -7,8 +7,14 @@ import React, {
 } from 'react';
 
 import {
+  Platform,
+} from 'react-native';
+
+import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -45,6 +51,8 @@ type AuthContextValue = {
     email: string,
     password: string
   ) => Promise<void>;
+
+  signInWithGoogle: () => Promise<void>;
 
   sendResetEmail: (
     email: string
@@ -192,6 +200,31 @@ export function AuthProvider({
     );
   }
 
+  async function signInWithGoogle() {
+    if (Platform.OS !== 'web') {
+      throw new Error(
+        'Google Sign-In is currently available on the web version. Native Google authentication will be connected during the Android/iOS build.'
+      );
+    }
+
+    const provider =
+      new GoogleAuthProvider();
+
+    provider.setCustomParameters({
+      prompt: 'select_account',
+    });
+
+    const result =
+      await signInWithPopup(
+        auth,
+        provider
+      );
+
+    await loadProfile(
+      result.user
+    );
+  }
+
   async function sendResetEmail(
     email: string
   ) {
@@ -221,6 +254,7 @@ export function AuthProvider({
           isAdminEmail(user?.email),
         signUp,
         signIn,
+        signInWithGoogle,
         sendResetEmail,
         logout,
         refreshProfile,
