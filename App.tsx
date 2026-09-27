@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import {
   Pressable,
   ScrollView,
@@ -6,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,8 +21,14 @@ import AdminDashboard from './src/admin/AdminDashboard';
 import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
 import { useAuth } from './src/auth/AuthProvider';
+import { useTheme } from './src/themes/ThemeProvider';
 
-type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
+type Tab =
+  | 'Home'
+  | 'Quran'
+  | 'Hadith'
+  | 'Prayer'
+  | 'More';
 
 type QuranOpenRequest = {
   surahNumber: number;
@@ -28,11 +36,31 @@ type QuranOpenRequest = {
 } | null;
 
 const prayers = [
-  { name: 'Fajr', time: '05:02 AM', icon: 'sunny-outline' as const },
-  { name: 'Dhuhr', time: '12:18 PM', icon: 'sunny' as const },
-  { name: 'Asr', time: '04:42 PM', icon: 'partly-sunny-outline' as const },
-  { name: 'Maghrib', time: '06:29 PM', icon: 'moon-outline' as const },
-  { name: 'Isha', time: '07:48 PM', icon: 'moon' as const },
+  {
+    name: 'Fajr',
+    time: '05:02 AM',
+    icon: 'sunny-outline' as const,
+  },
+  {
+    name: 'Dhuhr',
+    time: '12:18 PM',
+    icon: 'sunny' as const,
+  },
+  {
+    name: 'Asr',
+    time: '04:42 PM',
+    icon: 'partly-sunny-outline' as const,
+  },
+  {
+    name: 'Maghrib',
+    time: '06:29 PM',
+    icon: 'moon-outline' as const,
+  },
+  {
+    name: 'Isha',
+    time: '07:48 PM',
+    icon: 'moon' as const,
+  },
 ];
 
 const quickItems = [
@@ -60,18 +88,37 @@ const quickItems = [
 
 export default function App() {
   const { isAdmin } = useAuth();
+  const { theme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<Tab>('Home');
-  const [showAbout, setShowAbout] = useState(false);
-  const [showBookmarks, setShowBookmarks] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showPremium, setShowPremium] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const styles = createStyles(theme);
 
-  const [quranOpenRequest, setQuranOpenRequest] =
-    useState<QuranOpenRequest>(null);
+  const [activeTab, setActiveTab] =
+    useState<Tab>('Home');
 
-  const [quranProgress, setQuranProgress] = useState({
+  const [showAbout, setShowAbout] =
+    useState(false);
+
+  const [showBookmarks, setShowBookmarks] =
+    useState(false);
+
+  const [showProfile, setShowProfile] =
+    useState(false);
+
+  const [showPremium, setShowPremium] =
+    useState(false);
+
+  const [showAdmin, setShowAdmin] =
+    useState(false);
+
+  const [
+    quranOpenRequest,
+    setQuranOpenRequest,
+  ] = useState<QuranOpenRequest>(null);
+
+  const [
+    quranProgress,
+    setQuranProgress,
+  ] = useState({
     surahNumber: 1,
     ayahNumber: 1,
   });
@@ -82,7 +129,8 @@ export default function App() {
 
   async function loadQuranProgress() {
     try {
-      const progress = await getQuranProgress();
+      const progress =
+        await getQuranProgress();
 
       if (progress) {
         setQuranProgress(progress);
@@ -102,15 +150,16 @@ export default function App() {
         quranProgress.surahNumber
     ) || SURAHS[0];
 
-  const progressPercentage = Math.min(
-    100,
-    Math.max(
-      3,
-      (quranProgress.ayahNumber /
-        currentProgressSurah.ayahCount) *
-        100
-    )
-  );
+  const progressPercentage =
+    Math.min(
+      100,
+      Math.max(
+        3,
+        (quranProgress.ayahNumber /
+          currentProgressSurah.ayahCount) *
+          100
+      )
+    );
 
   const openAbout = () => {
     setShowAbout(true);
@@ -172,13 +221,13 @@ export default function App() {
     setShowBookmarks(false);
   };
 
-const closeAdmin = () => {
-  setShowAdmin(false);
-  setShowProfile(true);
-  setShowPremium(false);
-  setShowAbout(false);
-  setShowBookmarks(false);
-};
+  const closeAdmin = () => {
+    setShowAdmin(false);
+    setShowProfile(true);
+    setShowPremium(false);
+    setShowAbout(false);
+    setShowBookmarks(false);
+  };
 
   const openQuran = async () => {
     setShowBookmarks(false);
@@ -188,14 +237,17 @@ const closeAdmin = () => {
     setShowAdmin(false);
 
     try {
-      const progress = await getQuranProgress();
+      const progress =
+        await getQuranProgress();
 
       if (progress) {
         setQuranProgress(progress);
 
         setQuranOpenRequest({
-          surahNumber: progress.surahNumber,
-          ayahNumber: progress.ayahNumber,
+          surahNumber:
+            progress.surahNumber,
+          ayahNumber:
+            progress.ayahNumber,
         });
       } else {
         setQuranOpenRequest({
@@ -210,51 +262,59 @@ const closeAdmin = () => {
       );
 
       setQuranOpenRequest({
-        surahNumber: quranProgress.surahNumber,
-        ayahNumber: quranProgress.ayahNumber,
+        surahNumber:
+          quranProgress.surahNumber,
+        ayahNumber:
+          quranProgress.ayahNumber,
       });
     }
 
     setActiveTab('Quran');
   };
 
-  const openContinueQuran = async () => {
-    setShowBookmarks(false);
-    setShowAbout(false);
-    setShowProfile(false);
-    setShowPremium(false);
-    setShowAdmin(false);
+  const openContinueQuran =
+    async () => {
+      setShowBookmarks(false);
+      setShowAbout(false);
+      setShowProfile(false);
+      setShowPremium(false);
+      setShowAdmin(false);
 
-    try {
-      const progress = await getQuranProgress();
+      try {
+        const progress =
+          await getQuranProgress();
 
-      if (progress) {
-        setQuranProgress(progress);
+        if (progress) {
+          setQuranProgress(progress);
+
+          setQuranOpenRequest({
+            surahNumber:
+              progress.surahNumber,
+            ayahNumber:
+              progress.ayahNumber,
+          });
+        } else {
+          setQuranOpenRequest({
+            surahNumber: 1,
+            ayahNumber: 1,
+          });
+        }
+      } catch (err) {
+        console.error(
+          'Quran progress refresh error:',
+          err
+        );
 
         setQuranOpenRequest({
-          surahNumber: progress.surahNumber,
-          ayahNumber: progress.ayahNumber,
-        });
-      } else {
-        setQuranOpenRequest({
-          surahNumber: 1,
-          ayahNumber: 1,
+          surahNumber:
+            quranProgress.surahNumber,
+          ayahNumber:
+            quranProgress.ayahNumber,
         });
       }
-    } catch (err) {
-      console.error(
-        'Quran progress refresh error:',
-        err
-      );
 
-      setQuranOpenRequest({
-        surahNumber: quranProgress.surahNumber,
-        ayahNumber: quranProgress.ayahNumber,
-      });
-    }
-
-    setActiveTab('Quran');
-  };
+      setActiveTab('Quran');
+    };
 
   const openBookmarkedAyah = (
     surahNumber: number,
@@ -277,7 +337,9 @@ const closeAdmin = () => {
   const renderHome = () => (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={
+        styles.scrollContent
+      }
     >
       <View style={styles.header}>
         <View>
@@ -297,21 +359,30 @@ const closeAdmin = () => {
           <Ionicons
             name="person-outline"
             size={21}
-            color="#E8E7D8"
+            color={theme.textSecondary}
           />
         </Pressable>
       </View>
 
       <View style={styles.heroCard}>
-        <View style={styles.heroGlowOne} />
-        <View style={styles.heroGlowTwo} />
+        <View
+          style={styles.heroGlowOne}
+        />
+
+        <View
+          style={styles.heroGlowTwo}
+        />
 
         <View style={styles.heroTop}>
-          <View style={styles.smallIconCircle}>
+          <View
+            style={
+              styles.smallIconCircle
+            }
+          >
             <Ionicons
               name="sparkles-outline"
               size={18}
-              color="#D9C77A"
+              color={theme.accent}
             />
           </View>
 
@@ -321,37 +392,52 @@ const closeAdmin = () => {
         </View>
 
         <Text style={styles.heroTitle}>
-          Make your heart{'\n'}remember Allah.
+          Make your heart{'\n'}
+          remember Allah.
         </Text>
 
-        <Text style={styles.heroDescription}>
-          Take a moment to pause, reflect and reconnect
-          with your faith.
+        <Text
+          style={
+            styles.heroDescription
+          }
+        >
+          Take a moment to pause, reflect
+          and reconnect with your faith.
         </Text>
 
         <Pressable
           style={styles.heroButton}
           onPress={openQuran}
         >
-          <Text style={styles.heroButtonText}>
+          <Text
+            style={
+              styles.heroButtonText
+            }
+          >
             Open Quran
           </Text>
 
           <Ionicons
             name="arrow-forward"
             size={17}
-            color="#101512"
+            color={theme.background}
           />
         </Pressable>
       </View>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={styles.sectionTitle}
+          >
             Next Prayer
           </Text>
 
-          <Text style={styles.sectionSubtitle}>
+          <Text
+            style={
+              styles.sectionSubtitle
+            }
+          >
             Your daily prayer schedule
           </Text>
         </View>
@@ -359,31 +445,51 @@ const closeAdmin = () => {
         <Ionicons
           name="location-outline"
           size={19}
-          color="#8C938D"
+          color={theme.textMuted}
         />
       </View>
 
       <View style={styles.prayerCard}>
         <View>
-          <Text style={styles.nextPrayerLabel}>
+          <Text
+            style={
+              styles.nextPrayerLabel
+            }
+          >
             NEXT PRAYER
           </Text>
 
-          <Text style={styles.nextPrayerName}>
+          <Text
+            style={
+              styles.nextPrayerName
+            }
+          >
             Asr
           </Text>
 
-          <Text style={styles.nextPrayerTime}>
+          <Text
+            style={
+              styles.nextPrayerTime
+            }
+          >
             04:42 PM
           </Text>
         </View>
 
-        <View style={styles.countdownBox}>
-          <Text style={styles.countdownLabel}>
+        <View
+          style={styles.countdownBox}
+        >
+          <Text
+            style={
+              styles.countdownLabel
+            }
+          >
             STARTS IN
           </Text>
 
-          <Text style={styles.countdown}>
+          <Text
+            style={styles.countdown}
+          >
             01:24:18
           </Text>
         </View>
@@ -391,25 +497,41 @@ const closeAdmin = () => {
 
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.prayerRow}
+        showsHorizontalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.prayerRow
+        }
       >
         {prayers.map((prayer) => (
           <View
             key={prayer.name}
-            style={styles.prayerMiniCard}
+            style={
+              styles.prayerMiniCard
+            }
           >
             <Ionicons
               name={prayer.icon}
               size={19}
-              color="#B9C1BA"
+              color={
+                theme.textSecondary
+              }
             />
 
-            <Text style={styles.prayerMiniName}>
+            <Text
+              style={
+                styles.prayerMiniName
+              }
+            >
               {prayer.name}
             </Text>
 
-            <Text style={styles.prayerMiniTime}>
+            <Text
+              style={
+                styles.prayerMiniTime
+              }
+            >
               {prayer.time}
             </Text>
           </View>
@@ -418,11 +540,17 @@ const closeAdmin = () => {
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={styles.sectionTitle}
+          >
             Continue Quran
           </Text>
 
-          <Text style={styles.sectionSubtitle}>
+          <Text
+            style={
+              styles.sectionSubtitle
+            }
+          >
             Pick up where you left off
           </Text>
         </View>
@@ -442,20 +570,31 @@ const closeAdmin = () => {
           <Ionicons
             name="book"
             size={25}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
         <View style={styles.quranInfo}>
-          <Text style={styles.quranSurah}>
-            Surah {currentProgressSurah.englishName}
+          <Text
+            style={styles.quranSurah}
+          >
+            Surah{' '}
+            {
+              currentProgressSurah.englishName
+            }
           </Text>
 
-          <Text style={styles.quranAyah}>
+          <Text
+            style={styles.quranAyah}
+          >
             Ayah {quranProgress.ayahNumber}
           </Text>
 
-          <View style={styles.progressTrack}>
+          <View
+            style={
+              styles.progressTrack
+            }
+          >
             <View
               style={[
                 styles.progressFill,
@@ -466,7 +605,11 @@ const closeAdmin = () => {
             />
           </View>
 
-          <Text style={styles.progressText}>
+          <Text
+            style={
+              styles.progressText
+            }
+          >
             Continue reading
           </Text>
         </View>
@@ -474,17 +617,23 @@ const closeAdmin = () => {
         <Ionicons
           name="play-circle"
           size={34}
-          color="#D9C77A"
+          color={theme.accent}
         />
       </Pressable>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={styles.sectionTitle}
+          >
             For Your Day
           </Text>
 
-          <Text style={styles.sectionSubtitle}>
+          <Text
+            style={
+              styles.sectionSubtitle
+            }
+          >
             Small reminders, every day
           </Text>
         </View>
@@ -492,28 +641,38 @@ const closeAdmin = () => {
 
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.dailyRow}
+        showsHorizontalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.dailyRow
+        }
       >
         <View style={styles.dailyCard}>
           <View style={styles.dailyIcon}>
             <Ionicons
               name="book-outline"
               size={20}
-              color="#D9C77A"
+              color={theme.accent}
             />
           </View>
 
-          <Text style={styles.dailyLabel}>
+          <Text
+            style={styles.dailyLabel}
+          >
             AYAH OF THE DAY
           </Text>
 
           <Text style={styles.dailyText}>
-            “Indeed, in the remembrance of Allah do hearts
-            find rest.”
+            “Indeed, in the remembrance of
+            Allah do hearts find rest.”
           </Text>
 
-          <Text style={styles.dailyReference}>
+          <Text
+            style={
+              styles.dailyReference
+            }
+          >
             Quran 13:28
           </Text>
         </View>
@@ -523,20 +682,26 @@ const closeAdmin = () => {
             <Ionicons
               name="heart-outline"
               size={20}
-              color="#D9C77A"
+              color={theme.accent}
             />
           </View>
 
-          <Text style={styles.dailyLabel}>
+          <Text
+            style={styles.dailyLabel}
+          >
             DUA OF THE DAY
           </Text>
 
           <Text style={styles.dailyText}>
-            “Our Lord, give us good in this world and good
-            in the Hereafter.”
+            “Our Lord, give us good in this
+            world and good in the Hereafter.”
           </Text>
 
-          <Text style={styles.dailyReference}>
+          <Text
+            style={
+              styles.dailyReference
+            }
+          >
             Quran 2:201
           </Text>
         </View>
@@ -544,11 +709,17 @@ const closeAdmin = () => {
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={styles.sectionTitle}
+          >
             Explore
           </Text>
 
-          <Text style={styles.sectionSubtitle}>
+          <Text
+            style={
+              styles.sectionSubtitle
+            }
+          >
             Everything you need in one place
           </Text>
         </View>
@@ -573,32 +744,52 @@ const closeAdmin = () => {
               }
             }}
           >
-            <View style={styles.exploreIcon}>
+            <View
+              style={styles.exploreIcon}
+            >
               <Ionicons
                 name={item.icon}
                 size={23}
-                color="#D9C77A"
+                color={theme.accent}
               />
             </View>
 
-            <Text style={styles.exploreTitle}>
+            <Text
+              style={
+                styles.exploreTitle
+              }
+            >
               {item.title}
             </Text>
 
-            <Text style={styles.exploreSubtitle}>
+            <Text
+              style={
+                styles.exploreSubtitle
+              }
+            >
               {item.subtitle}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      <View style={styles.bottomSpace} />
+      <View
+        style={styles.bottomSpace}
+      />
     </ScrollView>
   );
 
   const renderPlaceholder = () => (
-    <View style={styles.placeholderScreen}>
-      <View style={styles.placeholderIcon}>
+    <View
+      style={
+        styles.placeholderScreen
+      }
+    >
+      <View
+        style={
+          styles.placeholderIcon
+        }
+      >
         <Ionicons
           name={
             activeTab === 'Hadith'
@@ -608,24 +799,40 @@ const closeAdmin = () => {
               : 'grid-outline'
           }
           size={34}
-          color="#D9C77A"
+          color={theme.accent}
         />
       </View>
 
-      <Text style={styles.placeholderTitle}>
+      <Text
+        style={
+          styles.placeholderTitle
+        }
+      >
         {activeTab}
       </Text>
 
-      <Text style={styles.placeholderText}>
-        This section is being prepared for the Muslim
-        Ummah experience.
+      <Text
+        style={
+          styles.placeholderText
+        }
+      >
+        This section is being prepared
+        for the Muslim Ummah experience.
       </Text>
 
       <Pressable
-        style={styles.backHomeButton}
-        onPress={() => setActiveTab('Home')}
+        style={
+          styles.backHomeButton
+        }
+        onPress={() =>
+          setActiveTab('Home')
+        }
       >
-        <Text style={styles.backHomeText}>
+        <Text
+          style={
+            styles.backHomeText
+          }
+        >
           Back to Home
         </Text>
       </Pressable>
@@ -634,8 +841,12 @@ const closeAdmin = () => {
 
   const renderMore = () => (
     <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.moreContent}
+      showsVerticalScrollIndicator={
+        false
+      }
+      contentContainerStyle={
+        styles.moreContent
+      }
     >
       <View style={styles.moreHeader}>
         <View>
@@ -643,41 +854,63 @@ const closeAdmin = () => {
             MUSLIM UMMAH
           </Text>
 
-          <Text style={styles.moreTitle}>
+          <Text
+            style={styles.moreTitle}
+          >
             More
           </Text>
         </View>
 
-        <View style={styles.moreHeaderIcon}>
+        <View
+          style={
+            styles.moreHeaderIcon
+          }
+        >
           <Ionicons
             name="grid-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
       </View>
 
       <View style={styles.moreHero}>
-        <View style={styles.moreHeroIcon}>
+        <View
+          style={styles.moreHeroIcon}
+        >
           <Ionicons
             name="moon-outline"
             size={30}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreHeroInfo}>
-          <Text style={styles.moreHeroTitle}>
+        <View
+          style={styles.moreHeroInfo}
+        >
+          <Text
+            style={
+              styles.moreHeroTitle
+            }
+          >
             Muslim Ummah
           </Text>
 
-          <Text style={styles.moreHeroText}>
+          <Text
+            style={
+              styles.moreHeroText
+            }
+          >
             Your modern Islamic companion
           </Text>
         </View>
       </View>
 
-      <Text style={styles.moreSectionTitle}>
+      <Text
+        style={
+          styles.moreSectionTitle
+        }
+      >
         Account
       </Text>
 
@@ -685,20 +918,36 @@ const closeAdmin = () => {
         style={styles.moreItem}
         onPress={openProfile}
       >
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="person-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             Profile
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             Account, membership and security
           </Text>
         </View>
@@ -706,7 +955,7 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </Pressable>
 
@@ -714,20 +963,36 @@ const closeAdmin = () => {
         style={styles.moreItem}
         onPress={openPremium}
       >
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="diamond-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             Premium
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             Themes, audio and advanced features
           </Text>
         </View>
@@ -735,7 +1000,7 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </Pressable>
 
@@ -744,20 +1009,36 @@ const closeAdmin = () => {
           style={styles.moreItem}
           onPress={openAdmin}
         >
-          <View style={styles.moreItemIcon}>
+          <View
+            style={
+              styles.moreItemIcon
+            }
+          >
             <Ionicons
               name="shield-checkmark-outline"
               size={21}
-              color="#D9C77A"
+              color={theme.accent}
             />
           </View>
 
-          <View style={styles.moreItemInfo}>
-            <Text style={styles.moreItemTitle}>
+          <View
+            style={
+              styles.moreItemInfo
+            }
+          >
+            <Text
+              style={
+                styles.moreItemTitle
+              }
+            >
               Admin Control Center
             </Text>
 
-            <Text style={styles.moreItemSubtitle}>
+            <Text
+              style={
+                styles.moreItemSubtitle
+              }
+            >
               Users, premium, payments and analytics
             </Text>
           </View>
@@ -765,12 +1046,16 @@ const closeAdmin = () => {
           <Ionicons
             name="chevron-forward"
             size={19}
-            color="#59645E"
+            color={theme.textMuted}
           />
         </Pressable>
       )}
 
-      <Text style={styles.moreSectionTitle}>
+      <Text
+        style={
+          styles.moreSectionTitle
+        }
+      >
         Quran
       </Text>
 
@@ -778,20 +1063,36 @@ const closeAdmin = () => {
         style={styles.moreItem}
         onPress={openBookmarks}
       >
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="bookmark-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             Saved Ayahs
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             Your bookmarked Quran verses
           </Text>
         </View>
@@ -799,11 +1100,15 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </Pressable>
 
-      <Text style={styles.moreSectionTitle}>
+      <Text
+        style={
+          styles.moreSectionTitle
+        }
+      >
         App
       </Text>
 
@@ -811,20 +1116,36 @@ const closeAdmin = () => {
         style={styles.moreItem}
         onPress={openAbout}
       >
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="information-circle-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             About Muslim Ummah
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             Features, developer and app information
           </Text>
         </View>
@@ -832,25 +1153,41 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </Pressable>
 
       <View style={styles.moreItem}>
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="shield-checkmark-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             Privacy
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             Your privacy and app data information
           </Text>
         </View>
@@ -858,25 +1195,41 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </View>
 
       <View style={styles.moreItem}>
-        <View style={styles.moreItemIcon}>
+        <View
+          style={
+            styles.moreItemIcon
+          }
+        >
           <Ionicons
             name="settings-outline"
             size={21}
-            color="#D9C77A"
+            color={theme.accent}
           />
         </View>
 
-        <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>
+        <View
+          style={
+            styles.moreItemInfo
+          }
+        >
+          <Text
+            style={
+              styles.moreItemTitle
+            }
+          >
             Settings
           </Text>
 
-          <Text style={styles.moreItemSubtitle}>
+          <Text
+            style={
+              styles.moreItemSubtitle
+            }
+          >
             App preferences and customization
           </Text>
         </View>
@@ -884,36 +1237,55 @@ const closeAdmin = () => {
         <Ionicons
           name="chevron-forward"
           size={19}
-          color="#59645E"
+          color={theme.textMuted}
         />
       </View>
 
-      <View style={styles.moreVersionCard}>
-        <Text style={styles.moreVersionLabel}>
+      <View
+        style={
+          styles.moreVersionCard
+        }
+      >
+        <Text
+          style={
+            styles.moreVersionLabel
+          }
+        >
           APP VERSION
         </Text>
 
-        <Text style={styles.moreVersion}>
+        <Text
+          style={styles.moreVersion}
+        >
           1.0.0
         </Text>
 
-        <Text style={styles.moreVersionText}>
+        <Text
+          style={
+            styles.moreVersionText
+          }
+        >
           Muslim Ummah • Free Islamic Companion
         </Text>
       </View>
 
-      <View style={styles.moreBottomSpace} />
+      <View
+        style={
+          styles.moreBottomSpace
+        }
+      />
     </ScrollView>
   );
 
   const renderContent = () => {
     if (showAdmin) {
-  return (
-    <AdminDashboard
-      onBack={closeAdmin}
-    />
-  );
-}
+      return (
+        <AdminDashboard
+          onBack={closeAdmin}
+        />
+      );
+    }
+
     if (showPremium) {
       return (
         <PremiumScreen
@@ -944,7 +1316,9 @@ const closeAdmin = () => {
       return (
         <QuranBookmarksScreen
           onBack={closeBookmarks}
-          onOpenAyah={openBookmarkedAyah}
+          onOpenAyah={
+            openBookmarkedAyah
+          }
         />
       );
     }
@@ -978,7 +1352,15 @@ const closeAdmin = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            theme.background,
+        },
+      ]}
+    >
       <StatusBar style="light" />
 
       {renderContent()}
@@ -988,53 +1370,70 @@ const closeAdmin = () => {
         !showProfile &&
         !showPremium &&
         !showAdmin && (
-          <View style={styles.bottomNav}>
+          <View
+            style={styles.bottomNav}
+          >
             <NavItem
               label="Home"
               icon="home"
-              active={activeTab === 'Home'}
+              active={
+                activeTab === 'Home'
+              }
               onPress={() => {
                 setQuranOpenRequest(null);
                 setActiveTab('Home');
                 loadQuranProgress();
               }}
+              theme={theme}
             />
 
             <NavItem
               label="Quran"
               icon="book-outline"
-              active={activeTab === 'Quran'}
+              active={
+                activeTab === 'Quran'
+              }
               onPress={openQuran}
+              theme={theme}
             />
 
             <NavItem
               label="Hadith"
               icon="library-outline"
-              active={activeTab === 'Hadith'}
+              active={
+                activeTab === 'Hadith'
+              }
               onPress={() => {
                 setQuranOpenRequest(null);
                 setActiveTab('Hadith');
               }}
+              theme={theme}
             />
 
             <NavItem
               label="Prayer"
               icon="time-outline"
-              active={activeTab === 'Prayer'}
+              active={
+                activeTab === 'Prayer'
+              }
               onPress={() => {
                 setQuranOpenRequest(null);
                 setActiveTab('Prayer');
               }}
+              theme={theme}
             />
 
             <NavItem
               label="More"
               icon="grid-outline"
-              active={activeTab === 'More'}
+              active={
+                activeTab === 'More'
+              }
               onPress={() => {
                 setQuranOpenRequest(null);
                 setActiveTab('More');
               }}
+              theme={theme}
             />
           </View>
         )}
@@ -1047,6 +1446,9 @@ type NavItemProps = {
   icon: keyof typeof Ionicons.glyphMap;
   active: boolean;
   onPress: () => void;
+  theme: ReturnType<
+    typeof useTheme
+  >['theme'];
 };
 
 function NavItem({
@@ -1054,22 +1456,31 @@ function NavItem({
   icon,
   active,
   onPress,
+  theme,
 }: NavItemProps) {
   return (
     <Pressable
-      style={styles.navItem}
+      style={stylesStatic.navItem}
       onPress={onPress}
     >
       <Ionicons
         name={icon}
         size={21}
-        color={active ? '#D9C77A' : '#6F7771'}
+        color={
+          active
+            ? theme.tabActive
+            : theme.tabInactive
+        }
       />
 
       <Text
         style={[
-          styles.navLabel,
-          active && styles.navLabelActive,
+          stylesStatic.navLabel,
+          {
+            color: active
+              ? theme.tabActive
+              : theme.tabInactive,
+          },
         ]}
       >
         {label}
@@ -1078,558 +1489,7 @@ function NavItem({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#07100D',
-  },
-
-  scrollContent: {
-    paddingTop: 58,
-    paddingHorizontal: 18,
-    paddingBottom: 30,
-  },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 22,
-  },
-
-  eyebrow: {
-    color: '#89938D',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 2.2,
-    marginBottom: 5,
-  },
-
-  appTitle: {
-    color: '#F0F0E7',
-    fontSize: 25,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-
-  profileButton: {
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#27352F',
-    backgroundColor: '#111B17',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  heroCard: {
-    minHeight: 260,
-    borderRadius: 27,
-    backgroundColor: '#13251E',
-    padding: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#294239',
-    justifyContent: 'space-between',
-  },
-
-  heroGlowOne: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: '#1D4937',
-    opacity: 0.45,
-    right: -85,
-    top: -75,
-  },
-
-  heroGlowTwo: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: '#816D28',
-    opacity: 0.13,
-    left: -60,
-    bottom: -50,
-  },
-
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-
-  smallIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#263A31',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  heroLabel: {
-    color: '#AEB8B1',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-
-  heroTitle: {
-    color: '#F3F1E7',
-    fontSize: 31,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.8,
-    marginTop: 22,
-  },
-
-  heroDescription: {
-    color: '#AAB4AD',
-    fontSize: 13,
-    lineHeight: 20,
-    maxWidth: 310,
-    marginTop: 10,
-  },
-
-  heroButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: '#D9C77A',
-    paddingHorizontal: 17,
-    paddingVertical: 11,
-    borderRadius: 18,
-    marginTop: 19,
-  },
-
-  heroButtonText: {
-    color: '#101512',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 28,
-    marginBottom: 13,
-  },
-
-  sectionTitle: {
-    color: '#EDEDE5',
-    fontSize: 19,
-    fontWeight: '700',
-  },
-
-  sectionSubtitle: {
-    color: '#737D77',
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  seeAll: {
-    color: '#D9C77A',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  prayerCard: {
-    minHeight: 118,
-    borderRadius: 23,
-    backgroundColor: '#101B16',
-    borderWidth: 1,
-    borderColor: '#26352E',
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  nextPrayerLabel: {
-    color: '#78847D',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.6,
-  },
-
-  nextPrayerName: {
-    color: '#F0F0E7',
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 5,
-  },
-
-  nextPrayerTime: {
-    color: '#B5BDB7',
-    fontSize: 12,
-    marginTop: 2,
-  },
-
-  countdownBox: {
-    backgroundColor: '#192820',
-    borderRadius: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: 'flex-end',
-  },
-
-  countdownLabel: {
-    color: '#718078',
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-
-  countdown: {
-    color: '#D9C77A',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 5,
-  },
-
-  prayerRow: {
-    gap: 9,
-    paddingTop: 10,
-  },
-
-  prayerMiniCard: {
-    width: 94,
-    minHeight: 82,
-    borderRadius: 17,
-    backgroundColor: '#0E1814',
-    borderWidth: 1,
-    borderColor: '#202D27',
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-
-  prayerMiniName: {
-    color: '#D8DDD9',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  prayerMiniTime: {
-    color: '#69756E',
-    fontSize: 9,
-  },
-
-  quranCard: {
-    minHeight: 115,
-    borderRadius: 22,
-    backgroundColor: '#111C17',
-    borderWidth: 1,
-    borderColor: '#26352E',
-    padding: 17,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-
-  quranIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
-    backgroundColor: '#1D3027',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  quranInfo: {
-    flex: 1,
-  },
-
-  quranSurah: {
-    color: '#E9EAE3',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  quranAyah: {
-    color: '#78847D',
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  progressTrack: {
-    height: 4,
-    backgroundColor: '#26342D',
-    borderRadius: 3,
-    marginTop: 13,
-    overflow: 'hidden',
-  },
-
-  progressFill: {
-    width: '38%',
-    height: 4,
-    backgroundColor: '#D9C77A',
-    borderRadius: 3,
-  },
-
-  progressText: {
-    color: '#6E7972',
-    fontSize: 9,
-    marginTop: 6,
-  },
-
-  dailyRow: {
-    gap: 11,
-  },
-
-  dailyCard: {
-    width: 265,
-    minHeight: 190,
-    borderRadius: 22,
-    backgroundColor: '#111C17',
-    borderWidth: 1,
-    borderColor: '#26352E',
-    padding: 18,
-  },
-
-  dailyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: '#1D3027',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-
-  dailyLabel: {
-    color: '#7D8982',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-  },
-
-  dailyText: {
-    color: '#E2E5DE',
-    fontSize: 15,
-    lineHeight: 23,
-    fontWeight: '600',
-    marginTop: 10,
-  },
-
-  dailyReference: {
-    color: '#D9C77A',
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 13,
-  },
-
-  exploreGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-
-  exploreCard: {
-    width: '48%',
-    minHeight: 125,
-    borderRadius: 20,
-    backgroundColor: '#101A16',
-    borderWidth: 1,
-    borderColor: '#24322C',
-    padding: 15,
-  },
-
-  exploreIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 15,
-    backgroundColor: '#1B2C24',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-
-  exploreTitle: {
-    color: '#E2E5DE',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  exploreSubtitle: {
-    color: '#6F7973',
-    fontSize: 9,
-    marginTop: 4,
-  },
-
-  bottomSpace: {
-    height: 80,
-  },
-
-  moreContent: {
-    paddingTop: 58,
-    paddingHorizontal: 18,
-    paddingBottom: 30,
-  },
-
-  moreHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 22,
-  },
-
-  moreTitle: {
-    color: '#F0F0E7',
-    fontSize: 27,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-
-  moreHeaderIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    backgroundColor: '#111B17',
-    borderWidth: 1,
-    borderColor: '#29372F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  moreHero: {
-    minHeight: 96,
-    borderRadius: 23,
-    backgroundColor: '#13251E',
-    borderWidth: 1,
-    borderColor: '#294239',
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  moreHeroIcon: {
-    width: 57,
-    height: 57,
-    borderRadius: 19,
-    backgroundColor: '#1D3027',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  moreHeroInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  moreHeroTitle: {
-    color: '#EDEDE5',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  moreHeroText: {
-    color: '#7F8A83',
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  moreSectionTitle: {
-    color: '#EDEDE5',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 27,
-    marginBottom: 10,
-  },
-
-  moreItem: {
-    minHeight: 75,
-    borderRadius: 19,
-    backgroundColor: '#101A16',
-    borderWidth: 1,
-    borderColor: '#24322C',
-    padding: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 9,
-  },
-
-  moreItemIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 15,
-    backgroundColor: '#1A2C24',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  moreItemInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  moreItemTitle: {
-    color: '#E4E7E0',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  moreItemSubtitle: {
-    color: '#707B74',
-    fontSize: 9,
-    marginTop: 4,
-  },
-
-  moreVersionCard: {
-    marginTop: 13,
-    borderRadius: 20,
-    backgroundColor: '#0D1713',
-    borderWidth: 1,
-    borderColor: '#202E27',
-    padding: 18,
-    alignItems: 'center',
-  },
-
-  moreVersionLabel: {
-    color: '#66726B',
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-
-  moreVersion: {
-    color: '#D9C77A',
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 5,
-  },
-
-  moreVersionText: {
-    color: '#68736C',
-    fontSize: 9,
-    marginTop: 4,
-  },
-
-  moreBottomSpace: {
-    height: 90,
-  },
-
-  bottomNav: {
-    position: 'absolute',
-    left: 10,
-    right: 10,
-    bottom: 10,
-    height: 67,
-    borderRadius: 24,
-    backgroundColor: '#111A16',
-    borderWidth: 1,
-    borderColor: '#29362F',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 5,
-  },
-
+const stylesStatic = StyleSheet.create({
   navItem: {
     flex: 1,
     height: 58,
@@ -1639,59 +1499,639 @@ const styles = StyleSheet.create({
   },
 
   navLabel: {
-    color: '#68736C',
     fontSize: 9,
     fontWeight: '600',
   },
-
-  navLabelActive: {
-    color: '#D9C77A',
-  },
-
-  placeholderScreen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 35,
-    paddingBottom: 90,
-  },
-
-  placeholderIcon: {
-    width: 76,
-    height: 76,
-    borderRadius: 25,
-    backgroundColor: '#1B2C24',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-
-  placeholderTitle: {
-    color: '#F0F0E7',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-
-  placeholderText: {
-    color: '#7D8982',
-    fontSize: 13,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginTop: 10,
-    maxWidth: 310,
-  },
-
-  backHomeButton: {
-    backgroundColor: '#D9C77A',
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 18,
-    marginTop: 24,
-  },
-
-  backHomeText: {
-    color: '#101512',
-    fontSize: 12,
-    fontWeight: '800',
-  },
 });
+
+function createStyles(
+  theme: ReturnType<
+    typeof useTheme
+  >['theme']
+) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        theme.background,
+    },
+
+    scrollContent: {
+      paddingTop: 58,
+      paddingHorizontal: 18,
+      paddingBottom: 30,
+    },
+
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 22,
+    },
+
+    eyebrow: {
+      color: theme.textMuted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 2.2,
+      marginBottom: 5,
+    },
+
+    appTitle: {
+      color: theme.text,
+      fontSize: 25,
+      fontWeight: '700',
+      letterSpacing: -0.5,
+    },
+
+    profileButton: {
+      width: 43,
+      height: 43,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor:
+        theme.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    heroCard: {
+      minHeight: 260,
+      borderRadius: 27,
+      backgroundColor: theme.card,
+      padding: 24,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor:
+        theme.borderStrong,
+      justifyContent: 'space-between',
+    },
+
+    heroGlowOne: {
+      position: 'absolute',
+      width: 210,
+      height: 210,
+      borderRadius: 105,
+      backgroundColor:
+        theme.gradientStart,
+      opacity: 0.55,
+      right: -85,
+      top: -75,
+    },
+
+    heroGlowTwo: {
+      position: 'absolute',
+      width: 130,
+      height: 130,
+      borderRadius: 65,
+      backgroundColor: theme.glow,
+      opacity: 0.12,
+      left: -60,
+      bottom: -50,
+    },
+
+    heroTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+
+    smallIconCircle: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    heroLabel: {
+      color: theme.textSecondary,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.5,
+    },
+
+    heroTitle: {
+      color: theme.text,
+      fontSize: 31,
+      lineHeight: 38,
+      fontWeight: '700',
+      letterSpacing: -0.8,
+      marginTop: 22,
+    },
+
+    heroDescription: {
+      color: theme.textSecondary,
+      fontSize: 13,
+      lineHeight: 20,
+      maxWidth: 310,
+      marginTop: 10,
+    },
+
+    heroButton: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 9,
+      backgroundColor: theme.accent,
+      paddingHorizontal: 17,
+      paddingVertical: 11,
+      borderRadius: 18,
+      marginTop: 19,
+    },
+
+    heroButtonText: {
+      color: theme.background,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 28,
+      marginBottom: 13,
+    },
+
+    sectionTitle: {
+      color: theme.text,
+      fontSize: 19,
+      fontWeight: '700',
+    },
+
+    sectionSubtitle: {
+      color: theme.textMuted,
+      fontSize: 11,
+      marginTop: 4,
+    },
+
+    seeAll: {
+      color: theme.accent,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    prayerCard: {
+      minHeight: 118,
+      borderRadius: 23,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+
+    nextPrayerLabel: {
+      color: theme.textMuted,
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.6,
+    },
+
+    nextPrayerName: {
+      color: theme.text,
+      fontSize: 24,
+      fontWeight: '700',
+      marginTop: 5,
+    },
+
+    nextPrayerTime: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      marginTop: 2,
+    },
+
+    countdownBox: {
+      backgroundColor:
+        theme.surfaceElevated,
+      borderRadius: 17,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      alignItems: 'flex-end',
+    },
+
+    countdownLabel: {
+      color: theme.textMuted,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.2,
+    },
+
+    countdown: {
+      color: theme.accent,
+      fontSize: 16,
+      fontWeight: '700',
+      marginTop: 5,
+    },
+
+    prayerRow: {
+      gap: 9,
+      paddingTop: 10,
+    },
+
+    prayerMiniCard: {
+      width: 94,
+      minHeight: 82,
+      borderRadius: 17,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 12,
+      justifyContent: 'space-between',
+    },
+
+    prayerMiniName: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    prayerMiniTime: {
+      color: theme.textMuted,
+      fontSize: 9,
+    },
+
+    quranCard: {
+      minHeight: 115,
+      borderRadius: 22,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 17,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+    },
+
+    quranIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 17,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    quranInfo: {
+      flex: 1,
+    },
+
+    quranSurah: {
+      color: theme.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+
+    quranAyah: {
+      color: theme.textMuted,
+      fontSize: 10,
+      marginTop: 4,
+    },
+
+    progressTrack: {
+      height: 4,
+      backgroundColor:
+        theme.border,
+      borderRadius: 3,
+      marginTop: 13,
+      overflow: 'hidden',
+    },
+
+    progressFill: {
+      width: '38%',
+      height: 4,
+      backgroundColor:
+        theme.accent,
+      borderRadius: 3,
+    },
+
+    progressText: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 6,
+    },
+
+    dailyRow: {
+      gap: 11,
+    },
+
+    dailyCard: {
+      width: 265,
+      minHeight: 190,
+      borderRadius: 22,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 18,
+    },
+
+    dailyIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+
+    dailyLabel: {
+      color: theme.textMuted,
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.4,
+    },
+
+    dailyText: {
+      color: theme.text,
+      fontSize: 15,
+      lineHeight: 23,
+      fontWeight: '600',
+      marginTop: 10,
+    },
+
+    dailyReference: {
+      color: theme.accent,
+      fontSize: 10,
+      fontWeight: '700',
+      marginTop: 13,
+    },
+
+    exploreGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+
+    exploreCard: {
+      width: '48%',
+      minHeight: 125,
+      borderRadius: 20,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 15,
+    },
+
+    exploreIcon: {
+      width: 43,
+      height: 43,
+      borderRadius: 15,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+
+    exploreTitle: {
+      color: theme.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+
+    exploreSubtitle: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    bottomSpace: {
+      height: 80,
+    },
+
+    moreContent: {
+      paddingTop: 58,
+      paddingHorizontal: 18,
+      paddingBottom: 30,
+    },
+
+    moreHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 22,
+    },
+
+    moreTitle: {
+      color: theme.text,
+      fontSize: 27,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+
+    moreHeaderIcon: {
+      width: 43,
+      height: 43,
+      borderRadius: 22,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreHero: {
+      minHeight: 96,
+      borderRadius: 23,
+      backgroundColor:
+        theme.card,
+      borderWidth: 1,
+      borderColor:
+        theme.borderStrong,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+
+    moreHeroIcon: {
+      width: 57,
+      height: 57,
+      borderRadius: 19,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreHeroInfo: {
+      flex: 1,
+      marginLeft: 14,
+    },
+
+    moreHeroTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+
+    moreHeroText: {
+      color: theme.textMuted,
+      fontSize: 10,
+      marginTop: 4,
+    },
+
+    moreSectionTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginTop: 27,
+      marginBottom: 10,
+    },
+
+    moreItem: {
+      minHeight: 75,
+      borderRadius: 19,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 13,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 9,
+    },
+
+    moreItemIcon: {
+      width: 45,
+      height: 45,
+      borderRadius: 15,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreItemInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+
+    moreItemTitle: {
+      color: theme.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+
+    moreItemSubtitle: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    moreVersionCard: {
+      marginTop: 13,
+      borderRadius: 20,
+      backgroundColor:
+        theme.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 18,
+      alignItems: 'center',
+    },
+
+    moreVersionLabel: {
+      color: theme.textMuted,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.5,
+    },
+
+    moreVersion: {
+      color: theme.accent,
+      fontSize: 18,
+      fontWeight: '700',
+      marginTop: 5,
+    },
+
+    moreVersionText: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    moreBottomSpace: {
+      height: 90,
+    },
+
+    bottomNav: {
+      position: 'absolute',
+      left: 10,
+      right: 10,
+      bottom: 10,
+      height: 67,
+      borderRadius: 24,
+      backgroundColor:
+        theme.tabBackground,
+      borderWidth: 1,
+      borderColor: theme.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      paddingHorizontal: 5,
+    },
+
+    placeholderScreen: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 35,
+      paddingBottom: 90,
+      backgroundColor:
+        theme.background,
+    },
+
+    placeholderIcon: {
+      width: 76,
+      height: 76,
+      borderRadius: 25,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+
+    placeholderTitle: {
+      color: theme.text,
+      fontSize: 28,
+      fontWeight: '700',
+    },
+
+    placeholderText: {
+      color: theme.textMuted,
+      fontSize: 13,
+      lineHeight: 21,
+      textAlign: 'center',
+      marginTop: 10,
+      maxWidth: 310,
+    },
+
+    backHomeButton: {
+      backgroundColor:
+        theme.accent,
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: 18,
+      marginTop: 24,
+    },
+
+    backHomeText: {
+      color: theme.background,
+      fontSize: 12,
+      fontWeight: '800',
+    },
+  });
+}
