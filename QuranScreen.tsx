@@ -62,9 +62,8 @@ export default function QuranScreen({
   initialAyah,
 }: QuranScreenProps) {
   const [quran, setQuran] = useState<QuranSurah[]>([]);
-  const [selectedSurah, setSelectedSurah] = useState<
-    number | null
-  >(null);
+  const [selectedSurah, setSelectedSurah] =
+    useState<number | null>(null);
 
   const [language, setLanguage] =
     useState<QuranLanguage>(
@@ -102,12 +101,13 @@ export default function QuranScreen({
   }, []);
 
   useEffect(() => {
-    if (language !== 'arabic') {
-      loadTranslation(language);
-    } else {
+    if (language === 'arabic') {
       setTranslation({});
       setTranslationError('');
+      return;
     }
+
+    loadTranslation(language);
   }, [language]);
 
   useEffect(() => {
@@ -129,7 +129,6 @@ export default function QuranScreen({
     }
 
     initialNavigationHandled.current = true;
-
     setSelectedSurah(initialSurah);
   }, [quran, initialSurah]);
 
@@ -142,24 +141,19 @@ export default function QuranScreen({
       return;
     }
 
-    const requestedOffset =
-      ayahOffsetsRef.current[initialAyah];
-
-    if (
-      typeof requestedOffset !== 'number'
-    ) {
-      return;
-    }
-
     const timer = setTimeout(() => {
+      const offset =
+        ayahOffsetsRef.current[initialAyah];
+
+      if (typeof offset !== 'number') {
+        return;
+      }
+
       readerScrollRef.current?.scrollTo({
-        y: Math.max(
-          requestedOffset - 20,
-          0
-        ),
+        y: Math.max(offset - 20, 0),
         animated: true,
       });
-    }, 150);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [selectedSurah, initialAyah]);
@@ -269,13 +263,12 @@ export default function QuranScreen({
   async function loadTranslation(
     selectedLanguage: QuranLanguage
   ) {
-    if (selectedLanguage === 'arabic') {
-      return;
-    }
-
     const url =
       TRANSLATION_FILE_URLS[
-        selectedLanguage
+        selectedLanguage as Exclude<
+          QuranLanguage,
+          'arabic'
+        >
       ];
 
     if (!url) {
@@ -297,6 +290,7 @@ export default function QuranScreen({
       }
 
       const text = await response.text();
+
       const parsed =
         parseTranslationText(text);
 
@@ -384,40 +378,6 @@ export default function QuranScreen({
             styles.readerContent
           }
           showsVerticalScrollIndicator={false}
-          onLayout={() => {
-            if (
-              initialAyah &&
-              ayahOffsetsRef.current[
-                initialAyah
-              ] !== undefined
-            ) {
-              const timer = setTimeout(() => {
-                const offset =
-                  ayahOffsetsRef.current[
-                    initialAyah
-                  ];
-
-                if (
-                  typeof offset === 'number'
-                ) {
-                  readerScrollRef.current?.scrollTo(
-                    {
-                      y: Math.max(
-                        offset - 20,
-                        0
-                      ),
-                      animated: true,
-                    }
-                  );
-                }
-              }, 100);
-
-              return () =>
-                clearTimeout(timer);
-            }
-
-            return undefined;
-          }}
         >
           <Pressable
             style={styles.backButton}
