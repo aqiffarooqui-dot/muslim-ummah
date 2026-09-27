@@ -21,12 +21,16 @@ import {
 import {
   usePremium,
 } from './PremiumProvider';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 export default function PremiumScreen({
   onBack,
 }: {
   onBack?: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   const {
     subscription,
     isPremium,
