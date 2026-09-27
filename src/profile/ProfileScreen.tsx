@@ -2,6 +2,7 @@ import React from 'react';
 
 import {
   Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -49,7 +50,42 @@ export default function ProfileScreen({
     user?.email ||
     '';
 
-  async function handleLogout() {
+  async function performLogout() {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(
+        'Logout error:',
+        error
+      );
+
+      if (Platform.OS === 'web') {
+        window.alert(
+          'Logout failed. Please try again.'
+        );
+      } else {
+        Alert.alert(
+          'Logout Failed',
+          'Please try again.'
+        );
+      }
+    }
+  }
+
+  function handleLogout() {
+    if (Platform.OS === 'web') {
+      const confirmed =
+        window.confirm(
+          'Are you sure you want to log out?'
+        );
+
+      if (confirmed) {
+        void performLogout();
+      }
+
+      return;
+    }
+
     Alert.alert(
       'Log Out',
       'Are you sure you want to log out?',
@@ -61,20 +97,8 @@ export default function ProfileScreen({
         {
           text: 'Log Out',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error(
-                'Logout error:',
-                error
-              );
-
-              Alert.alert(
-                'Logout Failed',
-                'Please try again.'
-              );
-            }
+          onPress: () => {
+            void performLogout();
           },
         },
       ]
@@ -196,7 +220,11 @@ export default function ProfileScreen({
           <InfoRow
             icon="person-outline"
             title="Account"
-            value={isAdmin ? 'Admin account' : 'Standard account'}
+            value={
+              isAdmin
+                ? 'Admin account'
+                : 'Standard account'
+            }
           />
 
           <InfoRow
