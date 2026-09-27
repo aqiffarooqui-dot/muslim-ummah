@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
   createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
 } from 'firebase/auth';
+
 import { getReactNativePersistence } from 'firebase/auth/react-native';
 
 import { firebaseApp } from './firebaseConfig';
@@ -38,8 +41,20 @@ export async function registerWithEmail(
   return credential.user;
 }
 
+export async function resetPassword(
+  email: string
+): Promise<void> {
+  await sendPasswordResetEmail(
+    auth,
+    email.trim().toLowerCase()
+  );
+}
+
 export function subscribeToAuth(
   callback: (user: User | null) => void
 ) {
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(
+    auth,
+    callback
+  );
 }
