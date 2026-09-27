@@ -1178,6 +1178,24 @@ export default function App() {
         Islamic Tools
       </Text>
 
+      <Pressable style={styles.moreItem} onPress={() => setActiveTab('Hadith')}>
+        <View style={styles.moreItemIcon}><Ionicons name="library-outline" size={21} color={theme.accent}/></View>
+        <View style={styles.moreItemInfo}><Text style={styles.moreItemTitle}>Hadith</Text><Text style={styles.moreItemSubtitle}>Browse major Hadith collections</Text></View>
+        <Ionicons name="chevron-forward" size={19} color={theme.textMuted}/>
+      </Pressable>
+
+      <Pressable style={styles.moreItem} onPress={openDuas}>
+        <View style={styles.moreItemIcon}><Ionicons name="heart-outline" size={21} color={theme.accent}/></View>
+        <View style={styles.moreItemInfo}><Text style={styles.moreItemTitle}>Duas</Text><Text style={styles.moreItemSubtitle}>Quranic supplications with references</Text></View>
+        <Ionicons name="chevron-forward" size={19} color={theme.textMuted}/>
+      </Pressable>
+
+      <Pressable style={styles.moreItem} onPress={openCalendar}>
+        <View style={styles.moreItemIcon}><Ionicons name="calendar-outline" size={21} color={theme.accent}/></View>
+        <View style={styles.moreItemInfo}><Text style={styles.moreItemTitle}>Islamic Calendar</Text><Text style={styles.moreItemSubtitle}>Live Hijri dates and Islamic days</Text></View>
+        <Ionicons name="chevron-forward" size={19} color={theme.textMuted}/>
+      </Pressable>
+
       <Pressable
         style={styles.moreItem}
         onPress={() => setActiveTab('Qibla')}
