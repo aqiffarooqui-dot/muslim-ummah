@@ -24,6 +24,12 @@ import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
 import { useAuth } from './src/auth/AuthProvider';
 import { useTheme } from './src/themes/ThemeProvider';
+import {
+  formatCountdown,
+  getNextPrayer,
+  getTodayPrayerData,
+  type PrayerData,
+} from './src/prayer/prayerService';
 
 type Tab =
   | 'Home'
@@ -134,9 +140,56 @@ export default function App() {
     ayahNumber: 1,
   });
 
+  const [prayerData, setPrayerData] =
+    useState<PrayerData | null>(null);
+
+  const [countdownSeconds, setCountdownSeconds] =
+    useState(0);
+
   useEffect(() => {
     loadQuranProgress();
+    loadPrayerData();
   }, []);
+
+  useEffect(() => {
+    if (!prayerData) {
+      return;
+    }
+
+    const updateCountdown = () => {
+      const nextPrayer = getNextPrayer(
+        prayerData.prayers,
+        new Date()
+      );
+
+      setCountdownSeconds(
+        nextPrayer?.remainingSeconds ?? 0
+      );
+    };
+
+    updateCountdown();
+
+    const timer = setInterval(
+      updateCountdown,
+      1000
+    );
+
+    return () => clearInterval(timer);
+  }, [prayerData]);
+
+  async function loadPrayerData() {
+    try {
+      const data =
+        await getTodayPrayerData();
+
+      setPrayerData(data);
+    } catch (err) {
+      console.error(
+        'Prayer data loading error:',
+        err
+      );
+    }
+  }
 
   async function loadQuranProgress() {
     try {
@@ -461,107 +514,121 @@ export default function App() {
           </Text>
 
           <Text
-            style={
-              styles.sectionSubtitle
-            }
+            style={styles.sectionSubtitle}
           >
-            Your daily prayer schedule
+            {prayerData?.city
+              ? `${prayerData.city}${prayerData.hijriDate ? ` • ${prayerData.hijriDate}` : ''}`
+              : 'Calculating your prayer schedule'}
           </Text>
         </View>
 
-        <Ionicons
-          name="location-outline"
-          size={19}
-          color={theme.textMuted}
-        />
-      </View>
-
-      <View style={styles.prayerCard}>
-        <View>
-          <Text
-            style={
-              styles.nextPrayerLabel
-            }
-          >
-            NEXT PRAYER
-          </Text>
-
-          <Text
-            style={
-              styles.nextPrayerName
-            }
-          >
-            Asr
-          </Text>
-
-          <Text
-            style={
-              styles.nextPrayerTime
-            }
-          >
-            04:42 PM
-          </Text>
-        </View>
-
-        <View
-          style={styles.countdownBox}
+        <Pressable
+          onPress={loadPrayerData}
+          style={styles.refreshPrayerButton}
         >
-          <Text
-            style={
-              styles.countdownLabel
-            }
-          >
-            STARTS IN
-          </Text>
-
-          <Text
-            style={styles.countdown}
-          >
-            01:24:18
-          </Text>
-        </View>
+          <Ionicons
+            name="refresh-outline"
+            size={18}
+            color={theme.accent}
+          />
+        </Pressable>
       </View>
+
+      {(() => {
+        const nextPrayer =
+          prayerData
+            ? getNextPrayer(
+                prayerData.prayers,
+                new Date()
+              )
+            : null;
+
+        return (
+          <View style={styles.prayerCard}>
+            <View>
+              <Text
+                style={styles.nextPrayerLabel}
+              >
+                NEXT PRAYER
+              </Text>
+
+              <Text
+                style={styles.nextPrayerName}
+              >
+                {nextPrayer?.name ?? 'Loading...'}
+              </Text>
+
+              <Text
+                style={styles.nextPrayerTime}
+              >
+                {nextPrayer?.time ?? '--:--'}
+              </Text>
+            </View>
+
+            <View
+              style={styles.countdownBox}
+            >
+              <Text
+                style={styles.countdownLabel}
+              >
+                STARTS IN
+              </Text>
+
+              <Text
+                style={styles.countdown}
+              >
+                {formatCountdown(
+                  countdownSeconds
+                )}
+              </Text>
+            </View>
+          </View>
+        );
+      })()}
 
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={          false
-        }
-        contentContainerStyle={
-          styles.prayerRow
-        }
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.prayerRow}
       >
-        {prayers.map((prayer) => (
-          <View
-            key={prayer.name}
-            style={
-              styles.prayerMiniCard
-            }
-          >
-            <Ionicons
-              name={prayer.icon}
-              size={19}
-              color={
-                theme.textSecondary
-              }
-            />
-
-            <Text
-              style={
-                styles.prayerMiniName
-              }
+        {(prayerData?.prayers ?? []).map(
+          (prayer) => (
+            <View
+              key={prayer.key}
+              style={styles.prayerMiniCard}
             >
-              {prayer.name}
-            </Text>
+              <Ionicons
+                name={
+                  prayer.key === 'Fajr'
+                    ? 'sunny-outline'
+                    : prayer.key === 'Dhuhr'
+                    ? 'sunny'
+                    : prayer.key === 'Asr'
+                    ? 'partly-sunny-outline'
+                    : prayer.key === 'Maghrib'
+                    ? 'moon-outline'
+                    : prayer.key === 'Isha'
+                    ? 'moon'
+                    : 'sunny-outline'
+                }
+                size={19}
+                color={theme.textSecondary}
+              />
 
-            <Text
-              style={
-                styles.prayerMiniTime
-              }
-            >
-              {prayer.time}
-            </Text>
-          </View>
-        ))}
+              <Text
+                style={styles.prayerMiniName}
+              >
+                {prayer.name}
+              </Text>
+
+              <Text
+                style={styles.prayerMiniTime}
+              >
+                {prayer.time}
+              </Text>
+            </View>
+          )
+        )}
       </ScrollView>
 
       <View style={styles.sectionHeader}>
@@ -1483,6 +1550,7 @@ export default function App() {
         !showBookmarks &&
         !showProfile &&
         !showPremium &&
+        !showPremiumTools &&
         !showAdmin &&
         activeTab !== 'Qibla' && (
           <View
@@ -1787,6 +1855,17 @@ function createStyles(
       color: theme.accent,
       fontSize: 12,
       fontWeight: '700',
+    },
+
+    refreshPrayerButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
 
     prayerCard: {
