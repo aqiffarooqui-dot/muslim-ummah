@@ -12,10 +12,16 @@
       "output": "single"
     },
     "android": {
-      "package": "com.aqiffarooqui.muslimummah"
+      "package": "com.aqiffarooqui.muslimummah",
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.aqiffarooqui.muslimummah"
-    }
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }
