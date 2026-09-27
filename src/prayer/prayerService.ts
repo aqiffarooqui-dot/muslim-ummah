@@ -193,6 +193,40 @@ async function getCoordinates() {
   };
 }
 
+export async function getPrayerTimesForDateAtLocation(
+  date: Date,
+  latitude: number,
+  longitude: number
+): Promise<PrayerTime[]> {
+  const settings = await getPrayerSettings();
+  const url =
+    `${API_BASE}/timings/${getDateString(date)}` +
+    `?latitude=${latitude}` +
+    `&longitude=${longitude}` +
+    `&method=${settings.method}` +
+    `&school=${settings.school}`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `Prayer API returned ${response.status}`
+    );
+  }
+
+  const json =
+    (await response.json()) as AlAdhanResponse;
+
+  if (
+    json.code !== 200 ||
+    !json.data?.timings
+  ) {
+    throw new Error('Prayer API returned invalid data');
+  }
+
+  return buildPrayerList(json.data.timings);
+}
+
 export async function getTodayPrayerData(): Promise<PrayerData> {
   try {
     const location = await getCoordinates();
