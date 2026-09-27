@@ -1,0 +1,15 @@
+export const ANALYTICS_EVENTS = {
+  APP_OPEN: 'app_open',
+  QURAN_OPEN: 'quran_open',
+  SURAH_OPEN: 'surah_open',
+  AYAH_BOOKMARKED: 'ayah_bookmarked',
+  HADITH_OPEN: 'hadith_open',
+  DUA_OPEN: 'dua_open',
+  PRAYER_OPEN: 'prayer_open',
+  QIBLA_OPEN: 'qibla_open',
+  AUDIO_START: 'audio_start',
+  PREMIUM_VIEW: 'premium_view',
+  PREMIUM_ACTIVATED: 'premium_activated',
+  PREMIUM_EXPIRED: 'premium_expired',
+  THEME_CHANGED: 'theme_changed',
+} as const;
