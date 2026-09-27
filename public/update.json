@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "title": "Muslim Ummah",
+  "changes": [
+    "Initial Muslim Ummah release",
+    "Quran, Hadith, Duas and Prayer features",
+    "Location-based prayer times and live countdown"
+  ],
+  "mandatory": false,
+  "apkUrl": ""
+}
