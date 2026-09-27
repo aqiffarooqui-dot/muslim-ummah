@@ -30,7 +30,8 @@ type QuranAyahCardProps = {
   isUrdu?: boolean;
   bookmarked?: boolean;
   onBookmarkPress?: () => void;
-undefined
+};
+
 export default function QuranAyahCard({
   surahNumber,
   ayahNumber,
