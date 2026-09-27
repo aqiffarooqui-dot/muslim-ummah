@@ -52,9 +52,9 @@ const features: Array<{
   {
     id: 'quranAdvanced',
     title: 'Advanced Quran',
-    description: 'Advanced Quran reading preferences and controls.',
+    description: 'Reading controls and Tafsir Ibn Kathir for individual Ayahs.',
     icon: 'book-outline',
-    state: 'available',
+    state: 'active',
   },
   {
     id: 'quranAudio',
@@ -621,9 +621,9 @@ export default function PremiumToolsScreen({
           />
 
           <Text style={styles.text}>
-            Themes, Insights, Quran Audio, Bookmarks,
-            Reminders and Cloud Sync are connected to
-            real app functionality. Dua, Hadith and
+            Themes, Advanced Quran, Insights, Quran Audio,
+            Bookmarks, Reminders and Cloud Sync are connected
+            to real app functionality. Dua, Hadith and
             Advanced Prayer are listed here but their
             dedicated premium modules still need their
             real data/functionality wired in.
