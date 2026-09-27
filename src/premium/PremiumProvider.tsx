@@ -19,6 +19,7 @@ import type {
 } from './premiumTypes';
 
 import { useAuth } from '../auth/AuthProvider';
+import { isAdminEmail } from '../admin/adminConfig';
 
 type PremiumContextValue = {
   subscription:
@@ -87,7 +88,26 @@ export function PremiumProvider({
     refreshPremium();
   }, [user?.uid]);
 
+  const isAdmin = isAdminEmail(
+    user?.email
+  );
+
+  const effectiveSubscription =
+    isAdmin
+      ? {
+          userId: user?.uid ?? 'admin',
+          planId: 'lifetime',
+          status: 'ACTIVE' as const,
+          startedAt: '2026-09-27T00:00:00.000Z',
+          expiresAt: null,
+          source: 'ADMIN' as const,
+          paymentId: null,
+          autoRenew: false,
+        }
+      : subscription;
+
   const isPremium =
+    isAdmin ||
     isPremiumActive(
       subscription
     );
@@ -95,13 +115,13 @@ export function PremiumProvider({
   const value =
     useMemo(
       () => ({
-        subscription,
+        subscription: effectiveSubscription,
         isPremium,
         loading,
         refreshPremium,
       }),
       [
-        subscription,
+        effectiveSubscription,
         isPremium,
         loading,
       ]
