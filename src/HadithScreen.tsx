@@ -19,12 +19,11 @@ type H = {
   grade?: string;
 };
 
-type UrduHadith = {
+type TranslationHadith = {
   hadithnumber?: number;
   hadithNumber?: number;
-  hadith?: string;
   text?: string;
-  narrator?: string;
+  hadith?: string;
 };
 
 type Book = {
@@ -96,7 +95,7 @@ async function fetchJson(url: string): Promise<any> {
   return response.json();
 }
 
-function extractEditionHadiths(value: any): UrduHadith[] {
+function extractEditionHadiths(value: any): TranslationHadith[] {
   if (Array.isArray(value)) {
     return value;
   }
@@ -112,7 +111,7 @@ function extractEditionHadiths(value: any): UrduHadith[] {
   return [];
 }
 
-function getHadithNumber(item: UrduHadith): number | null {
+function getHadithNumber(item: TranslationHadith): number | null {
   const value = item.hadithnumber ?? item.hadithNumber;
 
   if (typeof value === 'number') {
@@ -127,8 +126,97 @@ function getHadithNumber(item: UrduHadith): number | null {
   return null;
 }
 
-function getUrduText(item: UrduHadith): string {
+function getUrduText(item: TranslationHadith): string {
   return item.hadith?.trim() || item.text?.trim() || '';
+}
+
+function parseCsvRow(line: string): string[] {
+  const values: string[] = [];
+  let value = '';
+  let quoted = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (quoted && line[i + 1] === '"') {
+        value += '"';
+        i += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === ',' && !quoted) {
+      values.push(value);
+      value = '';
+    } else {
+      value += char;
+    }
+  }
+
+  values.push(value);
+  return values;
+}
+
+function parseToonTranslation(source: string): Record<number, string> {
+  const match = source.match(
+    /hadiths\[(?:count|\d+)\]\{([^}]+)\}\s*:\s*/
+  );
+
+  if (!match) {
+    return {};
+  }
+
+  const columns = match[1].split(',').map((item) => item.trim());
+  const numberIndex = columns.indexOf('hadithnumber');
+  const textIndex = columns.indexOf('text');
+
+  if (numberIndex < 0 || textIndex < 0) {
+    return {};
+  }
+
+  const body = source.slice((match.index ?? 0) + match[0].length);
+  const map: Record<number, string> = {};
+  let row = '';
+  let quoted = false;
+
+  const flush = () => {
+    if (!row.trim()) {
+      row = '';
+      return;
+    }
+
+    const values = parseCsvRow(row);
+    const number = Number(values[numberIndex]);
+    const text = String(values[textIndex] || '').trim();
+
+    if (Number.isFinite(number) && text) {
+      map[number] = text;
+    }
+
+    row = '';
+  };
+
+  for (const line of body.split('\n')) {
+    row += (row ? '\n' : '') + line;
+
+    let quotes = 0;
+    for (let i = 0; i < line.length; i += 1) {
+      if (line[i] === '"' && line[i - 1] !== '\\') {
+        quotes += 1;
+      }
+    }
+
+    if (quotes % 2 === 1) {
+      quoted = !quoted;
+    }
+
+    if (!quoted) {
+      flush();
+    }
+  }
+
+  flush();
+  return map;
 }
 
 export default function HadithScreen({
@@ -140,11 +228,14 @@ export default function HadithScreen({
   const [ch, setCh] = useState(1);
   const [items, setItems] = useState<H[]>([]);
   const [urduMap, setUrduMap] = useState<Record<number, string>>({});
+  const [romanUrduMap, setRomanUrduMap] = useState<Record<number, string>>({});
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(true);
   const [urduBusy, setUrduBusy] = useState(false);
+  const [romanUrduBusy, setRomanUrduBusy] = useState(false);
   const [err, setErr] = useState('');
   const [urduErr, setUrduErr] = useState('');
+  const [romanUrduErr, setRomanUrduErr] = useState('');
   const book = B[bi];
 
   useEffect(() => {
@@ -236,6 +327,48 @@ export default function HadithScreen({
     };
   }, [book.urduEdition]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    setRomanUrduBusy(true);
+    setRomanUrduErr('');
+    setRomanUrduMap({});
+
+    fetch(
+      `https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions/${book.id}/translations/roman-ur/sections/${ch}.toon`
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('Roman Urdu translation unavailable');
+        }
+        return response.text();
+      })
+      .then((source) => {
+        if (!cancelled) {
+          setRomanUrduMap(parseToonTranslation(source));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setRomanUrduMap({});
+          setRomanUrduErr(
+            error instanceof Error
+              ? error.message
+              : 'Roman Urdu translation unavailable'
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRomanUrduBusy(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [book.id, ch]);
+
   const shown = useMemo(() => {
     const s = q.toLowerCase().trim();
 
@@ -253,12 +386,13 @@ export default function HadithScreen({
         h.idInBook,
         h.id,
         h.idInBook ? urduMap[h.idInBook] : '',
+        h.idInBook ? romanUrduMap[h.idInBook] : '',
       ]
         .join(' ')
         .toLowerCase()
         .includes(s)
     );
-  }, [items, q, urduMap]);
+  }, [items, q, urduMap, romanUrduMap]);
 
   const selectBook = (index: number) => {
     setBi(index);
@@ -290,7 +424,7 @@ export default function HadithScreen({
         <View style={s.headText}>
           <Text style={s.title}>Hadith</Text>
           <Text style={s.sub}>
-            Arabic • English • Urdu
+            Arabic • English • Urdu • Roman Urdu
           </Text>
         </View>
       </View>
@@ -425,6 +559,7 @@ export default function HadithScreen({
               const number =
                 h.idInBook ?? h.id ?? index + 1;
               const urdu = urduMap[number];
+              const romanUrdu = romanUrduMap[number];
 
               return (
                 <View
@@ -485,6 +620,21 @@ export default function HadithScreen({
                       Urdu translation not available for this Hadith.
                     </Text>
                   )}
+
+                  {romanUrdu ? (
+                    <>
+                      <Text style={s.languageLabel}>
+                        ROMAN URDU / HINGLISH
+                      </Text>
+                      <Text style={s.romanUrdu}>
+                        {romanUrdu}
+                      </Text>
+                    </>
+                  ) : romanUrduBusy ? (
+                    <Text style={s.translationLoading}>
+                      Roman Urdu translation loading…
+                    </Text>
+                  ) : null}
                 </View>
               );
             })
@@ -492,9 +642,9 @@ export default function HadithScreen({
         </ScrollView>
       )}
 
-      {urduErr ? (
+      {urduErr || romanUrduErr ? (
         <Text style={s.footerError}>
-          Urdu source could not be loaded. English and Arabic remain available.
+          Some translations could not be loaded. Available Arabic, English and other translations remain visible.
         </Text>
       ) : null}
     </View>
@@ -735,6 +885,12 @@ const s = StyleSheet.create({
     lineHeight: 29,
     textAlign: 'right',
     writingDirection: 'rtl',
+  },
+
+  romanUrdu: {
+    color: '#D1D5D0',
+    fontSize: 12,
+    lineHeight: 20,
   },
 
   translationLoading: {
