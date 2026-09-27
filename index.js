@@ -7,13 +7,13 @@ import { ThemeProvider } from './src/themes/ThemeProvider';
 
 function Root() {
   return (
-    <AuthGate>
-      <PremiumProvider>
-        <ThemeProvider>
+    <PremiumProvider>
+      <ThemeProvider>
+        <AuthGate>
           <App />
-        </ThemeProvider>
-      </PremiumProvider>
-    </AuthGate>
+        </AuthGate>
+      </ThemeProvider>
+    </PremiumProvider>
   );
 }
 
