@@ -128,43 +128,39 @@ export default function QuranAyahCard({
           </Text>
         </View>
 
-        <View style={styles.actions}>
-          {isPremium && (
+        {isPremium && (
+          <View style={styles.actions}>
             <View style={styles.premiumMiniBadge}>
               <Ionicons name="sparkles" size={10} color="#D8B36A" />
               <Text style={styles.premiumMiniBadgeText}>PREMIUM</Text>
             </View>
-          )}
-        <Pressable onPress={openTafsir} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Open Tafsir for Ayah ${ayahNumber}`}>
-          <Ionicons name={isPremium ? 'book-outline' : 'lock-closed-outline'} size={21} color={isPremium ? '#D8B36A' : '#777D89'} />
-        </Pressable>
-        <Pressable onPress={playAudio} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Play Ayah ${ayahNumber}`}>
-          <Ionicons name={isPremium ? 'play-circle-outline' : 'lock-closed-outline'} size={21} color={isPremium ? '#D8B36A' : '#777D89'} />
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            if (!isPremium) {
-              const message='Unlimited Quran Bookmarks are a Premium feature.';
-              if (Platform.OS === 'web') window.alert(message); else Alert.alert('Premium Feature',message);
-              return;
-            }
-            onBookmarkPress?.();
-          }}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={
-            bookmarked
-              ? `Remove bookmark from Ayah ${ayahNumber}`
-              : `Bookmark Ayah ${ayahNumber}`
-          }
-        >
-          <Ionicons
-            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-            size={21}
-            color={bookmarked ? '#D8B36A' : '#8D91A3'}
-          />
-        </Pressable>
-        </View>
+
+            <Pressable onPress={openTafsir} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Open Tafsir for Ayah ${ayahNumber}`}>
+              <Ionicons name="book-outline" size={21} color="#D8B36A" />
+            </Pressable>
+
+            <Pressable onPress={playAudio} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Play Ayah ${ayahNumber}`}>
+              <Ionicons name="play-circle-outline" size={21} color="#D8B36A" />
+            </Pressable>
+
+            <Pressable
+              onPress={() => onBookmarkPress?.()}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={
+                bookmarked
+                  ? `Remove bookmark from Ayah ${ayahNumber}`
+                  : `Bookmark Ayah ${ayahNumber}`
+              }
+            >
+              <Ionicons
+                name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                size={21}
+                color={bookmarked ? '#D8B36A' : '#8D91A3'}
+              />
+            </Pressable>
+          </View>
+        )}
       </View>
 
       <QuranArabicText
