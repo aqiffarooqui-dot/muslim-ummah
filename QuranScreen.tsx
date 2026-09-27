@@ -77,10 +77,13 @@ function getBookmarkKey(
   return `${surahNumber}:${ayahNumber}`;
 }
 
-export default }: QuranScreenProps) {
+export default function QuranScreen({
+  onBack,
   initialSurah,
   initialAyah,
 }: QuranScreenProps) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   const [quran, setQuran] = useState<QuranSurah[]>([]);
   const [quranProgress, setQuranProgress] = useState<{
     surahNumber: number;
