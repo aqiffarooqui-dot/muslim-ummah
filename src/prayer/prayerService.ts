@@ -456,12 +456,10 @@ export function getNextPrayer(
 
 export function getCurrentPrayerWindow(
   prayers: PrayerTime[],
-  now = new Date()
+  now = new Date(),
+  timezone?: string
 ) {
-  const currentSeconds =
-    now.getHours() * 3600 +
-    now.getMinutes() * 60 +
-    now.getSeconds();
+  const currentSeconds = getClockSeconds(now, timezone);
 
   const obligatory = prayers.filter(
     (prayer) =>
