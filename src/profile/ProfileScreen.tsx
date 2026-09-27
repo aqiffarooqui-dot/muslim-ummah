@@ -316,6 +316,8 @@ function InfoRow({
   value: string;
   last?: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   return (
     <View
       style={[
