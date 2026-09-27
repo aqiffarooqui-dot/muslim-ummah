@@ -10,6 +10,8 @@ import {
 import {
   usePremium,
 } from './PremiumProvider';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 export default function PremiumGate({
   children,
@@ -18,6 +20,8 @@ export default function PremiumGate({
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const {
     isPremium,
     loading,
@@ -61,7 +65,7 @@ export default function PremiumGate({
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   loading: {
     flex: 1,
     alignItems: 'center',
@@ -102,4 +106,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 10,
   },
-});
+};
