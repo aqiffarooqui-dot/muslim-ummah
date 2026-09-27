@@ -71,7 +71,7 @@ function parseToonRow(line: string): string[] {
 }
 
 function firstToonRow(content: string): string[] | null {
-  const headerEnd = content.indexOf('\\n');
+  const headerEnd = content.indexOf('\n');
   if (headerEnd < 0) return null;
 
   let row = '';
@@ -92,7 +92,7 @@ function firstToonRow(content: string): string[] | null {
       continue;
     }
 
-    if (char === '\\n' && !quoted) {
+    if (char === '\n' && !quoted) {
       break;
     }
 
