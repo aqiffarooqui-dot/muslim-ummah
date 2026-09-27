@@ -358,6 +358,22 @@ export default function App() {
     setActiveTab('Quran');
   };
 
+  const openContinueQuran = () => {
+    setShowBookmarks(false);
+    setShowAbout(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowPremiumTools(false);
+    setShowAdmin(false);
+
+    setQuranOpenRequest({
+      surahNumber: quranProgress.surahNumber,
+      ayahNumber: quranProgress.ayahNumber,
+    });
+
+    setActiveTab('Quran');
+  };
+
   const renderHome = () => (
     <ScrollView
       showsVerticalScrollIndicator={false}
