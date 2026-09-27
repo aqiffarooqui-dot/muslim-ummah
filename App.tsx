@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import QuranScreen from './QuranScreen';
 import QuranBookmarksScreen from './src/QuranBookmarksScreen';
 import AboutScreen from './AboutScreen';
+import { SURAHS } from './src/QuranData';
+import { getQuranProgress } from './src/quranProgress';
 
 type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
 
@@ -59,6 +61,47 @@ export default function App() {
   const [quranOpenRequest, setQuranOpenRequest] =
     useState<QuranOpenRequest>(null);
 
+  const [quranProgress, setQuranProgress] = useState({
+    surahNumber: 1,
+    ayahNumber: 1,
+  });
+
+  useEffect(() => {
+    loadQuranProgress();
+  }, []);
+
+  async function loadQuranProgress() {
+    try {
+      const progress = await getQuranProgress();
+
+      if (progress) {
+        setQuranProgress(progress);
+      }
+    } catch (err) {
+      console.error(
+        'Quran progress loading error:',
+        err
+      );
+    }
+  }
+
+  const currentProgressSurah =
+    SURAHS.find(
+      (surah) =>
+        surah.number ===
+        quranProgress.surahNumber
+    ) || SURAHS[0];
+
+  const progressPercentage = Math.min(
+    100,
+    Math.max(
+      3,
+      (quranProgress.ayahNumber /
+        currentProgressSurah.ayahCount) *
+        100
+    )
+  );
+
   const openAbout = () => {
     setShowAbout(true);
     setShowBookmarks(false);
@@ -84,6 +127,20 @@ export default function App() {
     setActiveTab('Quran');
   };
 
+  const openContinueQuran = () => {
+    setShowBookmarks(false);
+    setShowAbout(false);
+
+    setQuranOpenRequest({
+      surahNumber:
+        quranProgress.surahNumber,
+      ayahNumber:
+        quranProgress.ayahNumber,
+    });
+
+    setActiveTab('Quran');
+  };
+
   const openBookmarkedAyah = (
     surahNumber: number,
     ayahNumber: number
@@ -106,8 +163,13 @@ export default function App() {
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.eyebrow}>ASSALAMU ALAIKUM</Text>
-          <Text style={styles.appTitle}>Muslim Ummah</Text>
+          <Text style={styles.eyebrow}>
+            ASSALAMU ALAIKUM
+          </Text>
+
+          <Text style={styles.appTitle}>
+            Muslim Ummah
+          </Text>
         </View>
 
         <Pressable style={styles.profileButton}>
@@ -253,7 +315,7 @@ export default function App() {
 
       <Pressable
         style={styles.quranCard}
-        onPress={openQuran}
+        onPress={openContinueQuran}
       >
         <View style={styles.quranIcon}>
           <Ionicons
@@ -265,15 +327,22 @@ export default function App() {
 
         <View style={styles.quranInfo}>
           <Text style={styles.quranSurah}>
-            Surah Al-Baqarah
+            Surah {currentProgressSurah.englishName}
           </Text>
 
           <Text style={styles.quranAyah}>
-            Ayah 255 • Ayat-ul-Kursi
+            Ayah {quranProgress.ayahNumber}
           </Text>
 
           <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${progressPercentage}%`,
+                },
+              ]}
+            />
           </View>
 
           <Text style={styles.progressText}>
@@ -684,6 +753,7 @@ export default function App() {
             onPress={() => {
               setQuranOpenRequest(null);
               setActiveTab('Home');
+              loadQuranProgress();
             }}
           />
 
