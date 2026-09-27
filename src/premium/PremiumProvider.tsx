@@ -19,7 +19,6 @@ import type {
 } from './premiumTypes';
 
 import { useAuth } from '../auth/AuthProvider';
-import { isAdminEmail } from '../admin/adminConfig';
 
 type PremiumContextValue = {
   subscription:
@@ -43,7 +42,7 @@ export function PremiumProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [
     subscription,
@@ -88,10 +87,6 @@ export function PremiumProvider({
     refreshPremium();
   }, [user?.uid]);
 
-  const isAdmin = isAdminEmail(
-    user?.email
-  );
-
   const effectiveSubscription =
     isAdmin
       ? {
@@ -107,9 +102,8 @@ export function PremiumProvider({
       : subscription;
 
   const isPremium =
-    isAdmin ||
     isPremiumActive(
-      subscription
+      effectiveSubscription
     );
 
   const value =
