@@ -84,10 +84,19 @@ export function AuthProvider({
   const [loading, setLoading] =
     useState(true);
 
+  const [adminClaim, setAdminClaim] =
+    useState(false);
+
   async function loadProfile(
     firebaseUser: User
   ) {
     try {
+      const tokenResult =
+        await firebaseUser.getIdTokenResult();
+
+      setAdminClaim(
+        tokenResult.claims.admin === true
+      );
       let existingProfile =
         await getUserProfile(
           firebaseUser.uid
@@ -148,6 +157,7 @@ export function AuthProvider({
             );
           } else {
             setProfile(null);
+            setAdminClaim(false);
           }
 
           setLoading(false);
@@ -250,6 +260,7 @@ export function AuthProvider({
         profile,
         loading,
         isAdmin:
+          adminClaim ||
           profile?.role === 'admin' ||
           isAdminEmail(user?.email),
         signUp,
