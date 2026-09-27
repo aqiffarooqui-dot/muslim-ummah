@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from './themes/ThemeProvider';
+import { createThemedStyles } from './themes/themeStyleMapper';
 
 type H = {
   id?: number;
@@ -237,6 +239,8 @@ export default function HadithScreen({
   const [urduErr, setUrduErr] = useState('');
   const [romanUrduErr, setRomanUrduErr] = useState('');
   const book = B[bi];
+  const { theme } = useTheme();
+  const s = createLegacyStyles(theme);
 
   useEffect(() => {
     let cancelled = false;
@@ -651,7 +655,7 @@ export default function HadithScreen({
   );
 }
 
-const s = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   root: {
     flex: 1,
     backgroundColor: '#080A0F',
@@ -932,4 +936,4 @@ const s = StyleSheet.create({
     textAlign: 'center',
     paddingTop: 5,
   },
-});
+})
