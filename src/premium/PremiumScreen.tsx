@@ -494,6 +494,8 @@ function PremiumFeature({
   text: string;
   enabled: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   return (
     <View
       style={[
@@ -556,6 +558,8 @@ function Benefit({
   icon: keyof typeof Ionicons.glyphMap;
   text: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   return (
     <View style={styles.benefit}>
       <View style={styles.benefitIcon}>
@@ -586,6 +590,8 @@ function PlanCard({
   name: string;
   duration: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   return (
     <View style={styles.plan}>
       <View style={styles.planIcon}>
@@ -617,7 +623,7 @@ function PlanCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   safe: {
     flex: 1,
     backgroundColor: '#080A0F',
