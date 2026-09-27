@@ -11,6 +11,17 @@ export type AppTheme = {
   name: string;
   description: string;
 
+  // Visual language applied across the app.
+  style: 'ios-glass' | 'minimal' | 'islamic' | 'royal-glass' | 'material' | 'sapphire';
+  radius: {
+    sm: number;
+    md: number;
+    lg: number;
+    pill: number;
+  };
+  glass: boolean;
+  shadowOpacity: number;
+
   background: string;
   backgroundSecondary: string;
 
