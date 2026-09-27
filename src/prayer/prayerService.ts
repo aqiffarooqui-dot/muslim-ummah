@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { getPrayerSettings } from './prayerSettings';
 
 export type PrayerKey =
   | 'Fajr'
@@ -196,13 +197,14 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
   try {
     const location = await getCoordinates();
     const date = getDateString();
+    const settings = await getPrayerSettings();
 
     const url =
       `${API_BASE}/timings/${date}` +
       `?latitude=${location.latitude}` +
       `&longitude=${location.longitude}` +
-      `&method=${INDIA_METHOD}` +
-      `&school=1`;
+      `&method=${settings.method}` +
+      `&school=${settings.school}`;
 
     const response = await fetch(url);
 
