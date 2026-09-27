@@ -21,6 +21,7 @@ import PremiumToolsScreen from './src/premium/PremiumToolsScreen';
 import AdminDashboard from './src/admin/AdminDashboard';
 import QiblaScreen from './src/qibla/QiblaScreen';
 import HadithScreen from './src/HadithScreen';
+import PrayerScreen from './src/PrayerScreen';
 import DuasScreen from './src/DuasScreen';
 import IslamicCalendarScreen from './src/IslamicCalendarScreen';
 
@@ -1543,6 +1544,10 @@ export default function App() {
           }
         />
       );
+    }
+
+    if (activeTab === 'Prayer') {
+      return <PrayerScreen onBack={() => setActiveTab('Home')} />;
     }
 
     if (activeTab === 'Qibla') {
