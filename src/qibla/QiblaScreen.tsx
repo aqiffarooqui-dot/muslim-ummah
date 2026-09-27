@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Platform,
   Pressable,
   StyleSheet,
@@ -74,6 +76,9 @@ export default function QiblaScreen({
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [heading, setHeading] = useState(0);
   const [headingAccuracy, setHeadingAccuracy] = useState(0);
+  const animatedHeading = useRef(new Animated.Value(0)).current;
+  const previousHeading = useRef(0);
+  const pulse = useRef(new Animated.Value(0)).current;
   const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
@@ -117,7 +122,14 @@ export default function QiblaScreen({
               ? nextHeading.trueHeading
               : nextHeading.magHeading;
 
-          setHeading(normalizeDegrees(trueHeading));
+          const next = normalizeDegrees(trueHeading);
+          const previous = previousHeading.current;
+          let delta = next - previous;
+          if (delta > 180) delta -= 360;
+          if (delta < -180) delta += 360;
+          previousHeading.current = next;
+          setHeading(next);
+          Animated.timing(animatedHeading, { toValue: previous + delta, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
           setHeadingAccuracy(nextHeading.accuracy);
           setSensorAvailable(true);
           setLoading(false);
@@ -143,7 +155,16 @@ export default function QiblaScreen({
       mounted = false;
       headingSubscription?.remove();
     };
-  }, [retryNonce]);
+  }, [retryNonce, animatedHeading]);
+
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
 
   const qiblaBearing = useMemo(() => {
     if (!location) return 0;
@@ -165,6 +186,9 @@ export default function QiblaScreen({
 
   const relativeAngle = normalizeDegrees(qiblaBearing - heading);
   const accuracyLabel = getAccuracyLabel(headingAccuracy);
+  const compassRotation = animatedHeading.interpolate({ inputRange: [-720, 0, 720], outputRange: ['720deg', '0deg', '-720deg'] });
+  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] });
+  const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.28, 0] });
 
   const styles = createStyles(theme);
 
@@ -256,7 +280,7 @@ export default function QiblaScreen({
 
             <View style={styles.compassWrap}>
               <View style={styles.compassOuter}>
-                <View style={styles.compassInner}>
+                <Animated.View style={[styles.compassInner, { transform: [{ rotate: compassRotation }] }]}>
                   <View style={styles.northMark}>
                     <Text style={styles.northText}>N</Text>
                   </View>
@@ -268,7 +292,7 @@ export default function QiblaScreen({
                     style={[
                       styles.qiblaArrow,
                       {
-                        transform: [{ rotate: `${relativeAngle}deg` }],
+                        transform: [{ rotate: `${qiblaBearing}deg` }],
                       },
                     ]}
                   >
@@ -277,6 +301,8 @@ export default function QiblaScreen({
                     <View style={styles.arrowBase} />
                   </View>
 
+                  <Animated.View style={[styles.pulseRing, { opacity: pulseOpacity, transform: [{ scale: pulseScale }] }]} />
+
                   <View style={styles.centerDot}>
                     <Ionicons
                       name="location"
@@ -284,7 +310,7 @@ export default function QiblaScreen({
                       color={theme.background}
                     />
                   </View>
-                </View>
+                </Animated.View>
               </View>
 
               <Text style={styles.bearing}>
@@ -487,6 +513,10 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
+    },
+    pulseRing: {
+      position: 'absolute', width: 66, height: 66, borderRadius: 33,
+      borderWidth: 2, borderColor: theme.accent,
     },
     northMark: {
       position: 'absolute',
