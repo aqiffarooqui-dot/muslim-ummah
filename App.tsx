@@ -17,7 +17,6 @@ import AboutScreen from './AboutScreen';
 import ProfileScreen from './src/profile/ProfileScreen';
 import PremiumScreen from './src/premium/PremiumScreen';
 import PremiumToolsScreen from './src/premium/PremiumToolsScreen';
-import ThemeSelector from './src/themes/ThemeSelector';
 import AdminDashboard from './src/admin/AdminDashboard';
 import QiblaScreen from './src/qibla/QiblaScreen';
 
@@ -1094,9 +1093,6 @@ export default function App() {
           />
         </Pressable>
       )}
-
-      <Text style={styles.moreSectionTitle}>Appearance</Text>
-      <ThemeSelector />
 
       <Text
         style={
