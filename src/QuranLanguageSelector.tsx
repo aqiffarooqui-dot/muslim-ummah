@@ -7,6 +7,9 @@ import {
   View,
 } from 'react-native';
 
+import { useTheme } from './themes/ThemeProvider';
+import { createThemedStyles } from './themes/themeStyleMapper';
+
 import {
   QuranLanguage,
 } from './quranTranslation';
@@ -24,6 +27,8 @@ export default function QuranLanguageSelector({
   selectedLanguage,
   onLanguageChange,
 }: QuranLanguageSelectorProps) {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Translation</Text>
@@ -70,7 +75,7 @@ export default function QuranLanguageSelector({
   );
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   container: {
     marginTop: 18,
     marginBottom: 8,
@@ -125,4 +130,4 @@ const styles = StyleSheet.create({
   nativeLabelActive: {
     color: '#39301F',
   },
-});
+};
