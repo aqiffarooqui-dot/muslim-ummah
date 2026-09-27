@@ -91,7 +91,7 @@ export default function QuranAyahCard({
 
       setTafsirText(
         text
-          .replace(/<br\\s*\\/?>(?=.)/gi, '\\n')
+          .replace(/<br\s*\/?>(?=.)/gi, '\n')
           .replace(/<[^>]+>/g, '')
           .replace(/&nbsp;/gi, ' ')
           .replace(/&amp;/gi, '&')
