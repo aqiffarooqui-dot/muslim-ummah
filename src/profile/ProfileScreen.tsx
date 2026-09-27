@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../auth/AuthProvider';
 import { usePremium } from '../premium/PremiumProvider';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 type Props = {
   onBack: () => void;
@@ -27,6 +29,9 @@ export default function ProfileScreen({
   onPremium,
   onAdmin,
 }: Props) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
+
   const {
     user,
     profile,
@@ -339,7 +344,7 @@ function InfoRow({
   );
 }
 
-const styles = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   safe: {
     flex: 1,
     backgroundColor: '#07100D',
