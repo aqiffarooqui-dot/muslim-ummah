@@ -47,7 +47,7 @@ import { saveQuranProgress } from './src/quranProgress';
 const QURAN_TEXT_URL =
   Platform.OS === 'web'
     ? '/quran-uthmani.txt'
-    : 'https://raw.githubusercontent.com/aqiffarooqui-dot/muslim-ummah/main/public/quran-uthmani.txt';
+    : 'https://raw.githubusercontent.com/cchartm16/quran/master/quran-uthmani.txt';
 
 type QuranScreenProps = {
   onBack?: () => void;
