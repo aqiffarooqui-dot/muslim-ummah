@@ -2,11 +2,14 @@ import { registerRootComponent } from 'expo';
 
 import App from './App';
 import AuthGate from './src/auth/AuthGate';
+import { PremiumProvider } from './src/premium/PremiumProvider';
 
 function Root() {
   return (
     <AuthGate>
-      <App />
+      <PremiumProvider>
+        <App />
+      </PremiumProvider>
     </AuthGate>
   );
 }
