@@ -2156,4 +2156,194 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginLeft: 8,
   },
+
+  premiumToolsCard: {
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#806B3D',
+  },
+
+  premiumToolsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  premiumToolsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  premiumToolsTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  premiumBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 7,
+    backgroundColor: '#211F18',
+    borderWidth: 1,
+    borderColor: '#806B3D',
+  },
+
+  premiumBadgeText: {
+    color: '#D8B36A',
+    fontSize: 7,
+    fontWeight: '900',
+  },
+
+  premiumToolsText: {
+    color: '#858B99',
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 6,
+  },
+
+  premiumControlLabel: {
+    color: '#9DA1AE',
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 14,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+
+  premiumAction: {
+    flex: 1,
+    padding: 11,
+    borderRadius: 12,
+    backgroundColor: '#211F18',
+    borderWidth: 1,
+    borderColor: '#806B3D',
+    alignItems: 'center',
+  },
+
+  premiumActionText: {
+    color: '#D8B36A',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+
+  premiumValue: {
+    flex: 1,
+    padding: 11,
+    borderRadius: 12,
+    backgroundColor: '#151922',
+    borderWidth: 1,
+    borderColor: '#252A35',
+    alignItems: 'center',
+  },
+
+  premiumValueText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  premiumMode: {
+    flex: 1,
+    padding: 11,
+    borderRadius: 12,
+    backgroundColor: '#151922',
+    borderWidth: 1,
+    borderColor: '#252A35',
+    alignItems: 'center',
+  },
+
+  premiumModeActive: {
+    backgroundColor: '#211F18',
+    borderColor: '#806B3D',
+  },
+
+  premiumModeText: {
+    color: '#858B99',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  premiumModeTextActive: {
+    color: '#D8B36A',
+  },
+
+  premiumStatsRow: {
+    flexDirection: 'row',
+    gap: 7,
+    marginTop: 14,
+  },
+
+  premiumStat: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#151922',
+    alignItems: 'center',
+  },
+
+  premiumStatValue: {
+    color: '#D8B36A',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+
+  premiumStatLabel: {
+    color: '#858B99',
+    fontSize: 8,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+
+  premiumHistoryTitle: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 14,
+    marginBottom: 7,
+  },
+
+  premiumHistory: {
+    gap: 5,
+  },
+
+  premiumHistoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 22,
+  },
+
+  premiumHistoryDate: {
+    width: 43,
+    color: '#858B99',
+    fontSize: 7,
+    fontWeight: '700',
+  },
+
+  premiumHistoryTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#252A35',
+    overflow: 'hidden',
+  },
+
+  premiumHistoryFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D8B36A',
+  },
+
+  premiumHistoryCount: {
+    width: 18,
+    textAlign: 'right',
+    color: '#858B99',
+    fontSize: 8,
+    fontWeight: '800',
+  },
 });
