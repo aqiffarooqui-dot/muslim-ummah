@@ -66,7 +66,11 @@ export function ThemeProvider({
         const saved =
           await getSelectedTheme();
 
-        setThemeId(saved);
+        if (saved !== 'midnight' && !isPremium) {
+          setThemeId('midnight');
+        } else {
+          setThemeId(saved);
+        }
       } catch (error) {
         console.error(
           'Theme loading error:',
@@ -78,7 +82,7 @@ export function ThemeProvider({
     }
 
     loadTheme();
-  }, []);
+  }, [isPremium]);
 
   async function setTheme(
     nextTheme: AppThemeId
