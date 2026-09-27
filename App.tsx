@@ -321,92 +321,24 @@ export default function App() {
     setShowBookmarks(false);
   };
 
-  const openQuran = async () => {
+  const openQuran = () => {
     setShowBookmarks(false);
     setShowAbout(false);
     setShowProfile(false);
     setShowPremium(false);
+    setShowPremiumTools(false);
     setShowAdmin(false);
 
-    try {
-      const progress =
-        await getQuranProgress();
-
-      if (progress) {
-        setQuranProgress(progress);
-
-        setQuranOpenRequest({
-          surahNumber:
-            progress.surahNumber,
-          ayahNumber:
-            progress.ayahNumber,
-        });
-      } else {
-        setQuranOpenRequest({
-          surahNumber: 1,
-          ayahNumber: 1,
-        });
-      }
-    } catch (err) {
-      console.error(
-        'Quran progress refresh error:',
-        err
-      );
-
-      setQuranOpenRequest({
-        surahNumber:
-          quranProgress.surahNumber,
-        ayahNumber:
-          quranProgress.ayahNumber,
-      });
-    }
-
+    /*
+     * The Quran tab should open the Quran browser,
+     * not automatically jump to the last-read Ayah.
+     *
+     * Continue Reading / bookmarks use quranOpenRequest
+     * when an exact Ayah needs to be opened.
+     */
+    setQuranOpenRequest(null);
     setActiveTab('Quran');
   };
-
-  const openContinueQuran =
-    async () => {
-      setShowBookmarks(false);
-      setShowAbout(false);
-      setShowProfile(false);
-      setShowPremium(false);
-      setShowAdmin(false);
-
-      try {
-        const progress =
-          await getQuranProgress();
-
-        if (progress) {
-          setQuranProgress(progress);
-
-          setQuranOpenRequest({
-            surahNumber:
-              progress.surahNumber,
-            ayahNumber:
-              progress.ayahNumber,
-          });
-        } else {
-          setQuranOpenRequest({
-            surahNumber: 1,
-            ayahNumber: 1,
-          });
-        }
-      } catch (err) {
-        console.error(
-          'Quran progress refresh error:',
-          err
-        );
-
-        setQuranOpenRequest({
-          surahNumber:
-            quranProgress.surahNumber,
-          ayahNumber:
-            quranProgress.ayahNumber,
-        });
-      }
-
-      setActiveTab('Quran');
-    };
 
   const openBookmarkedAyah = (
     surahNumber: number,
