@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +34,7 @@ export default function QuranBookmarksScreen({
 }: QuranBookmarksScreenProps) {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const { isPremium } = usePremium();
 
   useEffect(() => {
@@ -178,6 +180,26 @@ export default function QuranBookmarksScreen({
     );
   }
 
+  const normalizedSearch = search.trim().toLowerCase();
+
+  const filteredBookmarks = normalizedSearch
+    ? bookmarks.filter((bookmark) =>
+        (
+          bookmark.surahName +
+          ' ' +
+          bookmark.arabicSurahName +
+          ' ' +
+          bookmark.surahNumber +
+          ':' +
+          bookmark.ayahNumber +
+          ' ' +
+          bookmark.ayahText
+        )
+          .toLowerCase()
+          .includes(normalizedSearch)
+      )
+    : bookmarks;
+
   if (!isPremium) {
     return (
       <View style={styles.center}>
@@ -289,8 +311,39 @@ export default function QuranBookmarksScreen({
               </View>
             </View>
 
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color="#858B99" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search saved Ayahs..."
+                placeholderTextColor="#68707E"
+                style={styles.searchInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {search.length > 0 ? (
+                <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="#858B99" />
+                </Pressable>
+              ) : null}
+            </View>
+
+            <Text style={styles.resultCount}>
+              {filteredBookmarks.length} matching {filteredBookmarks.length === 1 ? 'Ayah' : 'Ayahs'}
+            </Text>
+
+            {filteredBookmarks.length === 0 ? (
+              <View style={styles.noResultsCard}>
+                <Ionicons name="search-outline" size={28} color="#D9C77A" />
+                <Text style={styles.noResultsTitle}>No matching Ayahs</Text>
+                <Text style={styles.noResultsText}>
+                  Try a Surah name, Ayah reference like 2:255, or Arabic text.
+                </Text>
+              </View>
+            ) : (
             <View style={styles.list}>
-              {bookmarks.map((bookmark) => (
+              {filteredBookmarks.map((bookmark) => (
                 <View
                   key={`${bookmark.surahNumber}:${bookmark.ayahNumber}`}
                   style={styles.bookmarkCard}
@@ -379,6 +432,7 @@ export default function QuranBookmarksScreen({
                 </View>
               ))}
             </View>
+            )};
           </>
         )}
 
@@ -492,6 +546,57 @@ const styles = StyleSheet.create({
     color: '#737E77',
     fontSize: 10,
     marginTop: 3,
+  },
+
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#11141B',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#252A35',
+    paddingHorizontal: 13,
+    minHeight: 48,
+    marginBottom: 8,
+  },
+
+  searchInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 13,
+    marginLeft: 9,
+    paddingVertical: 9,
+  },
+
+  resultCount: {
+    color: '#737E77',
+    fontSize: 10,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+
+  noResultsCard: {
+    backgroundColor: '#11141B',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#252A35',
+    padding: 24,
+    alignItems: 'center',
+  },
+
+  noResultsTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 10,
+  },
+
+  noResultsText: {
+    color: '#858B99',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 6,
   },
 
   list: {
