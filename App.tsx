@@ -24,10 +24,12 @@ import HadithScreen from './src/HadithScreen';
 import PrayerScreen from './src/PrayerScreen';
 import DuasScreen from './src/DuasScreen';
 import IslamicCalendarScreen from './src/IslamicCalendarScreen';
+import PremiumHomeCard, { PremiumPill } from './src/home/PremiumHomeCard';
 
 import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
 import { useAuth } from './src/auth/AuthProvider';
+import { usePremium } from './src/premium/PremiumProvider';
 import { useTheme } from './src/themes/ThemeProvider';
 import {
   formatCountdown,
@@ -107,6 +109,7 @@ const quickItems = [
 
 export default function App() {
   const { isAdmin } = useAuth();
+  const { isPremium } = usePremium();
   const { theme } = useTheme();
 
   const styles = createStyles(theme);
@@ -401,9 +404,12 @@ export default function App() {
             ASSALAMU ALAIKUM
           </Text>
 
-          <Text style={styles.appTitle}>
-            Muslim Ummah
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.appTitle}>
+              Muslim Ummah
+            </Text>
+            {isPremium ? <PremiumPill label="PREMIUM ACTIVE" /> : null}
+          </View>
         </View>
 
         <Pressable
@@ -418,6 +424,14 @@ export default function App() {
         </Pressable>
       </View>
 
+      {isPremium ? (
+        <PremiumHomeCard
+          prayerData={prayerData}
+          countdownSeconds={countdownSeconds}
+          onOpenPrayer={() => setActiveTab('Prayer')}
+          onOpenHadith={() => setActiveTab('Hadith')}
+        />
+      ) : (
       <View style={styles.heroCard}>
         <View
           style={styles.heroGlowOne}
@@ -478,6 +492,7 @@ export default function App() {
           />
         </Pressable>
       </View>
+      )}
 
       <View style={styles.sectionHeader}>
         <View>
@@ -1763,6 +1778,14 @@ function createStyles(
       fontSize: 25,
       fontWeight: '700',
       letterSpacing: -0.5,
+    },
+
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+      maxWidth: 330,
     },
 
     profileButton: {
