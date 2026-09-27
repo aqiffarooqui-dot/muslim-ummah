@@ -32,6 +32,8 @@ import {
 } from './src/quranTranslations';
 import { parseTranslationText } from './src/quranTranslationParser';
 import { usePremium } from './src/premium/PremiumProvider';
+import { useTheme } from './src/themes/ThemeProvider';
+import { createThemedStyles } from './src/themes/themeStyleMapper';
 import {
   DEFAULT_QURAN_READING_SETTINGS,
   getQuranReadingSettings,
@@ -76,6 +78,8 @@ function getBookmarkKey(
 }
 
 export default function QuranScreen({
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   onBack,
   initialSurah,
   initialAyah,
@@ -1755,7 +1759,7 @@ export default function QuranScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   container: {
     flex: 1,
     backgroundColor: '#080A0F',
