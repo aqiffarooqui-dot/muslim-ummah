@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
 import { Alert, Platform } from 'react-native';
 import { usePremium } from './premium/PremiumProvider';
+import { useTheme } from './themes/ThemeProvider';
+import { createThemedStyles } from './themes/themeStyleMapper';
 import {
   DEFAULT_QURAN_READING_SETTINGS,
   getQuranReadingSettings,
@@ -28,8 +30,7 @@ type QuranAyahCardProps = {
   isUrdu?: boolean;
   bookmarked?: boolean;
   onBookmarkPress?: () => void;
-};
-
+undefined
 export default function QuranAyahCard({
   surahNumber,
   ayahNumber,
@@ -40,6 +41,8 @@ export default function QuranAyahCard({
   onBookmarkPress,
 }: QuranAyahCardProps) {
   const { isPremium } = usePremium();
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const [readingSettings, setReadingSettings] =
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
   const [tafsirVisible, setTafsirVisible] = useState(false);
@@ -193,7 +196,7 @@ export default function QuranAyahCard({
   );
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   flex: { flex: 1 },
 
   premiumMiniBadge: {
@@ -362,4 +365,4 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 30,
   },
-});
+undefined
