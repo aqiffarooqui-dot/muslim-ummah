@@ -19,6 +19,22 @@ export type QuranInsights = {
   goalCompletedToday: boolean;
 };
 
+export type QuranReadingHistoryDay = {
+  date: string;
+  count: number;
+  goal: number;
+  goalCompleted: boolean;
+};
+
+export type QuranReadingSummary = {
+  last7Days: number;
+  last30Days: number;
+  last90Days: number;
+  activeDaysLast30: number;
+  totalUniqueAyahsLast90: number;
+  averagePerActiveDayLast30: number;
+};
+
 export async function saveQuranProgress(
   surahNumber: number,
   ayahNumber: number
@@ -264,5 +280,87 @@ export async function getQuranInsights(): Promise<QuranInsights> {
     ),
     goalCompletedToday:
       todayCount >= dailyGoal,
+  };
+}
+
+
+export async function getQuranReadingHistory(
+  days = 30
+): Promise<QuranReadingHistoryDay[]> {
+  const safeDays = Math.min(90, Math.max(1, Math.round(days)));
+  const activity = await getDailyActivity();
+  const goal = await getQuranDailyGoal();
+  const result: QuranReadingHistoryDay[] = [];
+
+  for (let offset = safeDays - 1; offset >= 0; offset -= 1) {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() - offset);
+
+    const dateKey = getTodayKey(date);
+    const count = Array.isArray(activity[dateKey])
+      ? activity[dateKey].length
+      : 0;
+
+    result.push({
+      date: dateKey,
+      count,
+      goal,
+      goalCompleted: count >= goal,
+    });
+  }
+
+  return result;
+}
+
+export async function getQuranReadingSummary(): Promise<QuranReadingSummary> {
+  const activity = await getDailyActivity();
+  const keys = Object.keys(activity)
+    .filter(
+      (key) =>
+        Array.isArray(activity[key]) &&
+        activity[key].length > 0
+    )
+    .sort();
+
+  const countSince = (days: number): number => {
+    const cutoff = new Date();
+    cutoff.setHours(12, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - (days - 1));
+    const cutoffKey = getTodayKey(cutoff);
+
+    return keys
+      .filter((key) => key >= cutoffKey)
+      .reduce(
+        (total, key) =>
+          total + activity[key].length,
+        0
+      );
+  };
+
+  const activeDaysLast30 = keys.filter((key) => {
+    const cutoff = new Date();
+    cutoff.setHours(12, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - 29);
+    return key >= getTodayKey(cutoff);
+  }).length;
+
+  const totalUniqueAyahsLast90 = keys.reduce(
+    (total, key) => total + activity[key].length,
+    0
+  );
+
+  return {
+    last7Days: countSince(7),
+    last30Days: countSince(30),
+    last90Days: countSince(90),
+    activeDaysLast30,
+    totalUniqueAyahsLast90,
+    averagePerActiveDayLast30:
+      activeDaysLast30 > 0
+        ? Math.round(
+            (countSince(30) / activeDaysLast30) * 10
+          ) / 10
+        : 0,
   };
 }
