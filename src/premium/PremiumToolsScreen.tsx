@@ -39,6 +39,17 @@ import {
   type QuranReadingSettings,
 } from '../quranReadingSettings';
 import { getPrayerSettings, PRAYER_METHODS, savePrayerSettings, type PrayerSettings } from '../prayer/prayerSettings';
+import {
+  getPrayerNotificationSettings,
+  PRAYER_NOTIFICATION_KEYS,
+  savePrayerNotificationSettings,
+  type PrayerNotificationSettings,
+} from '../prayer/prayerNotificationSettings';
+import {
+  cancelPrayerNotifications,
+  getScheduledPrayerNotificationCount,
+  schedulePrayerNotifications,
+} from '../prayer/prayerNotificationService';
 
 type FeatureState = 'active' | 'available' | 'planned';
 
@@ -96,7 +107,7 @@ const features: Array<{
     title: 'Advanced Prayer',
     description: 'Additional prayer and Islamic features.',
     icon: 'time-outline',
-    state: 'planned',
+    state: 'active',
   },
   {
     id: 'insights',
@@ -139,6 +150,18 @@ export default function PremiumToolsScreen({
   const [readingSettings, setReadingSettings] =
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
   const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>({ method: 1, school: 1 });
+  const [prayerNotifications, setPrayerNotifications] =
+    useState<PrayerNotificationSettings>({
+      enabled: false,
+      prayers: {
+        Fajr: true,
+        Dhuhr: true,
+        Asr: true,
+        Maghrib: true,
+        Isha: true,
+      },
+    });
+  const [scheduledPrayerNotifications, setScheduledPrayerNotifications] = useState(0);
   const [quranInsights, setQuranInsights] =
     useState<QuranInsights>({
       todayCount: 0,
@@ -162,6 +185,8 @@ export default function PremiumToolsScreen({
     setReadingSettings(await getQuranReadingSettings());
     setQuranInsights(await getQuranInsights());
     setPrayerSettings(await getPrayerSettings());
+    setPrayerNotifications(await getPrayerNotificationSettings());
+    setScheduledPrayerNotifications(await getScheduledPrayerNotificationCount());
   }, []);
 
   useEffect(() => {
@@ -529,6 +554,124 @@ export default function PremiumToolsScreen({
             </Pressable>
           ))}
         </View>
+
+        <Text style={styles.controlLabel}>Prayer notifications</Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons name="notifications-outline" size={24} color="#D8B36A" />
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>
+              Prayer time reminders
+            </Text>
+            <Text style={styles.text}>
+              Schedule the five daily prayers for the next 7 days using your current location and prayer calculation settings.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <Pressable
+            disabled={busy}
+            style={[
+              styles.action,
+              prayerNotifications.enabled && styles.actionActive,
+              busy && styles.disabled,
+            ]}
+            onPress={() =>
+              run(async () => {
+                const next = {
+                  ...prayerNotifications,
+                  enabled: !prayerNotifications.enabled,
+                };
+                if (next.enabled) {
+                  await schedulePrayerNotifications(next);
+                } else {
+                  await cancelPrayerNotifications();
+                }
+                await savePrayerNotificationSettings(next);
+                setPrayerNotifications(next);
+              }, prayerNotifications.enabled
+                ? 'Prayer notifications turned off.'
+                : 'Prayer notifications enabled and scheduled.')
+            }
+          >
+            <Text style={styles.actionText}>
+              {prayerNotifications.enabled ? 'ON' : 'OFF'}
+            </Text>
+          </Pressable>
+
+          <View style={styles.valuePill}>
+            <Text style={styles.valueText}>
+              {scheduledPrayerNotifications} scheduled
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.controlLabel}>Individual prayers</Text>
+
+        <View style={styles.prayerNotificationGrid}>
+          {PRAYER_NOTIFICATION_KEYS.map((key) => {
+            const active = prayerNotifications.prayers[key];
+
+            return (
+              <Pressable
+                key={key}
+                disabled={busy || !prayerNotifications.enabled}
+                style={[
+                  styles.prayerNotificationButton,
+                  active && prayerNotifications.enabled && styles.prayerNotificationButtonActive,
+                  (busy || !prayerNotifications.enabled) && styles.disabled,
+                ]}
+                onPress={() =>
+                  run(async () => {
+                    const next = {
+                      ...prayerNotifications,
+                      prayers: {
+                        ...prayerNotifications.prayers,
+                        [key]: !active,
+                      },
+                    };
+                    await savePrayerNotificationSettings(next);
+                    setPrayerNotifications(next);
+                    await schedulePrayerNotifications(next);
+                  }, key + (active ? ' notification disabled.' : ' notification enabled.'))
+                }
+              >
+                <Ionicons
+                  name={active ? 'notifications' : 'notifications-off-outline'}
+                  size={17}
+                  color={active && prayerNotifications.enabled ? '#D8B36A' : '#858B99'}
+                />
+                <Text
+                  style={[
+                    styles.prayerNotificationText,
+                    active && prayerNotifications.enabled && styles.prayerNotificationTextActive,
+                  ]}
+                >
+                  {key}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Pressable
+          disabled={busy || !prayerNotifications.enabled}
+          style={[styles.action, busy && styles.disabled, !prayerNotifications.enabled && styles.disabled]}
+          onPress={() =>
+            run(async () => {
+              await schedulePrayerNotifications(prayerNotifications);
+            }, 'Prayer notification schedule refreshed for the next 7 days.')
+          }
+        >
+          <Text style={styles.actionText}>Refresh 7-Day Schedule</Text>
+        </Pressable>
+
+        <Text style={styles.text}>
+          Prayer notifications use the device's local time. A native Android/iOS build is required; the web version cannot schedule device notifications.
+        </Text>
 
         <Text style={styles.section}>
           Reading Goals & Streak
@@ -1228,6 +1371,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 9,
+  },
+
+  prayerNotificationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 9,
+  },
+
+  prayerNotificationButton: {
+    width: '31%',
+    minHeight: 48,
+    paddingHorizontal: 9,
+    paddingVertical: 9,
+    borderRadius: 13,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#252A35',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+
+  prayerNotificationButtonActive: {
+    backgroundColor: '#211F18',
+    borderColor: '#806B3D',
+  },
+
+  prayerNotificationText: {
+    color: '#858B99',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+
+  prayerNotificationTextActive: {
+    color: '#D8B36A',
   },
 
   actionActive: {
