@@ -94,14 +94,37 @@ export default function QuranScreen({
   const ayahOffsetsRef =
     useRef<Record<number, number>>({});
 
-  const initialNavigationHandled =
-    useRef(false);
+  /*
+   * The Ayah that we need to open exactly.
+   *
+   * This stays pending until the corresponding
+   * Ayah has actually been laid out on screen.
+   */
+  const pendingNavigationRef =
+    useRef<{
+      surahNumber: number;
+      ayahNumber: number;
+    } | null>(null);
+
+  /*
+   * Used to retry exact scrolling after the
+   * ScrollView/content has finished laying out.
+   */
+  const navigationRetryTimeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
+
+  const lastNavigationKeyRef =
+    useRef<string | null>(null);
 
   const lastSavedProgressRef =
     useRef<string | null>(null);
 
   const progressSaveTimeoutRef =
-    useRef<ReturnType<typeof setTimeout> | null>(null);
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
 
   useEffect(() => {
     loadQuran();
@@ -118,10 +141,23 @@ export default function QuranScreen({
     loadTranslation(language);
   }, [language]);
 
+  /*
+   * Handle EVERY navigation request.
+   *
+   * We intentionally do NOT use a permanent
+   * "initialNavigationHandled" flag here.
+   *
+   * This allows:
+   * - Home -> Continue Reading
+   * - Bookmark -> exact Ayah
+   * - another Bookmark -> another Ayah
+   * - reopening the same Ayah
+   * to work correctly.
+   */
   useEffect(() => {
     if (
-      initialNavigationHandled.current ||
       !initialSurah ||
+      initialSurah <= 0 ||
       quran.length === 0
     ) {
       return;
@@ -136,58 +172,187 @@ export default function QuranScreen({
       return;
     }
 
-    initialNavigationHandled.current = true;
-    setSelectedSurah(initialSurah);
-
-    saveQuranProgress(
-      initialSurah,
+    const requestedAyah =
       initialAyah && initialAyah > 0
-        ? initialAyah
-        : 1
-    ).catch((err) => {
-      console.error(
-        'Quran progress save error:',
-        err
-      );
-    });
+        ? Math.min(
+            initialAyah,
+            requestedSurah.ayahCount
+          )
+        : 1;
+
+    const navigationKey =
+      `${initialSurah}:${requestedAyah}`;
+
+    /*
+     * If this is already the same active request,
+     * don't unnecessarily reset the reader.
+     *
+     * The exact scroll effect below can still retry
+     * if the Ayah layout wasn't ready yet.
+     */
+    if (
+      lastNavigationKeyRef.current !==
+      navigationKey
+    ) {
+      lastNavigationKeyRef.current =
+        navigationKey;
+
+      pendingNavigationRef.current = {
+        surahNumber: initialSurah,
+        ayahNumber: requestedAyah,
+      };
+
+      ayahOffsetsRef.current = {};
+
+      if (progressSaveTimeoutRef.current) {
+        clearTimeout(
+          progressSaveTimeoutRef.current
+        );
+
+        progressSaveTimeoutRef.current =
+          null;
+      }
+
+      lastSavedProgressRef.current = null;
+
+      setSelectedSurah(initialSurah);
+
+      saveQuranProgress(
+        initialSurah,
+        requestedAyah
+      ).catch((err) => {
+        console.error(
+          'Quran navigation progress save error:',
+          err
+        );
+      });
+    } else {
+      /*
+       * Same request can still need a retry when
+       * the component remained mounted.
+       */
+      pendingNavigationRef.current = {
+        surahNumber: initialSurah,
+        ayahNumber: requestedAyah,
+      };
+    }
   }, [quran, initialSurah, initialAyah]);
 
+  /*
+   * Reset layout tracking whenever the Surah changes.
+   */
   useEffect(() => {
     ayahOffsetsRef.current = {};
 
     if (progressSaveTimeoutRef.current) {
-      clearTimeout(progressSaveTimeoutRef.current);
+      clearTimeout(
+        progressSaveTimeoutRef.current
+      );
+
       progressSaveTimeoutRef.current = null;
     }
 
     lastSavedProgressRef.current = null;
   }, [selectedSurah]);
 
-  useEffect(() => {
+  /*
+   * Try to move to the requested Ayah.
+   *
+   * We wait until the specific Ayah has an onLayout
+   * position. If it is not ready yet, retry shortly.
+   */
+  function scrollToPendingAyah() {
+    const pending =
+      pendingNavigationRef.current;
+
+    if (!pending) {
+      return;
+    }
+
     if (
-      selectedSurah === null ||
-      !initialAyah ||
-      initialAyah <= 0
+      selectedSurah !== pending.surahNumber
     ) {
       return;
     }
 
-    const timer = setTimeout(() => {
-      const offset =
-        ayahOffsetsRef.current[initialAyah];
+    const offset =
+      ayahOffsetsRef.current[
+        pending.ayahNumber
+      ];
 
-      if (typeof offset !== 'number') {
-        return;
+    if (typeof offset !== 'number') {
+      if (
+        navigationRetryTimeoutRef.current
+      ) {
+        clearTimeout(
+          navigationRetryTimeoutRef.current
+        );
       }
 
-      readerScrollRef.current?.scrollTo({
-        y: Math.max(offset - 20, 0),
-        animated: true,
-      });
-    }, 250);
+      navigationRetryTimeoutRef.current =
+        setTimeout(() => {
+          navigationRetryTimeoutRef.current =
+            null;
 
-    return () => clearTimeout(timer);
-  }, [selectedSurah, initialAyah]);
+          scrollToPendingAyah();
+        }, 150);
+
+      return;
+    }
+
+    if (
+      navigationRetryTimeoutRef.current
+    ) {
+      clearTimeout(
+        navigationRetryTimeoutRef.current
+      );
+
+      navigationRetryTimeoutRef.current =
+        null;
+    }
+
+    readerScrollRef.current?.scrollTo({
+      y: Math.max(offset - 24, 0),
+      animated: false,
+    });
+
+    /*
+     * Once exact navigation succeeds, clear the
+     * pending target.
+     */
+    pendingNavigationRef.current = null;
+  }
+
+  /*
+   * This fires when the ScrollView content size
+   * becomes available/changes.
+   */
+  function handleContentSizeChange() {
+    scrollToPendingAyah();
+  }
+
+  /*
+   * This fires after an individual Ayah is laid out.
+   * If it is our requested Ayah, immediately attempt
+   * the exact scroll.
+   */
+  function handleAyahLayout(
+    ayahNumber: number,
+    y: number
+  ) {
+    ayahOffsetsRef.current[ayahNumber] = y;
+
+    const pending =
+      pendingNavigationRef.current;
+
+    if (
+      pending &&
+      pending.surahNumber === selectedSurah &&
+      pending.ayahNumber === ayahNumber
+    ) {
+      scrollToPendingAyah();
+    }
+  }
 
   function handleReaderScroll(scrollY: number) {
     if (selectedSurah === null) {
@@ -207,40 +372,52 @@ export default function QuranScreen({
           Number.isFinite(entry.offset) &&
           entry.offset <= scrollY + 140
       )
-      .sort((a, b) => b.offset - a.offset);
+      .sort(
+        (a, b) =>
+          b.offset - a.offset
+      );
 
     if (entries.length === 0) {
       return;
     }
 
-    const currentAyah = entries[0].ayahNumber;
-    const progressKey = `${selectedSurah}:${currentAyah}`;
+    const currentAyah =
+      entries[0].ayahNumber;
+
+    const progressKey =
+      `${selectedSurah}:${currentAyah}`;
 
     if (
-      lastSavedProgressRef.current === progressKey
+      lastSavedProgressRef.current ===
+      progressKey
     ) {
       return;
     }
 
-    lastSavedProgressRef.current = progressKey;
+    lastSavedProgressRef.current =
+      progressKey;
 
     if (progressSaveTimeoutRef.current) {
-      clearTimeout(progressSaveTimeoutRef.current);
+      clearTimeout(
+        progressSaveTimeoutRef.current
+      );
     }
 
-    progressSaveTimeoutRef.current = setTimeout(() => {
-      saveQuranProgress(
-        selectedSurah,
-        currentAyah
-      ).catch((err) => {
-        console.error(
-          'Quran scroll progress save error:',
-          err
-        );
-      });
+    progressSaveTimeoutRef.current =
+      setTimeout(() => {
+        saveQuranProgress(
+          selectedSurah,
+          currentAyah
+        ).catch((err) => {
+          console.error(
+            'Quran scroll progress save error:',
+            err
+          );
+        });
 
-      progressSaveTimeoutRef.current = null;
-    }, 250);
+        progressSaveTimeoutRef.current =
+          null;
+      }, 250);
   }
 
   async function initializeBookmarkState() {
@@ -463,6 +640,9 @@ export default function QuranScreen({
             styles.readerContent
           }
           showsVerticalScrollIndicator={false}
+          onContentSizeChange={
+            handleContentSizeChange
+          }
           onScroll={(event) =>
             handleReaderScroll(
               event.nativeEvent.contentOffset.y
@@ -473,6 +653,23 @@ export default function QuranScreen({
           <Pressable
             style={styles.backButton}
             onPress={() => {
+              if (
+                navigationRetryTimeoutRef.current
+              ) {
+                clearTimeout(
+                  navigationRetryTimeoutRef.current
+                );
+
+                navigationRetryTimeoutRef.current =
+                  null;
+              }
+
+              pendingNavigationRef.current =
+                null;
+
+              lastNavigationKeyRef.current =
+                null;
+
               setSelectedSurah(null);
 
               if (onBack) {
@@ -606,10 +803,10 @@ export default function QuranScreen({
                 <View
                   key={`${currentSurah.number}-${ayah.number}`}
                   onLayout={(event) => {
-                    ayahOffsetsRef.current[
-                      ayah.number
-                    ] =
-                      event.nativeEvent.layout.y;
+                    handleAyahLayout(
+                      ayah.number,
+                      event.nativeEvent.layout.y
+                    );
                   }}
                 >
                   <QuranAyahCard
