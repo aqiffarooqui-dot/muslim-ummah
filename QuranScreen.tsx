@@ -1054,6 +1054,7 @@ export default function QuranScreen({
                   }}
                 >
                   <QuranAyahCard
+                    surahNumber={currentSurah.number}
                     ayahNumber={ayah.number}
                     arabicText={ayah.text}
                     translation={
