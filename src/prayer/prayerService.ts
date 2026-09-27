@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getPrayerSettings } from './prayerSettings';
 
 export type PrayerKey =
@@ -23,6 +24,7 @@ export type PrayerData = {
   prayers: PrayerTime[];
   latitude: number;
   longitude: number;
+  timezone?: string;
 };
 
 type AlAdhanResponse = {
@@ -94,25 +96,57 @@ function buildPrayerList(timings: Record<string, string>): PrayerTime[] {
     }));
 }
 
-function fallbackPrayerData(): PrayerData {
-  const fallback = {
-    Fajr: '05:02',
-    Sunrise: '06:20',
-    Dhuhr: '12:18',
-    Asr: '16:42',
-    Maghrib: '18:29',
-    Isha: '19:48',
-  };
+const CACHE_PREFIX = '@muslim_ummah_prayer_cache_v2_';
 
-  return {
-    city: 'New Delhi',
-    country: 'India',
-    hijriDate: '',
-    prayers: buildPrayerList(fallback),
-    latitude: DEFAULT_LATITUDE,
-    longitude: DEFAULT_LONGITUDE,
-  };
+function prayerCacheKey(date: Date, method: number, school: number): string {
+  return `${CACHE_PREFIX}${getDateString(date)}_${method}_${school}`;
 }
+
+async function readPrayerCache(
+  date: Date,
+  method: number,
+  school: number
+): Promise<PrayerData | null> {
+  try {
+    const raw = await AsyncStorage.getItem(
+      prayerCacheKey(date, method, school)
+    );
+
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as PrayerData;
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.prayers) ||
+      typeof parsed.latitude !== 'number' ||
+      typeof parsed.longitude !== 'number'
+    ) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function writePrayerCache(
+  date: Date,
+  method: number,
+  school: number,
+  data: PrayerData
+): Promise<void> {
+  try {
+    await AsyncStorage.setItem(
+      prayerCacheKey(date, method, school),
+      JSON.stringify(data)
+    );
+  } catch {
+    // Cache is only an offline safety net.
+  }
+}
+
 
 async function getCoordinates() {
   const permission =
@@ -173,10 +207,17 @@ async function getCoordinates() {
 
     const place = places[0];
 
-    if (place?.city || place?.district) {
+    if (
+      place?.city ||
+      place?.district ||
+      place?.subregion ||
+      place?.region
+    ) {
       city =
         place.city ||
         place.district ||
+        place.subregion ||
+        place.region ||
         'Current location';
     }
 
@@ -228,13 +269,15 @@ export async function getPrayerTimesForDateAtLocation(
 }
 
 export async function getTodayPrayerData(): Promise<PrayerData> {
+  const date = new Date();
+  const settings = await getPrayerSettings();
+
   try {
     const location = await getCoordinates();
-    const date = getDateString();
-    const settings = await getPrayerSettings();
+    const dateString = getDateString(date);
 
     const url =
-      `${API_BASE}/timings/${date}` +
+      `${API_BASE}/timings/${dateString}` +
       `?latitude=${location.latitude}` +
       `&longitude=${location.longitude}` +
       `&method=${settings.method}` +
@@ -260,7 +303,7 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
 
     const hijri = json.data.date?.hijri;
 
-    return {
+    const data: PrayerData = {
       city: location.city,
       country: location.country,
       hijriDate:
@@ -272,7 +315,17 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
       prayers: buildPrayerList(json.data.timings),
       latitude: location.latitude,
       longitude: location.longitude,
+      timezone: json.data.meta?.timezone,
     };
+
+    await writePrayerCache(
+      date,
+      settings.method,
+      settings.school,
+      data
+    );
+
+    return data;
   } catch (error) {
     console.warn(
       'Prayer data loading failed:',
@@ -286,7 +339,17 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
       throw error;
     }
 
-    return fallbackPrayerData();
+    const cached = await readPrayerCache(
+      date,
+      settings.method,
+      settings.school
+    );
+
+    if (cached) {
+      return cached;
+    }
+
+    throw error;
   }
 }
 
@@ -294,11 +357,10 @@ export function getNextPrayer(
   prayers: PrayerTime[],
   now = new Date()
 ) {
-  const currentMinutes =
-    now.getHours() * 60 + now.getMinutes();
-
   const currentSeconds =
-    currentMinutes * 60 + now.getSeconds();
+    now.getHours() * 3600 +
+    now.getMinutes() * 60 +
+    now.getSeconds();
 
   const next =
     prayers.find(
@@ -332,6 +394,131 @@ export function getNextPrayer(
   return {
     ...next,
     remainingSeconds: remaining,
+  };
+}
+
+export function getCurrentPrayerWindow(
+  prayers: PrayerTime[],
+  now = new Date()
+) {
+  const currentSeconds =
+    now.getHours() * 3600 +
+    now.getMinutes() * 60 +
+    now.getSeconds();
+
+  const obligatory = prayers.filter(
+    (prayer) =>
+      prayer.key !== 'Sunrise'
+  );
+
+  for (let index = 0; index < obligatory.length; index += 1) {
+    const current = obligatory[index];
+    const next = obligatory[index + 1];
+
+    const start = current.minutes * 60;
+    const end =
+      next?.minutes * 60 ??
+      (24 * 60 * 60 +
+        (obligatory[0]?.minutes ?? 0) * 60);
+
+    const normalizedCurrent =
+      current.key === 'Isha' &&
+      currentSeconds < (obligatory[0]?.minutes ?? 0) * 60
+        ? currentSeconds + 24 * 60 * 60
+        : currentSeconds;
+
+    if (
+      normalizedCurrent >= start &&
+      normalizedCurrent < end
+    ) {
+      return {
+        name: current.name,
+        key: current.key,
+        endsAtMinutes:
+          next?.minutes ??
+          (obligatory[0]?.minutes ?? 0),
+        remainingSeconds:
+          end - normalizedCurrent,
+      };
+    }
+  }
+
+  return null;
+}
+
+export function getOptionalPrayerWindows(
+  prayers: PrayerTime[]
+) {
+  const sunrise =
+    prayers.find(
+      (prayer) => prayer.key === 'Sunrise'
+    )?.minutes;
+
+  const dhuhr =
+    prayers.find(
+      (prayer) => prayer.key === 'Dhuhr'
+    )?.minutes;
+
+  if (
+    sunrise === undefined ||
+    dhuhr === undefined
+  ) {
+    return null;
+  }
+
+  const ishraqStart = sunrise + 20;
+  const chashtStart = sunrise + 20;
+  const chashtEnd = Math.max(
+    chashtStart,
+    dhuhr - 10
+  );
+
+  return {
+    ishraqStart,
+    chashtStart,
+    chashtEnd,
+    zawalStart: dhuhr - 10,
+    dhuhr,
+  };
+}
+
+export function getNightWindow(
+  prayers: PrayerTime[]
+) {
+  const maghrib =
+    prayers.find(
+      (prayer) => prayer.key === 'Maghrib'
+    )?.minutes;
+
+  const fajr =
+    prayers.find(
+      (prayer) => prayer.key === 'Fajr'
+    )?.minutes;
+
+  const isha =
+    prayers.find(
+      (prayer) => prayer.key === 'Isha'
+    )?.minutes;
+
+  if (
+    maghrib === undefined ||
+    fajr === undefined ||
+    isha === undefined
+  ) {
+    return null;
+  }
+
+  const nightStart = isha;
+  const nightEnd = fajr + 24 * 60;
+
+  return {
+    maghrib,
+    isha,
+    nightStart,
+    nightEnd,
+    midnight: Math.round(
+      (isha + (fajr + 24 * 60)) / 2
+    ) % (24 * 60),
   };
 }
 
