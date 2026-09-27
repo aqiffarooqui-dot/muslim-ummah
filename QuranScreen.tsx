@@ -901,17 +901,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginLeft: 8,
   },
-
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 14,
-    marginLeft: 9,
-  },
-
-  surahArabic: {
-    color: '#E9E1D2',
-    fontSize: 20,
-    marginBottom: 5,
-  },
 });
+
