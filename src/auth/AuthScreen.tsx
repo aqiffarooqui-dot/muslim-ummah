@@ -20,8 +20,12 @@ import {
 } from '@expo/vector-icons';
 
 import { useAuth } from './AuthProvider';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 export default function AuthScreen() {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const {
     signIn,
     signUp,
@@ -511,7 +515,7 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   safe: {
     flex: 1,
     backgroundColor: '#080A0F',
@@ -734,4 +738,4 @@ const styles = StyleSheet.create({
     marginTop: 22,
     paddingHorizontal: 15,
   },
-});
+};
