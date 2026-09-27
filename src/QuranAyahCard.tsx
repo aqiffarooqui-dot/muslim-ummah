@@ -129,6 +129,12 @@ export default function QuranAyahCard({
         </View>
 
         <View style={styles.actions}>
+          {isPremium && (
+            <View style={styles.premiumMiniBadge}>
+              <Ionicons name="sparkles" size={10} color="#D8B36A" />
+              <Text style={styles.premiumMiniBadgeText}>PREMIUM</Text>
+            </View>
+          )}
         <Pressable onPress={openTafsir} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Open Tafsir for Ayah ${ayahNumber}`}>
           <Ionicons name={isPremium ? 'book-outline' : 'lock-closed-outline'} size={21} color={isPremium ? '#D8B36A' : '#777D89'} />
         </Pressable>
@@ -193,6 +199,24 @@ export default function QuranAyahCard({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+
+  premiumMiniBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#211F18',
+    borderWidth: 1,
+    borderColor: '#806B3D',
+  },
+
+  premiumMiniBadgeText: {
+    color: '#D8B36A',
+    fontSize: 6,
+    fontWeight: '900',
+  },
 
   modalBackdrop: {
     flex: 1,
