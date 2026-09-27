@@ -10,10 +10,12 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 import {
   getAllUserProfiles,
@@ -37,6 +39,8 @@ type AdminPremiumScreenProps = {
 export default function AdminPremiumScreen({
   onBack,
 }: AdminPremiumScreenProps) {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const [users, setUsers] =
     useState<FirestoreUserProfile[]>([]);
 
@@ -656,8 +660,7 @@ export default function AdminPremiumScreen({
   );
 }
 
-const styles =
-  StyleSheet.create({
+const rawStyles = {
     safe: {
       flex: 1,
       backgroundColor: '#080A0F',
@@ -965,4 +968,4 @@ const styles =
       fontSize: 12,
       fontWeight: '700',
     },
-  });
+  };;
