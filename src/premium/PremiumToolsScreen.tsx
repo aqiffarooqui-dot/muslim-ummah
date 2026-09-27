@@ -1195,10 +1195,43 @@ const styles = StyleSheet.create({
     color: '#D8B36A',
   },
 
+  horizontalOptions: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+
+  optionPill: {
+    maxWidth: 220,
+    padding: 11,
+    borderRadius: 13,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#252A35',
+  },
+
+  optionPillActive: {
+    backgroundColor: '#211F18',
+    borderColor: '#806B3D',
+  },
+
+  optionText: {
+    color: '#858B99',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+
+  optionTextActive: {
+    color: '#D8B36A',
+  },
+
   row: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 9,
+  },
+
+  actionActive: {
+    backgroundColor: '#2A261C',
   },
 
   action: {
