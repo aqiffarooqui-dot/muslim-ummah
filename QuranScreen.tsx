@@ -820,9 +820,15 @@ export default function QuranScreen({
     }
   }
 
+  const normalizedSearch = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\\u0300-\\u036f]/g, '')
+      .trim();
+
   const filteredSurahs = useMemo(() => {
-    const query =
-      search.trim().toLowerCase();
+    const query = normalizedSearch(search);
 
     if (!query) {
       return SURAHS;
@@ -830,17 +836,80 @@ export default function QuranScreen({
 
     return SURAHS.filter(
       (surah) =>
-        surah.name
-          .toLowerCase()
-          .includes(query) ||
-        surah.englishName
-          .toLowerCase()
-          .includes(query) ||
-        String(surah.number).includes(
-          query
-        )
+        normalizedSearch(surah.name).includes(query) ||
+        normalizedSearch(surah.englishName).includes(query) ||
+        normalizedSearch(surah.arabicName).includes(query) ||
+        String(surah.number) === query
     );
   }, [search]);
+
+  const ayahSearchResults = useMemo(() => {
+    const query = normalizedSearch(search);
+
+    if (!query || quran.length === 0) {
+      return [];
+    }
+
+    const exactReference = query.match(/^(\\d{1,3})\\s*[:.-]\\s*(\\d{1,3})$/);
+    const results: Array<{
+      surahNumber: number;
+      ayahNumber: number;
+      text: string;
+    }> = [];
+
+    for (const surah of quran) {
+      for (const ayah of surah.ayahs) {
+        const referenceMatches =
+          exactReference &&
+          Number(exactReference[1]) === surah.number &&
+          Number(exactReference[2]) === ayah.number;
+
+        const textMatches =
+          normalizedSearch(ayah.text).includes(query);
+
+        if (referenceMatches || textMatches) {
+          results.push({
+            surahNumber: surah.number,
+            ayahNumber: ayah.ayahNumber,
+            text: ayah.text,
+          });
+        }
+
+        if (results.length >= 40) {
+          return results;
+        }
+      }
+    }
+
+    return results;
+  }, [quran, search]);
+
+  function openAyahFromSearch(
+    surahNumber: number,
+    ayahNumber: number
+  ) {
+    pendingNavigationRef.current = {
+      surahNumber,
+      ayahNumber,
+    };
+    exactNavigationActiveRef.current = true;
+    ayahOffsetsRef.current = {};
+    lastNavigationKeyRef.current =
+      'search:' + surahNumber + ':' + ayahNumber;
+
+    setSelectedJuz(null);
+    setSelectedSurah(surahNumber);
+
+    saveQuranProgress(
+      surahNumber,
+      ayahNumber
+    ).catch((err) => {
+      console.error(
+        'Quran search navigation progress error:',
+        err
+      );
+    });
+  }
 
   const currentSurah = quran.find(
     (surah) =>
@@ -1329,6 +1398,65 @@ export default function QuranScreen({
           />
         </View>
 
+        {search.trim().length > 0 && (
+          <View style={styles.searchResultsSection}>
+            <View style={styles.searchResultsHeader}>
+              <Text style={styles.sectionTitle}>
+                Quran Ayahs
+              </Text>
+              <Text style={styles.searchResultsCount}>
+                {ayahSearchResults.length > 0
+                  ? 'Showing up to ' + ayahSearchResults.length
+                  : 'No Ayah match'}
+              </Text>
+            </View>
+
+            {ayahSearchResults.map((result) => {
+              const surah = SURAHS[result.surahNumber - 1];
+
+              return (
+                <Pressable
+                  key={result.surahNumber + ':' + result.ayahNumber}
+                  style={styles.searchResultCard}
+                  onPress={() =>
+                    openAyahFromSearch(
+                      result.surahNumber,
+                      result.ayahNumber
+                    )
+                  }
+                >
+                  <View style={styles.searchResultTop}>
+                    <Text style={styles.searchResultReference}>
+                      {result.surahNumber}:{result.ayahNumber}
+                    </Text>
+                    <Text style={styles.searchResultSurah}>
+                      {surah?.englishName ?? 'Quran'}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={styles.searchResultArabic}
+                    numberOfLines={3}
+                  >
+                    {result.text}
+                  </Text>
+
+                  <View style={styles.searchResultAction}>
+                    <Text style={styles.searchResultActionText}>
+                      Open Ayah
+                    </Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={15}
+                      color="#D8B36A"
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>
           30 Paras / Juz
         </Text>
@@ -1597,6 +1725,73 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 28,
     marginBottom: 13,
+  },
+
+  searchResultsSection: {
+    marginBottom: 8,
+  },
+
+  searchResultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+
+  searchResultsCount: {
+    color: '#777B8A',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  searchResultCard: {
+    backgroundColor: '#11141B',
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#252A36',
+  },
+
+  searchResultTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+
+  searchResultReference: {
+    color: '#D8B36A',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+
+  searchResultSurah: {
+    color: '#9DA1AE',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  searchResultArabic: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    lineHeight: 38,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+
+  searchResultAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 5,
+    marginTop: 8,
+  },
+
+  searchResultActionText: {
+    color: '#D8B36A',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
   juzList: { gap: 10 },
