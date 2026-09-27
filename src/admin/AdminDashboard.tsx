@@ -21,6 +21,16 @@ import {
   getUserCount,
 } from '../firebase/firestore';
 
+import {
+  getPremiumSubscription,
+} from '../premium/premiumService';
+
+import {
+  isPremiumActive,
+} from '../premium/premiumAccess';
+
+import AdminPremiumScreen from './AdminPremiumScreen';
+
 type AdminDashboardProps = {
   onBack: () => void;
 };
@@ -37,11 +47,20 @@ export default function AdminDashboard({
   const [activeUsers, setActiveUsers] =
     useState(0);
 
+  const [premiumUsers, setPremiumUsers] =
+    useState(0);
+
+  const [expiringSoon, setExpiringSoon] =
+    useState(0);
+
   const [loading, setLoading] =
     useState(true);
 
   const [error, setError] =
     useState<string | null>(null);
+
+  const [showPremium, setShowPremium] =
+    useState(false);
 
   const loadDashboard =
     useCallback(async () => {
@@ -59,8 +78,68 @@ export default function AdminDashboard({
           getAllUserProfiles(),
         ]);
 
+        let activePremium = 0;
+        let soonExpiring = 0;
+
+        const now = Date.now();
+        const sevenDays =
+          now +
+          7 * 24 * 60 * 60 * 1000;
+
+        const nonAdminUsers =
+          allUsers.filter(
+            (user) =>
+              user.role !== 'admin'
+          );
+
+        await Promise.all(
+          nonAdminUsers.map(
+            async (user) => {
+              try {
+                const subscription =
+                  await getPremiumSubscription(
+                    user.uid
+                  );
+
+                if (
+                  isPremiumActive(
+                    subscription
+                  )
+                ) {
+                  activePremium += 1;
+
+                  if (
+                    subscription?.expiresAt
+                  ) {
+                    const expiry =
+                      new Date(
+                        subscription.expiresAt
+                      ).getTime();
+
+                    if (
+                      expiry > now &&
+                      expiry <= sevenDays
+                    ) {
+                      soonExpiring += 1;
+                    }
+                  }
+                }
+              } catch (premiumError) {
+                console.error(
+                  'Premium lookup failed:',
+                  premiumError
+                );
+              }
+            }
+          )
+        );
+
         setTotalUsers(userCount);
         setActiveUsers(activeCount);
+        setPremiumUsers(activePremium);
+        setExpiringSoon(
+          soonExpiring
+        );
         setUsers(allUsers);
       } catch (loadError) {
         console.error(
@@ -126,6 +205,17 @@ export default function AdminDashboard({
     );
   }
 
+  if (showPremium) {
+    return (
+      <AdminPremiumScreen
+        onBack={() => {
+          setShowPremium(false);
+          loadDashboard();
+        }}
+      />
+    );
+  }
+
   return (
     <SafeAreaView
       style={styles.safe}
@@ -141,9 +231,7 @@ export default function AdminDashboard({
             ]}
           >
             <Text
-              style={
-                styles.backIcon
-              }
+              style={styles.backIcon}
             >
               ‹
             </Text>
@@ -279,16 +367,23 @@ export default function AdminDashboard({
                 PREMIUM
               </Text>
 
-              <Text
-                style={styles.statValue}
-              >
-                —
-              </Text>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#D8B36A"
+                />
+              ) : (
+                <Text
+                  style={styles.statValue}
+                >
+                  {premiumUsers}
+                </Text>
+              )}
 
               <Text
                 style={styles.statHint}
               >
-                Premium module next
+                Active Premium users
               </Text>
             </View>
 
@@ -301,16 +396,23 @@ export default function AdminDashboard({
                 EXPIRING SOON
               </Text>
 
-              <Text
-                style={styles.statValue}
-              >
-                —
-              </Text>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#D8B36A"
+                />
+              ) : (
+                <Text
+                  style={styles.statValue}
+                >
+                  {expiringSoon}
+                </Text>
+              )}
 
               <Text
                 style={styles.statHint}
               >
-                Premium module next
+                Within next 7 days
               </Text>
             </View>
           </View>
@@ -360,6 +462,49 @@ export default function AdminDashboard({
             Management
           </Text>
 
+          <Pressable
+            onPress={() =>
+              setShowPremium(true)
+            }
+            style={({ pressed }) => [
+              styles.managementCard,
+              pressed &&
+                styles.pressed,
+            ]}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                ⭐
+              </Text>
+            </View>
+
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Premium
+              </Text>
+
+              <Text
+                style={styles.cardDescription}
+              >
+                Activate or cancel Premium access for users.
+              </Text>
+            </View>
+
+            <Text
+              style={styles.cardCount}
+            >
+              {premiumUsers}
+            </Text>
+          </Pressable>
+
           <View
             style={styles.managementCard}
           >
@@ -393,42 +538,6 @@ export default function AdminDashboard({
               style={styles.cardCount}
             >
               {totalUsers}
-            </Text>
-          </View>
-
-          <View
-            style={styles.managementCard}
-          >
-            <View
-              style={styles.cardIcon}
-            >
-              <Text
-                style={styles.cardIconText}
-              >
-                ⭐
-              </Text>
-            </View>
-
-            <View
-              style={styles.cardBody}
-            >
-              <Text
-                style={styles.cardTitle}
-              >
-                Premium
-              </Text>
-
-              <Text
-                style={styles.cardDescription}
-              >
-                Manage subscriptions and premium access.
-              </Text>
-            </View>
-
-            <Text
-              style={styles.cardArrow}
-            >
-              ›
             </Text>
           </View>
 
@@ -548,9 +657,7 @@ export default function AdminDashboard({
 
           {loading ? (
             <View
-              style={
-                styles.loadingCard
-              }
+              style={styles.loadingCard}
             >
               <ActivityIndicator
                 size="small"
@@ -558,39 +665,29 @@ export default function AdminDashboard({
               />
 
               <Text
-                style={
-                  styles.loadingText
-                }
+                style={styles.loadingText}
               >
                 Loading users…
               </Text>
             </View>
           ) : users.length === 0 ? (
             <View
-              style={
-                styles.emptyCard
-              }
+              style={styles.emptyCard}
             >
               <Text
-                style={
-                  styles.emptyIcon
-                }
+                style={styles.emptyIcon}
               >
                 👤
               </Text>
 
               <Text
-                style={
-                  styles.emptyTitle
-                }
+                style={styles.emptyTitle}
               >
                 No users found
               </Text>
 
               <Text
-                style={
-                  styles.emptyText
-                }
+                style={styles.emptyText}
               >
                 Registered Firebase users will appear here.
               </Text>
@@ -600,14 +697,10 @@ export default function AdminDashboard({
               (user) => (
                 <View
                   key={user.uid}
-                  style={
-                    styles.userCard
-                  }
+                  style={styles.userCard}
                 >
                   <View
-                    style={
-                      styles.avatar
-                    }
+                    style={styles.avatar}
                   >
                     <Text
                       style={
@@ -621,14 +714,10 @@ export default function AdminDashboard({
                   </View>
 
                   <View
-                    style={
-                      styles.userInfo
-                    }
+                    style={styles.userInfo}
                   >
                     <Text
-                      numberOfLines={
-                        1
-                      }
+                      numberOfLines={1}
                       style={
                         styles.userName
                       }
@@ -638,9 +727,7 @@ export default function AdminDashboard({
                     </Text>
 
                     <Text
-                      numberOfLines={
-                        1
-                      }
+                      numberOfLines={1}
                       style={
                         styles.userEmail
                       }
@@ -702,12 +789,6 @@ export default function AdminDashboard({
               ← Back to Profile
             </Text>
           </Pressable>
-
-          <View
-            style={
-              styles.bottomSpace
-            }
-          />
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -1105,9 +1186,5 @@ const styles =
       color: '#AEB4BE',
       fontSize: 12,
       fontWeight: '700',
-    },
-
-    bottomSpace: {
-      height: 10,
     },
   });
