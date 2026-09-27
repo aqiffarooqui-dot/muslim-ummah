@@ -59,13 +59,13 @@ function getDateString(date = new Date()) {
 }
 
 function toMinutes(value: string) {
-  const match = value.match(/(\\d{1,2}):(\\d{2})/);
+  const match = value.match(/(\d{1,2}):(\d{2})/);
   if (!match) return 0;
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
 function formatTime(value: string) {
-  const match = value.match(/(\\d{1,2}):(\\d{2})/);
+  const match = value.match(/(\d{1,2}):(\d{2})/);
   if (!match) return value;
 
   let hour = Number(match[1]);
