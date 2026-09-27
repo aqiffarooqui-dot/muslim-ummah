@@ -71,11 +71,35 @@ function parseToonRow(line: string): string[] {
 }
 
 function firstToonRow(content: string): string[] | null {
-  const lines = content
-    .split(/\r?\n/)
-    .filter((line) => line.trim().startsWith('"'));
+  const headerEnd = content.indexOf('\\n');
+  if (headerEnd < 0) return null;
 
-  return lines.length ? parseToonRow(lines[0]) : null;
+  let row = '';
+  let quoted = false;
+
+  for (let i = headerEnd + 1; i < content.length; i += 1) {
+    const char = content[i];
+
+    if (char === '"') {
+      if (quoted && content[i + 1] === '"') {
+        row += '""';
+        i += 1;
+        continue;
+      }
+
+      quoted = !quoted;
+      row += char;
+      continue;
+    }
+
+    if (char === '\\r' && content[i + 1] === '\\n' && !quoted) {
+      break;
+    }
+
+    row += char;
+  }
+
+  return row.trim() ? parseToonRow(row) : null;
 }
 
 async function fetchText(url: string): Promise<string> {
