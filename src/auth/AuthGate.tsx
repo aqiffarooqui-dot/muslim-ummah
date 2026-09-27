@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 
 import AuthScreen from './AuthScreen';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 import {
   AuthProvider,
   useAuth,
@@ -19,6 +21,8 @@ function AuthGateContent({
 }: {
   children: React.ReactNode;
 }) {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const {
     user,
     loading,
@@ -70,7 +74,7 @@ export default function AuthGate({
   );
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   safe: {
     flex: 1,
     backgroundColor: '#080A0F',
@@ -104,4 +108,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 12,
   },
-});
+};
