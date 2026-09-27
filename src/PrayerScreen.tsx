@@ -144,7 +144,7 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
   const now = new Date();
   const nextPrayer = prayerData ? getNextPrayer(prayerData.prayers, now, prayerData.timezone) : null;
   const currentWindow = prayerData
-    ? getCurrentPrayerWindow(prayerData.prayers, now)
+    ? getCurrentPrayerWindow(prayerData.prayers, now, prayerData.timezone)
     : null;
   const optionalWindows = prayerData
     ? getOptionalPrayerWindows(prayerData.prayers)
