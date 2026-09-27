@@ -100,18 +100,28 @@ function buildPrayerList(timings: Record<string, string>): PrayerTime[] {
 
 const CACHE_PREFIX = '@muslim_ummah_prayer_cache_v2_';
 
-function prayerCacheKey(date: Date, method: number, school: number): string {
-  return `${CACHE_PREFIX}${getDateString(date)}_${method}_${school}`;
+function prayerCacheKey(
+  date: Date,
+  method: number,
+  school: number,
+  latitude: number,
+  longitude: number
+): string {
+  const lat = latitude.toFixed(3);
+  const lon = longitude.toFixed(3);
+  return `${CACHE_PREFIX}${getDateString(date)}_${method}_${school}_${lat}_${lon}`;
 }
 
 async function readPrayerCache(
   date: Date,
   method: number,
-  school: number
+  school: number,
+  latitude: number,
+  longitude: number
 ): Promise<PrayerData | null> {
   try {
     const raw = await AsyncStorage.getItem(
-      prayerCacheKey(date, method, school)
+      prayerCacheKey(date, method, school, latitude, longitude)
     );
 
     if (!raw) return null;
@@ -141,7 +151,13 @@ async function writePrayerCache(
 ): Promise<void> {
   try {
     await AsyncStorage.setItem(
-      prayerCacheKey(date, method, school),
+      prayerCacheKey(
+        date,
+        method,
+        school,
+        data.latitude,
+        data.longitude
+      ),
       JSON.stringify(data)
     );
   } catch {
@@ -274,8 +290,9 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
   const date = new Date();
   const settings = await getPrayerSettings();
 
+  const location = await getCoordinates();
+
   try {
-    const location = await getCoordinates();
     const dateString = getDateString(date);
 
     const url =
@@ -336,21 +353,16 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
     return data;
   } catch (error) {
     console.warn(
-      'Prayer data loading failed:',
+      'Prayer API loading failed:',
       error
     );
-
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes('location')
-    ) {
-      throw error;
-    }
 
     const cached = await readPrayerCache(
       date,
       settings.method,
-      settings.school
+      settings.school,
+      location.latitude,
+      location.longitude
     );
 
     if (cached) {
