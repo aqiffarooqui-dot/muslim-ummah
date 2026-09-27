@@ -14,7 +14,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { usePremium } from './PremiumProvider';
 import { getBookmarks } from '../quranBookmarks';
-import { getQuranProgress } from '../quranProgress';
+import {
+  getQuranDailyGoal,
+  getQuranInsights,
+  getQuranProgress,
+  setQuranDailyGoal,
+  type QuranInsights,
+} from '../quranProgress';
 import {
   getLastCloudSync,
   restorePremiumData,
@@ -131,6 +137,14 @@ export default function PremiumToolsScreen({
   const [busy, setBusy] = useState(false);
   const [readingSettings, setReadingSettings] =
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
+  const [quranInsights, setQuranInsights] =
+    useState<QuranInsights>({
+      todayCount: 0,
+      dailyGoal: 10,
+      currentStreak: 0,
+      longestStreak: 0,
+      goalCompletedToday: false,
+    });
 
   const load = useCallback(async () => {
     setBookmarks(getBookmarks().length);
@@ -144,6 +158,7 @@ export default function PremiumToolsScreen({
     setSync(await getLastCloudSync());
     setReminders(await getScheduledReminderCount());
     setReadingSettings(await getQuranReadingSettings());
+    setQuranInsights(await getQuranInsights());
   }, []);
 
   useEffect(() => {
@@ -459,6 +474,101 @@ export default function PremiumToolsScreen({
             label="Current Ayah"
             value={progress.ayahNumber}
           />
+        </View>
+
+        <Text style={styles.section}>
+          Reading Goals & Streak
+        </Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons
+              name="flame-outline"
+              size={24}
+              color="#D8B36A"
+            />
+          </View>
+
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>
+              Daily Quran goal
+            </Text>
+
+            <Text style={styles.text}>
+              {quranInsights.goalCompletedToday
+                ? 'Goal completed today. MashaAllah!'
+                : quranInsights.todayCount +
+                  ' / ' +
+                  quranInsights.dailyGoal +
+                  ' unique Ayahs read today.'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.statsGrid}>
+          <Stat
+            icon="book-outline"
+            label="Today"
+            value={quranInsights.todayCount}
+          />
+
+          <Stat
+            icon="flame-outline"
+            label="Current Streak"
+            value={quranInsights.currentStreak}
+          />
+
+          <Stat
+            icon="trophy-outline"
+            label="Best Streak"
+            value={quranInsights.longestStreak}
+          />
+        </View>
+
+        <Text style={styles.controlLabel}>
+          Daily goal: {quranInsights.dailyGoal} Ayahs
+        </Text>
+
+        <View style={styles.row}>
+          <Pressable
+            disabled={busy || quranInsights.dailyGoal <= 1}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  await setQuranDailyGoal(
+                    quranInsights.dailyGoal - 5
+                  );
+                },
+                'Daily Quran goal reduced.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>−5</Text>
+          </Pressable>
+
+          <View style={styles.valuePill}>
+            <Text style={styles.valueText}>
+              {quranInsights.dailyGoal} Ayahs
+            </Text>
+          </View>
+
+          <Pressable
+            disabled={busy || quranInsights.dailyGoal >= 100}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  await setQuranDailyGoal(
+                    quranInsights.dailyGoal + 5
+                  );
+                },
+                'Daily Quran goal increased.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>+5</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.section}>
