@@ -14,6 +14,8 @@ import {
 import {
   usePremium,
 } from './PremiumProvider';
+import { useTheme } from '../themes/ThemeProvider';
+import { createThemedStyles } from '../themes/themeStyleMapper';
 
 import type {
   PremiumFeatureId,
@@ -32,6 +34,8 @@ export default function PremiumFeatureGate({
   onPremiumPress,
   fallback,
 }: PremiumFeatureGateProps) {
+  const { theme } = useTheme();
+  const styles = createThemedStyles(theme, rawStyles);
   const {
     isPremium,
   } = usePremium();
@@ -77,7 +81,7 @@ export default function PremiumFeatureGate({
   );
 }
 
-const styles = StyleSheet.create({
+const rawStyles = {
   locked: {
     minHeight: 66,
     flexDirection: 'row',
@@ -115,4 +119,4 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     marginTop: 3,
   },
-});
+};
