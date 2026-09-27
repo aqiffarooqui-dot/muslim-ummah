@@ -118,18 +118,47 @@ async function getCoordinates() {
     await Location.requestForegroundPermissionsAsync();
 
   if (permission.status !== 'granted') {
-    return {
-      latitude: DEFAULT_LATITUDE,
-      longitude: DEFAULT_LONGITUDE,
-      city: 'New Delhi',
-      country: 'India',
-    };
+    throw new Error(
+      'Location permission is required to calculate prayer times for your current location.'
+    );
   }
 
-  const position =
-    await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
+  try {
+    const servicesEnabled =
+      await Location.hasServicesEnabledAsync();
+
+    if (!servicesEnabled) {
+      await Location.enableNetworkProviderAsync();
+    }
+  } catch {
+    // Continue to get the best available fix.
+  }
+
+  const lastKnown =
+    await Location.getLastKnownPositionAsync({
+      maxAge: 5 * 60 * 1000,
+      requiredAccuracy: 5000,
     });
+
+  let position = lastKnown;
+
+  try {
+    position =
+      await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        mayShowUserSettingsDialog: true,
+      });
+  } catch (error) {
+    if (!position) {
+      throw error;
+    }
+  }
+
+  if (!position) {
+    throw new Error(
+      'Unable to determine the current device location.'
+    );
+  }
 
   let city = 'Current location';
   let country = '';
@@ -210,9 +239,16 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
     };
   } catch (error) {
     console.warn(
-      'Prayer data loading failed; using fallback:',
+      'Prayer data loading failed:',
       error
     );
+
+    if (
+      error instanceof Error &&
+      error.message.toLowerCase().includes('location')
+    ) {
+      throw error;
+    }
 
     return fallbackPrayerData();
   }
