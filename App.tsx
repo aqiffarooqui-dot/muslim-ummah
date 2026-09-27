@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import {
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -146,6 +147,9 @@ export default function App() {
   const [countdownSeconds, setCountdownSeconds] =
     useState(0);
 
+  const [prayerError, setPrayerError] =
+    useState('');
+
   useEffect(() => {
     loadQuranProgress();
     loadPrayerData();
@@ -179,17 +183,25 @@ export default function App() {
 
   async function loadPrayerData() {
     try {
-      const data =
-        await getTodayPrayerData();
-
+      setPrayerError('');
+      const data = await getTodayPrayerData();
       setPrayerData(data);
     } catch (err) {
-      console.error(
-        'Prayer data loading error:',
-        err
+      console.error('Prayer data loading error:', err);
+      setPrayerData(null);
+      setPrayerError(
+        'Allow location access to calculate prayer times for your current location.'
       );
     }
   }
+
+  const openLocationSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch (err) {
+      console.error('Unable to open app settings:', err);
+    }
+  };
 
   async function loadQuranProgress() {
     try {
@@ -533,6 +545,38 @@ export default function App() {
           />
         </Pressable>
       </View>
+
+      {prayerError ? (
+        <View style={styles.locationErrorCard}>
+          <Ionicons
+            name="location-outline"
+            size={22}
+            color={theme.accent}
+          />
+          <View style={styles.locationErrorContent}>
+            <Text style={styles.locationErrorTitle}>
+              Current location unavailable
+            </Text>
+            <Text style={styles.locationErrorText}>
+              {prayerError}
+            </Text>
+            <View style={styles.locationErrorActions}>
+              <Pressable
+                onPress={loadPrayerData}
+                style={styles.locationRetryButton}
+              >
+                <Text style={styles.locationRetryText}>Retry</Text>
+              </Pressable>
+              <Pressable
+                onPress={openLocationSettings}
+                style={styles.locationSettingsButton}
+              >
+                <Text style={styles.locationSettingsText}>Open Settings</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       {(() => {
         const nextPrayer =
@@ -1866,6 +1910,68 @@ function createStyles(
       borderColor: theme.border,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+
+    locationErrorCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      padding: 15,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+
+    locationErrorContent: {
+      flex: 1,
+      marginLeft: 12,
+    },
+
+    locationErrorTitle: {
+      color: theme.text,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+
+    locationErrorText: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      lineHeight: 18,
+      marginTop: 5,
+    },
+
+    locationErrorActions: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 11,
+    },
+
+    locationRetryButton: {
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+      borderRadius: 12,
+      backgroundColor: theme.accent,
+    },
+
+    locationRetryText: {
+      color: theme.background,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+
+    locationSettingsButton: {
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+
+    locationSettingsText: {
+      color: theme.text,
+      fontSize: 11,
+      fontWeight: '700',
     },
 
     prayerCard: {
