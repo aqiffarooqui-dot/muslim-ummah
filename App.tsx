@@ -504,8 +504,7 @@ export default function App() {
 
       <ScrollView
         horizontal
-        showsHorizontalScrollIndicator={
-          false
+        showsHorizontalScrollIndicator={          false
         }
         contentContainerStyle={
           styles.prayerRow
@@ -1008,8 +1007,7 @@ export default function App() {
           </Text>
         </View>
 
-        <Ionicons
-          name="chevron-forward"
+        <Ionicons          name="chevron-forward"
           size={19}
           color={theme.textMuted}
         />
@@ -1572,7 +1570,6 @@ const stylesStatic = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-
   navLabel: {
     fontSize: 9,
     fontWeight: '600',
@@ -1873,3 +1870,339 @@ function createStyles(
     },
 
     progressTrack: {
+      height: 4,
+      backgroundColor:
+        theme.border,
+      borderRadius: 3,
+      marginTop: 13,
+      overflow: 'hidden',
+    },
+
+    progressFill: {
+      width: '38%',
+      height: 4,
+      backgroundColor:
+        theme.accent,
+      borderRadius: 3,
+    },
+
+    progressText: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 6,
+    },
+
+    dailyRow: {
+      gap: 11,
+    },
+
+    dailyCard: {
+      width: 265,
+      minHeight: 190,
+      borderRadius: 22,
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 18,
+    },
+
+    dailyIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+
+    dailyLabel: {
+      color: theme.textMuted,
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.4,
+    },
+
+    dailyText: {
+      color: theme.text,
+      fontSize: 15,
+      lineHeight: 23,
+      fontWeight: '600',
+      marginTop: 10,
+    },
+
+    dailyReference: {
+      color: theme.accent,
+      fontSize: 10,
+      fontWeight: '700',
+      marginTop: 13,
+    },
+
+    exploreGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+
+    exploreCard: {
+      width: '48%',
+      minHeight: 125,
+      borderRadius: 20,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 15,
+    },
+
+    exploreIcon: {
+      width: 43,
+      height: 43,
+      borderRadius: 15,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+
+    exploreTitle: {
+      color: theme.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+
+    exploreSubtitle: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    bottomSpace: {
+      height: 80,
+    },
+
+    moreContent: {
+      paddingTop: 58,
+      paddingHorizontal: 18,
+      paddingBottom: 30,
+    },
+
+    moreHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 22,
+    },
+
+    moreTitle: {
+      color: theme.text,
+      fontSize: 27,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+
+    moreHeaderIcon: {
+      width: 43,
+      height: 43,
+      borderRadius: 22,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreHero: {
+      minHeight: 96,
+      borderRadius: 23,
+      backgroundColor:
+        theme.card,
+      borderWidth: 1,
+      borderColor:
+        theme.borderStrong,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+
+    moreHeroIcon: {
+      width: 57,
+      height: 57,
+      borderRadius: 19,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreHeroInfo: {
+      flex: 1,
+      marginLeft: 14,
+    },
+
+    moreHeroTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+
+    moreHeroText: {
+      color: theme.textMuted,
+      fontSize: 10,
+      marginTop: 4,
+    },
+
+    moreSectionTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginTop: 27,
+      marginBottom: 10,
+    },
+
+    moreItem: {
+      minHeight: 75,
+      borderRadius: 19,
+      backgroundColor:
+        theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,      padding: 13,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 9,
+    },
+
+    moreItemIcon: {
+      width: 45,
+      height: 45,
+      borderRadius: 15,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    moreItemInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+
+    moreItemTitle: {
+      color: theme.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+
+    moreItemSubtitle: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    moreVersionCard: {
+      marginTop: 13,
+      borderRadius: 20,
+      backgroundColor:
+        theme.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 18,
+      alignItems: 'center',
+    },
+
+    moreVersionLabel: {
+      color: theme.textMuted,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.5,
+    },
+
+    moreVersion: {
+      color: theme.accent,
+      fontSize: 18,
+      fontWeight: '700',
+      marginTop: 5,
+    },
+
+    moreVersionText: {
+      color: theme.textMuted,
+      fontSize: 9,
+      marginTop: 4,
+    },
+
+    moreBottomSpace: {
+      height: 90,
+    },
+
+    bottomNav: {
+      position: 'absolute',
+      left: 10,
+      right: 10,
+      bottom: 10,
+      height: 67,
+      borderRadius: 24,
+      backgroundColor:
+        theme.tabBackground,
+      borderWidth: 1,
+      borderColor: theme.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      paddingHorizontal: 5,
+    },
+
+    placeholderScreen: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 35,
+      paddingBottom: 90,
+      backgroundColor:
+        theme.background,
+    },
+
+    placeholderIcon: {
+      width: 76,
+      height: 76,
+      borderRadius: 25,
+      backgroundColor:
+        theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+
+    placeholderTitle: {
+      color: theme.text,
+      fontSize: 28,
+      fontWeight: '700',
+    },
+
+    placeholderText: {
+      color: theme.textMuted,
+      fontSize: 13,
+      lineHeight: 21,
+      textAlign: 'center',
+      marginTop: 10,
+      maxWidth: 310,
+    },
+
+    backHomeButton: {
+      backgroundColor:
+        theme.accent,
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: 18,
+      marginTop: 24,
+    },
+
+    backHomeText: {
+      color: theme.background,
+      fontSize: 12,
+      fontWeight: '800',
+    },
+  });
+}
