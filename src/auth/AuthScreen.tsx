@@ -25,6 +25,7 @@ export default function AuthScreen() {
   const {
     signIn,
     signUp,
+    sendResetEmail,
   } = useAuth();
 
   const [mode, setMode] =
@@ -44,11 +45,18 @@ export default function AuthScreen() {
   const [loading, setLoading] =
     useState(false);
 
+  const [resetLoading, setResetLoading] =
+    useState(false);
+
   const [error, setError] =
+    useState('');
+
+  const [success, setSuccess] =
     useState('');
 
   async function handleSubmit() {
     setError('');
+    setSuccess('');
 
     if (!email.trim()) {
       setError(
@@ -123,6 +131,66 @@ export default function AuthScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleForgotPassword() {
+    setError('');
+    setSuccess('');
+
+    if (!email.trim()) {
+      setError(
+        'Enter your email address first, then tap Forgot password.'
+      );
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+
+      await sendResetEmail(email);
+
+      setSuccess(
+        'Password reset email sent. Please check your inbox.'
+      );
+    } catch (err: any) {
+      let message =
+        'Unable to send the reset email. Please try again.';
+
+      if (
+        err?.code ===
+        'auth/invalid-email'
+      ) {
+        message =
+          'Please enter a valid email address.';
+      } else if (
+        err?.code ===
+        'auth/user-not-found'
+      ) {
+        message =
+          'No account was found with this email.';
+      } else if (
+        err?.code ===
+        'auth/too-many-requests'
+      ) {
+        message =
+          'Too many attempts. Please wait a while and try again.';
+      }
+
+      setError(message);
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  function switchMode() {
+    setMode(
+      mode === 'login'
+        ? 'signup'
+        : 'login'
+    );
+
+    setError('');
+    setSuccess('');
   }
 
   return (
@@ -225,6 +293,29 @@ export default function AuthScreen() {
               />
             </View>
 
+            {mode === 'login' && (
+              <Pressable
+                style={styles.forgotButton}
+                onPress={handleForgotPassword}
+                disabled={resetLoading}
+              >
+                {resetLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#D8B36A"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.forgotText
+                    }
+                  >
+                    Forgot password?
+                  </Text>
+                )}
+              </Pressable>
+            )}
+
             {!!error && (
               <View style={styles.errorBox}>
                 <Ionicons
@@ -235,6 +326,22 @@ export default function AuthScreen() {
 
                 <Text style={styles.error}>
                   {error}
+                </Text>
+              </View>
+            )}
+
+            {!!success && (
+              <View style={styles.successBox}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={18}
+                  color="#8FD6A8"
+                />
+
+                <Text
+                  style={styles.success}
+                >
+                  {success}
                 </Text>
               </View>
             )}
@@ -305,15 +412,7 @@ export default function AuthScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => {
-                setMode(
-                  mode === 'login'
-                    ? 'signup'
-                    : 'login'
-                );
-
-                setError('');
-              }}
+              onPress={switchMode}
             >
               <Text
                 style={styles.switchText}
@@ -434,6 +533,21 @@ const styles = StyleSheet.create({
     marginLeft: 11,
   },
 
+  forgotButton: {
+    alignSelf: 'flex-end',
+    minHeight: 30,
+    justifyContent: 'center',
+    marginTop: -4,
+    marginBottom: 9,
+    paddingHorizontal: 3,
+  },
+
+  forgotText: {
+    color: '#D8B36A',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -447,6 +561,25 @@ const styles = StyleSheet.create({
 
   error: {
     color: '#FFB1B1',
+    fontSize: 13,
+    flex: 1,
+    marginLeft: 8,
+    lineHeight: 18,
+  },
+
+  successBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#14231A',
+    borderWidth: 1,
+    borderColor: '#274735',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 13,
+  },
+
+  success: {
+    color: '#A9E4BC',
     fontSize: 13,
     flex: 1,
     marginLeft: 8,
