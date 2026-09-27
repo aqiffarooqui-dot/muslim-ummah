@@ -173,7 +173,8 @@ export default function App() {
     const updateCountdown = () => {
       const nextPrayer = getNextPrayer(
         prayerData.prayers,
-        new Date()
+        new Date(),
+        prayerData.timezone
       );
 
       setCountdownSeconds(
@@ -560,7 +561,8 @@ export default function App() {
           prayerData
             ? getNextPrayer(
                 prayerData.prayers,
-                new Date()
+                new Date(),
+                prayerData.timezone
               )
             : null;
 
