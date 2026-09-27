@@ -1,6 +1,11 @@
-import React from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,432 +15,1099 @@ import {
 } from 'react-native';
 
 import {
-  Ionicons,
-} from '@expo/vector-icons';
+  getActiveUserCount,
+  getAllUserProfiles,
+  type FirestoreUserProfile,
+  getUserCount,
+} from '../firebase/firestore';
 
-import {
-  useAuth,
-} from '../auth/AuthProvider';
-
-type Props = {
+type AdminDashboardProps = {
   onBack: () => void;
 };
 
 export default function AdminDashboard({
   onBack,
-}: Props) {
-  const {
-    profile,
-  } = useAuth();
+}: AdminDashboardProps) {
+  const [users, setUsers] =
+    useState<FirestoreUserProfile[]>([]);
+
+  const [totalUsers, setTotalUsers] =
+    useState(0);
+
+  const [activeUsers, setActiveUsers] =
+    useState(0);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const loadDashboard =
+    useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [
+          userCount,
+          activeCount,
+          allUsers,
+        ] = await Promise.all([
+          getUserCount(),
+          getActiveUserCount(24),
+          getAllUserProfiles(),
+        ]);
+
+        setTotalUsers(userCount);
+        setActiveUsers(activeCount);
+        setUsers(allUsers);
+      } catch (loadError) {
+        console.error(
+          'Admin dashboard loading error:',
+          loadError
+        );
+
+        setError(
+          'Unable to load Firebase user data.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  function formatDate(
+    value: string
+  ): string {
+    const date =
+      new Date(value);
+
+    if (
+      !Number.isFinite(
+        date.getTime()
+      )
+    ) {
+      return 'Unknown';
+    }
+
+    return date.toLocaleString();
+  }
+
+  function getInitials(
+    user: FirestoreUserProfile
+  ): string {
+    const name =
+      user.displayName?.trim();
+
+    if (name) {
+      const parts =
+        name.split(/\s+/);
+
+      return parts
+        .slice(0, 2)
+        .map(
+          (part) =>
+            part
+              .charAt(0)
+              .toUpperCase()
+        )
+        .join('');
+    }
+
+    return (
+      user.email
+        .charAt(0)
+        .toUpperCase() ||
+      'U'
+    );
+  }
 
   return (
     <SafeAreaView
       style={styles.safe}
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={
-          styles.content
-        }
-      >
+      <View style={styles.container}>
         <View style={styles.header}>
           <Pressable
-            style={styles.backButton}
             onPress={onBack}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed &&
+                styles.pressed,
+            ]}
           >
-            <Ionicons
-              name="arrow-back"
-              size={21}
-              color="#FFFFFF"
-            />
+            <Text
+              style={
+                styles.backIcon
+              }
+            >
+              ‹
+            </Text>
           </Pressable>
 
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>
-              Admin
+          <View
+            style={styles.headerText}
+          >
+            <Text
+              style={styles.eyebrow}
+            >
+              ADMIN CONTROL CENTER
+            </Text>
+
+            <Text
+              style={styles.title}
+            >
+              Dashboard
             </Text>
           </View>
 
-          <View style={styles.headerSpacer} />
+          <Pressable
+            onPress={loadDashboard}
+            style={({ pressed }) => [
+              styles.refreshButton,
+              pressed &&
+                styles.pressed,
+            ]}
+          >
+            <Text
+              style={
+                styles.refreshIcon
+              }
+            >
+              ↻
+            </Text>
+          </Pressable>
         </View>
 
-        <Text style={styles.eyebrow}>
-          ADMIN CONTROL CENTER
-        </Text>
-
-        <Text style={styles.title}>
-          Muslim Ummah Admin
-        </Text>
-
-        <Text style={styles.subtitle}>
-          {profile?.email}
-        </Text>
-
-        <View style={styles.adminVerified}>
-          <View style={styles.verifiedIcon}>
-            <Ionicons
-              name="shield-checkmark"
-              size={21}
-              color="#D8B36A"
+        <ScrollView
+          showsVerticalScrollIndicator={
+            false
+          }
+          contentContainerStyle={
+            styles.content
+          }
+        >
+          <View
+            style={styles.adminBadge}
+          >
+            <View
+              style={
+                styles.statusDot
+              }
             />
-          </View>
 
-          <View style={styles.verifiedInfo}>
-            <Text style={styles.verifiedTitle}>
+            <Text
+              style={
+                styles.adminBadgeText
+              }
+            >
               Administrator access active
             </Text>
-
-            <Text style={styles.verifiedText}>
-              Your account is verified through
-              Firebase administrator permissions.
-            </Text>
           </View>
-        </View>
 
-        <View style={styles.grid}>
-          <Stat
-            icon="people-outline"
-            label="Total Users"
-            value="—"
-          />
+          <View
+            style={styles.statsGrid}
+          >
+            <View
+              style={styles.statCard}
+            >
+              <Text
+                style={styles.statLabel}
+              >
+                TOTAL USERS
+              </Text>
 
-          <Stat
-            icon="diamond-outline"
-            label="Premium"
-            value="—"
-          />
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#D8B36A"
+                />
+              ) : (
+                <Text
+                  style={styles.statValue}
+                >
+                  {totalUsers}
+                </Text>
+              )}
 
-          <Stat
-            icon="pulse-outline"
-            label="Active Today"
-            value="—"
-          />
+              <Text
+                style={styles.statHint}
+              >
+                Registered profiles
+              </Text>
+            </View>
 
-          <Stat
-            icon="time-outline"
-            label="Expiring Soon"
-            value="—"
-          />
-        </View>
+            <View
+              style={styles.statCard}
+            >
+              <Text
+                style={styles.statLabel}
+              >
+                ACTIVE TODAY
+              </Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#6ED6A0"
+                />
+              ) : (
+                <Text
+                  style={styles.statValue}
+                >
+                  {activeUsers}
+                </Text>
+              )}
+
+              <Text
+                style={styles.statHint}
+              >
+                Active in last 24 hours
+              </Text>
+            </View>
+
+            <View
+              style={styles.statCard}
+            >
+              <Text
+                style={styles.statLabel}
+              >
+                PREMIUM
+              </Text>
+
+              <Text
+                style={styles.statValue}
+              >
+                —
+              </Text>
+
+              <Text
+                style={styles.statHint}
+              >
+                Premium module next
+              </Text>
+            </View>
+
+            <View
+              style={styles.statCard}
+            >
+              <Text
+                style={styles.statLabel}
+              >
+                EXPIRING SOON
+              </Text>
+
+              <Text
+                style={styles.statValue}
+              >
+                —
+              </Text>
+
+              <Text
+                style={styles.statHint}
+              >
+                Premium module next
+              </Text>
+            </View>
+          </View>
+
+          {error && (
+            <View
+              style={styles.errorCard}
+            >
+              <Text
+                style={
+                  styles.errorTitle
+                }
+              >
+                Firebase data unavailable
+              </Text>
+
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {error}
+              </Text>
+
+              <Pressable
+                onPress={
+                  loadDashboard
+                }
+                style={
+                  styles.retryButton
+                }
+              >
+                <Text
+                  style={
+                    styles.retryText
+                  }
+                >
+                  Retry
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          <Text
+            style={styles.sectionTitle}
+          >
             Management
           </Text>
 
-          <AdminItem
-            icon="people-outline"
-            title="Users"
-            text="View and manage registered users"
-          />
+          <View
+            style={styles.managementCard}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                👥
+              </Text>
+            </View>
 
-          <AdminItem
-            icon="diamond-outline"
-            title="Premium"
-            text="Activate, extend or cancel subscriptions"
-          />
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Users
+              </Text>
 
-          <AdminItem
-            icon="card-outline"
-            title="Payments"
-            text="Payment records and verification"
-          />
+              <Text
+                style={styles.cardDescription}
+              >
+                View registered users and account activity.
+              </Text>
+            </View>
 
-          <AdminItem
-            icon="megaphone-outline"
-            title="Announcements"
-            text="Send announcements to users"
-          />
+            <Text
+              style={styles.cardCount}
+            >
+              {totalUsers}
+            </Text>
+          </View>
 
-          <AdminItem
-            icon="bar-chart-outline"
-            title="Analytics"
-            text="Usage and feature analytics"
-          />
-        </View>
+          <View
+            style={styles.managementCard}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                ⭐
+              </Text>
+            </View>
 
-        <Pressable
-          style={styles.bottomBackButton}
-          onPress={onBack}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={18}
-            color="#101512"
-          />
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Premium
+              </Text>
 
-          <Text style={styles.bottomBackText}>
-            Back to Profile
+              <Text
+                style={styles.cardDescription}
+              >
+                Manage subscriptions and premium access.
+              </Text>
+            </View>
+
+            <Text
+              style={styles.cardArrow}
+            >
+              ›
+            </Text>
+          </View>
+
+          <View
+            style={styles.managementCard}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                💳
+              </Text>
+            </View>
+
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Payments
+              </Text>
+
+              <Text
+                style={styles.cardDescription}
+              >
+                Review payment records and activation status.
+              </Text>
+            </View>
+
+            <Text
+              style={styles.cardArrow}
+            >
+              ›
+            </Text>
+          </View>
+
+          <View
+            style={styles.managementCard}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                📢
+              </Text>
+            </View>
+
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Announcements
+              </Text>
+
+              <Text
+                style={styles.cardDescription}
+              >
+                Create messages shown to app users.
+              </Text>
+            </View>
+
+            <Text
+              style={styles.cardArrow}
+            >
+              ›
+            </Text>
+          </View>
+
+          <View
+            style={styles.managementCard}
+          >
+            <View
+              style={styles.cardIcon}
+            >
+              <Text
+                style={styles.cardIconText}
+              >
+                📊
+              </Text>
+            </View>
+
+            <View
+              style={styles.cardBody}
+            >
+              <Text
+                style={styles.cardTitle}
+              >
+                Analytics
+              </Text>
+
+              <Text
+                style={styles.cardDescription}
+              >
+                Monitor usage and application activity.
+              </Text>
+            </View>
+
+            <Text
+              style={styles.cardArrow}
+            >
+              ›
+            </Text>
+          </View>
+
+          <Text
+            style={styles.sectionTitle}
+          >
+            Registered Users
           </Text>
-        </Pressable>
-      </ScrollView>
+
+          {loading ? (
+            <View
+              style={
+                styles.loadingCard
+              }
+            >
+              <ActivityIndicator
+                size="small"
+                color="#D8B36A"
+              />
+
+              <Text
+                style={
+                  styles.loadingText
+                }
+              >
+                Loading users…
+              </Text>
+            </View>
+          ) : users.length === 0 ? (
+            <View
+              style={
+                styles.emptyCard
+              }
+            >
+              <Text
+                style={
+                  styles.emptyIcon
+                }
+              >
+                👤
+              </Text>
+
+              <Text
+                style={
+                  styles.emptyTitle
+                }
+              >
+                No users found
+              </Text>
+
+              <Text
+                style={
+                  styles.emptyText
+                }
+              >
+                Registered Firebase users will appear here.
+              </Text>
+            </View>
+          ) : (
+            users.map(
+              (user) => (
+                <View
+                  key={user.uid}
+                  style={
+                    styles.userCard
+                  }
+                >
+                  <View
+                    style={
+                      styles.avatar
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.avatarText
+                      }
+                    >
+                      {getInitials(
+                        user
+                      )}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.userInfo
+                    }
+                  >
+                    <Text
+                      numberOfLines={
+                        1
+                      }
+                      style={
+                        styles.userName
+                      }
+                    >
+                      {user.displayName ||
+                        'Unnamed user'}
+                    </Text>
+
+                    <Text
+                      numberOfLines={
+                        1
+                      }
+                      style={
+                        styles.userEmail
+                      }
+                    >
+                      {user.email ||
+                        'No email'}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.userActive
+                      }
+                    >
+                      Last active:{' '}
+                      {formatDate(
+                        user.lastActiveAt
+                      )}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.roleBadge,
+                      user.role ===
+                        'admin'
+                        ? styles.adminRole
+                        : styles.userRole,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        styles.roleText
+                      }
+                    >
+                      {user.role ===
+                      'admin'
+                        ? 'ADMIN'
+                        : 'USER'}
+                    </Text>
+                  </View>
+                </View>
+              )
+            )
+          )}
+
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => [
+              styles.bottomBack,
+              pressed &&
+                styles.pressed,
+            ]}
+          >
+            <Text
+              style={
+                styles.bottomBackText
+              }
+            >
+              ← Back to Profile
+            </Text>
+          </Pressable>
+
+          <View
+            style={
+              styles.bottomSpace
+            }
+          />
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.stat}>
-      <Ionicons
-        name={icon}
-        size={22}
-        color="#D8B36A"
-      />
+const styles =
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: '#080A0F',
+    },
 
-      <Text style={styles.statValue}>
-        {value}
-      </Text>
+    container: {
+      flex: 1,
+      backgroundColor: '#080A0F',
+    },
 
-      <Text style={styles.statLabel}>
-        {label}
-      </Text>
-    </View>
-  );
-}
+    header: {
+      minHeight: 78,
+      paddingHorizontal: 18,
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: '#171B24',
+    },
 
-function AdminItem({
-  icon,
-  title,
-  text,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  text: string;
-}) {
-  return (
-    <View style={styles.adminItem}>
-      <View style={styles.adminIcon}>
-        <Ionicons
-          name={icon}
-          size={21}
-          color="#D8B36A"
-        />
-      </View>
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      backgroundColor: '#12161E',
+      borderWidth: 1,
+      borderColor: '#252A34',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-      <View style={styles.adminInfo}>
-        <Text style={styles.adminTitle}>
-          {title}
-        </Text>
+    backIcon: {
+      color: '#F5F5F5',
+      fontSize: 30,
+      lineHeight: 30,
+      marginTop: -3,
+    },
 
-        <Text style={styles.adminText}>
-          {text}
-        </Text>
-      </View>
+    headerText: {
+      flex: 1,
+      marginLeft: 14,
+    },
 
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color="#59616D"
-      />
-    </View>
-  );
-}
+    eyebrow: {
+      color: '#D8B36A',
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.5,
+    },
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#080A0F',
-  },
+    title: {
+      color: '#F7F7F7',
+      fontSize: 25,
+      fontWeight: '800',
+      marginTop: 2,
+    },
 
-  content: {
-    padding: 20,
-    paddingBottom: 50,
-  },
+    refreshButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      backgroundColor: '#12161E',
+      borderWidth: 1,
+      borderColor: '#252A34',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  header: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 13,
-  },
+    refreshIcon: {
+      color: '#D8B36A',
+      fontSize: 25,
+      fontWeight: '600',
+    },
 
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
-    backgroundColor: '#11141B',
-    borderWidth: 1,
-    borderColor: '#2A303A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    pressed: {
+      opacity: 0.65,
+      transform: [
+        {
+          scale: 0.97,
+        },
+      ],
+    },
 
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
+    content: {
+      padding: 18,
+      paddingBottom: 40,
+    },
 
-  headerTitle: {
-    color: '#F0F0E7',
-    fontSize: 17,
-    fontWeight: '800',
-  },
+    adminBadge: {
+      minHeight: 44,
+      paddingHorizontal: 14,
+      borderRadius: 15,
+      backgroundColor: '#101A16',
+      borderWidth: 1,
+      borderColor: '#244536',
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
 
-  headerSpacer: {
-    width: 42,
-  },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#6ED6A0',
+      marginRight: 9,
+    },
 
-  eyebrow: {
-    color: '#D8B36A',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.7,
-    marginTop: 3,
-  },
+    adminBadgeText: {
+      color: '#9FE0BB',
+      fontSize: 12,
+      fontWeight: '700',
+    },
 
-  title: {
-    color: '#FFFFFF',
-    fontSize: 27,
-    fontWeight: '800',
-    marginTop: 6,
-  },
+    statsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
 
-  subtitle: {
-    color: '#777D89',
-    fontSize: 12,
-    marginTop: 5,
-  },
+    statCard: {
+      width: '48.5%',
+      minHeight: 126,
+      padding: 15,
+      borderRadius: 20,
+      backgroundColor: '#10131A',
+      borderWidth: 1,
+      borderColor: '#20252F',
+      justifyContent: 'space-between',
+    },
 
-  adminVerified: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#151912',
-    borderWidth: 1,
-    borderColor: '#44391F',
-    borderRadius: 18,
-    padding: 13,
-    marginTop: 20,
-  },
+    statLabel: {
+      color: '#747B88',
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 1.1,
+    },
 
-  verifiedIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 14,
-    backgroundColor: '#211F18',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    statValue: {
+      color: '#F5F5F5',
+      fontSize: 28,
+      fontWeight: '800',
+      marginTop: 8,
+    },
 
-  verifiedInfo: {
-    flex: 1,
-    marginLeft: 11,
-  },
+    statHint: {
+      color: '#5F6672',
+      fontSize: 10,
+      lineHeight: 14,
+      marginTop: 4,
+    },
 
-  verifiedTitle: {
-    color: '#E8E9E2',
-    fontSize: 12,
-    fontWeight: '800',
-  },
+    errorCard: {
+      marginTop: 14,
+      padding: 16,
+      borderRadius: 18,
+      backgroundColor: '#1A1113',
+      borderWidth: 1,
+      borderColor: '#5A292D',
+    },
 
-  verifiedText: {
-    color: '#858A80',
-    fontSize: 9,
-    lineHeight: 14,
-    marginTop: 4,
-  },
+    errorTitle: {
+      color: '#F0A4AA',
+      fontSize: 13,
+      fontWeight: '800',
+    },
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 20,
-  },
+    errorText: {
+      color: '#B98287',
+      fontSize: 11,
+      lineHeight: 17,
+      marginTop: 5,
+    },
 
-  stat: {
-    width: '48%',
-    minHeight: 110,
-    backgroundColor: '#11141B',
-    borderWidth: 1,
-    borderColor: '#242934',
-    borderRadius: 19,
-    padding: 15,
-  },
+    retryButton: {
+      alignSelf: 'flex-start',
+      marginTop: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 11,
+      backgroundColor: '#2A171A',
+      borderWidth: 1,
+      borderColor: '#6B3035',
+    },
 
-  statValue: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 13,
-  },
+    retryText: {
+      color: '#F0B0B5',
+      fontSize: 11,
+      fontWeight: '800',
+    },
 
-  statLabel: {
-    color: '#777D89',
-    fontSize: 10,
-    marginTop: 3,
-  },
+    sectionTitle: {
+      color: '#E9E9EA',
+      fontSize: 17,
+      fontWeight: '800',
+      marginTop: 26,
+      marginBottom: 12,
+    },
 
-  section: {
-    marginTop: 28,
-  },
+    managementCard: {
+      minHeight: 82,
+      padding: 14,
+      borderRadius: 19,
+      backgroundColor: '#10131A',
+      borderWidth: 1,
+      borderColor: '#20252F',
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
 
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 11,
-  },
+    cardIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: '#171B23',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  adminItem: {
-    minHeight: 72,
-    backgroundColor: '#11141B',
-    borderWidth: 1,
-    borderColor: '#242934',
-    borderRadius: 18,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 9,
-  },
+    cardIconText: {
+      fontSize: 21,
+    },
 
-  adminIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 14,
-    backgroundColor: '#1D1B16',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    cardBody: {
+      flex: 1,
+      marginLeft: 13,
+      marginRight: 8,
+    },
 
-  adminInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
+    cardTitle: {
+      color: '#F1F1F2',
+      fontSize: 14,
+      fontWeight: '800',
+    },
 
-  adminTitle: {
-    color: '#EDEEF0',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+    cardDescription: {
+      color: '#6D7480',
+      fontSize: 10.5,
+      lineHeight: 15,
+      marginTop: 4,
+    },
 
-  adminText: {
-    color: '#777D89',
-    fontSize: 10,
-    marginTop: 4,
-  },
+    cardArrow: {
+      color: '#555C68',
+      fontSize: 25,
+    },
 
-  bottomBackButton: {
-    height: 52,
-    borderRadius: 17,
-    backgroundColor: '#D8B36A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 20,
-  },
+    cardCount: {
+      color: '#D8B36A',
+      fontSize: 17,
+      fontWeight: '800',
+    },
 
-  bottomBackText: {
-    color: '#101512',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-});
+    loadingCard: {
+      minHeight: 100,
+      borderRadius: 18,
+      backgroundColor: '#10131A',
+      borderWidth: 1,
+      borderColor: '#20252F',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    loadingText: {
+      color: '#737A86',
+      fontSize: 11,
+      marginTop: 9,
+    },
+
+    emptyCard: {
+      padding: 28,
+      borderRadius: 18,
+      backgroundColor: '#10131A',
+      borderWidth: 1,
+      borderColor: '#20252F',
+      alignItems: 'center',
+    },
+
+    emptyIcon: {
+      fontSize: 28,
+    },
+
+    emptyTitle: {
+      color: '#E9E9EA',
+      fontSize: 14,
+      fontWeight: '800',
+      marginTop: 10,
+    },
+
+    emptyText: {
+      color: '#686F7B',
+      fontSize: 11,
+      textAlign: 'center',
+      marginTop: 5,
+    },
+
+    userCard: {
+      minHeight: 82,
+      padding: 12,
+      borderRadius: 18,
+      backgroundColor: '#10131A',
+      borderWidth: 1,
+      borderColor: '#20252F',
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 9,
+    },
+
+    avatar: {
+      width: 46,
+      height: 46,
+      borderRadius: 16,
+      backgroundColor: '#1A1E27',
+      borderWidth: 1,
+      borderColor: '#2C323D',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    avatarText: {
+      color: '#D8B36A',
+      fontSize: 14,
+      fontWeight: '800',
+    },
+
+    userInfo: {
+      flex: 1,
+      marginLeft: 12,
+      marginRight: 8,
+    },
+
+    userName: {
+      color: '#EEEEEF',
+      fontSize: 13,
+      fontWeight: '800',
+    },
+
+    userEmail: {
+      color: '#777E89',
+      fontSize: 10.5,
+      marginTop: 3,
+    },
+
+    userActive: {
+      color: '#555D69',
+      fontSize: 9.5,
+      marginTop: 5,
+    },
+
+    roleBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 9,
+      borderWidth: 1,
+    },
+
+    adminRole: {
+      backgroundColor: '#211D13',
+      borderColor: '#5A4B29',
+    },
+
+    userRole: {
+      backgroundColor: '#141820',
+      borderColor: '#2B323D',
+    },
+
+    roleText: {
+      color: '#B9B0A0',
+      fontSize: 8,
+      fontWeight: '900',
+      letterSpacing: 0.8,
+    },
+
+    bottomBack: {
+      minHeight: 48,
+      borderRadius: 15,
+      backgroundColor: '#12161E',
+      borderWidth: 1,
+      borderColor: '#272D38',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+
+    bottomBackText: {
+      color: '#AEB4BE',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    bottomSpace: {
+      height: 10,
+    },
+  });
