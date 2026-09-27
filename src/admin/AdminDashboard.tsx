@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,13 @@ import {
   useAuth,
 } from '../auth/AuthProvider';
 
-export default function AdminDashboard() {
+type Props = {
+  onBack: () => void;
+};
+
+export default function AdminDashboard({
+  onBack,
+}: Props) {
   const {
     profile,
   } = useAuth();
@@ -26,10 +33,32 @@ export default function AdminDashboard() {
       style={styles.safe}
     >
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={
           styles.content
         }
       >
+        <View style={styles.header}>
+          <Pressable
+            style={styles.backButton}
+            onPress={onBack}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={21}
+              color="#FFFFFF"
+            />
+          </Pressable>
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>
+              Admin
+            </Text>
+          </View>
+
+          <View style={styles.headerSpacer} />
+        </View>
+
         <Text style={styles.eyebrow}>
           ADMIN CONTROL CENTER
         </Text>
@@ -42,18 +71,25 @@ export default function AdminDashboard() {
           {profile?.email}
         </Text>
 
-        <View style={styles.warning}>
-          <Ionicons
-            name="shield-checkmark"
-            size={20}
-            color="#D8B36A"
-          />
+        <View style={styles.adminVerified}>
+          <View style={styles.verifiedIcon}>
+            <Ionicons
+              name="shield-checkmark"
+              size={21}
+              color="#D8B36A"
+            />
+          </View>
 
-          <Text style={styles.warningText}>
-            Admin security will be upgraded to
-            server-side custom claims before
-            production release.
-          </Text>
+          <View style={styles.verifiedInfo}>
+            <Text style={styles.verifiedTitle}>
+              Administrator access active
+            </Text>
+
+            <Text style={styles.verifiedText}>
+              Your account is verified through
+              Firebase administrator permissions.
+            </Text>
+          </View>
         </View>
 
         <View style={styles.grid}>
@@ -117,6 +153,21 @@ export default function AdminDashboard() {
             text="Usage and feature analytics"
           />
         </View>
+
+        <Pressable
+          style={styles.bottomBackButton}
+          onPress={onBack}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={18}
+            color="#101512"
+          />
+
+          <Text style={styles.bottomBackText}>
+            Back to Profile
+          </Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -199,12 +250,46 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
 
+  header: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 13,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    backgroundColor: '#11141B',
+    borderWidth: 1,
+    borderColor: '#2A303A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  headerTitle: {
+    color: '#F0F0E7',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  headerSpacer: {
+    width: 42,
+  },
+
   eyebrow: {
     color: '#D8B36A',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.7,
-    marginTop: 15,
+    marginTop: 3,
   },
 
   title: {
@@ -220,9 +305,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
-  warning: {
+  adminVerified: {
     flexDirection: 'row',
-    backgroundColor: '#1B1811',
+    alignItems: 'center',
+    backgroundColor: '#151912',
     borderWidth: 1,
     borderColor: '#44391F',
     borderRadius: 18,
@@ -230,12 +316,31 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 
-  warningText: {
+  verifiedIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 14,
+    backgroundColor: '#211F18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  verifiedInfo: {
     flex: 1,
-    color: '#B7AA8C',
-    fontSize: 10,
-    lineHeight: 16,
-    marginLeft: 9,
+    marginLeft: 11,
+  },
+
+  verifiedTitle: {
+    color: '#E8E9E2',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  verifiedText: {
+    color: '#858A80',
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 4,
   },
 
   grid: {
@@ -315,5 +420,22 @@ const styles = StyleSheet.create({
     color: '#777D89',
     fontSize: 10,
     marginTop: 4,
+  },
+
+  bottomBackButton: {
+    height: 52,
+    borderRadius: 17,
+    backgroundColor: '#D8B36A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+  },
+
+  bottomBackText: {
+    color: '#101512',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
