@@ -120,3 +120,44 @@ export function mapThemeColors(
 
   return result;
 }
+
+
+import { StyleSheet } from 'react-native';
+
+export function createThemedStyles(theme: AppTheme, styles: Record<string, any>) {
+  const map: Record<string, string> = {
+    '#080A0F': theme.background, '#07100D': theme.background, '#000000': theme.background,
+    '#151922': theme.card, '#10131A': theme.surface, '#11141B': theme.surface, '#101A16': theme.card,
+    '#111B17': theme.surface, '#13251E': theme.card, '#12151C': theme.surface, '#121A16': theme.surface,
+    '#211F18': theme.accentSoft, '#1D1B16': theme.accentSoft, '#16231C': theme.accentSoft,
+    '#191A1F': theme.surfaceElevated, '#1B1D22': theme.surfaceElevated,
+    '#252A35': theme.border, '#292E39': theme.border, '#29372F': theme.border, '#294239': theme.border,
+    '#294034': theme.border, '#24322C': theme.border, '#202D27': theme.border, '#28362E': theme.border,
+    '#302E27': theme.border, '#30343D': theme.border, '#403923': theme.borderStrong, '#44391F': theme.borderStrong,
+    '#3A3528': theme.borderStrong, '#806B3D': theme.accent,
+    '#D8B36A': theme.accent, '#D9C77A': theme.accent, '#E0BD72': theme.accent, '#E3C17B': theme.accent, '#D7C08A': theme.accent,
+    '#FFFFFF': theme.text, '#fff': theme.text, '#F0F0E7': theme.text, '#F3F1E8': theme.text, '#F0EBDD': theme.text,
+    '#EDEDE5': theme.text, '#EDEEF0': theme.text, '#E4E6E1': theme.textSecondary, '#D1D5D0': theme.textSecondary,
+    '#C9CEC9': theme.textSecondary, '#C6CCC7': theme.textSecondary, '#DCE2DD': theme.textSecondary, '#C9CDD4': theme.textSecondary,
+    '#7F8792': theme.textMuted, '#858B99': theme.textMuted, '#777D89': theme.textMuted, '#7F8A83': theme.textMuted,
+    '#737E77': theme.textMuted, '#68716D': theme.textMuted, '#9BA39D': theme.textSecondary,
+    '#9EE5B6': theme.success, '#82C99F': theme.success, '#E9A5AB': theme.danger, '#A3A8B2': theme.textSecondary,
+  };
+  const walk = (v: any, key = ''): any => {
+    if (typeof v === 'string' && map[v]) return map[v];
+    if (typeof v === 'number' && key.toLowerCase().includes('borderradius')) {
+      return v <= 10 ? theme.radius.sm : v <= 17 ? theme.radius.md : theme.radius.lg;
+    }
+    if (Array.isArray(v)) return v.map((x) => walk(x, key));
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x, k)]));
+    return v;
+  };
+  const out: Record<string, any> = {};
+  Object.entries(styles).forEach(([name, value]) => {
+    out[name] = walk(value);
+    if (theme.glass && /card|hero|surface|feature|benefit|plan|status|membership|info|subscription|next|live/i.test(name)) {
+      out[name] = { ...out[name], shadowColor: theme.glow, shadowOpacity: theme.shadowOpacity, shadowRadius: 14, elevation: 4 };
+    }
+  });
+  return StyleSheet.create(out);
+}
