@@ -25,6 +25,7 @@ import PrayerScreen from './src/PrayerScreen';
 import DuasScreen from './src/DuasScreen';
 import IslamicCalendarScreen from './src/IslamicCalendarScreen';
 import PremiumHomeCard, { PremiumPill } from './src/home/PremiumHomeCard';
+import UpdateNotice from './src/update/UpdateNotice';
 
 import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
@@ -1599,6 +1600,8 @@ export default function App() {
       ]}
     >
       <StatusBar style="light" />
+
+      <UpdateNotice />
 
       {renderContent()}
 
