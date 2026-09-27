@@ -97,6 +97,12 @@ export default function QuranScreen({
   const initialNavigationHandled =
     useRef(false);
 
+  const lastSavedProgressRef =
+    useRef<string | null>(null);
+
+  const progressSaveTimeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     loadQuran();
     initializeBookmarkState();
@@ -147,6 +153,17 @@ export default function QuranScreen({
   }, [quran, initialSurah, initialAyah]);
 
   useEffect(() => {
+    ayahOffsetsRef.current = {};
+
+    if (progressSaveTimeoutRef.current) {
+      clearTimeout(progressSaveTimeoutRef.current);
+      progressSaveTimeoutRef.current = null;
+    }
+
+    lastSavedProgressRef.current = null;
+  }, [selectedSurah]);
+
+  useEffect(() => {
     if (
       selectedSurah === null ||
       !initialAyah ||
@@ -171,6 +188,60 @@ export default function QuranScreen({
 
     return () => clearTimeout(timer);
   }, [selectedSurah, initialAyah]);
+
+  function handleReaderScroll(scrollY: number) {
+    if (selectedSurah === null) {
+      return;
+    }
+
+    const entries = Object.entries(
+      ayahOffsetsRef.current
+    )
+      .map(([ayahNumber, offset]) => ({
+        ayahNumber: Number(ayahNumber),
+        offset,
+      }))
+      .filter(
+        (entry) =>
+          Number.isFinite(entry.ayahNumber) &&
+          Number.isFinite(entry.offset) &&
+          entry.offset <= scrollY + 140
+      )
+      .sort((a, b) => b.offset - a.offset);
+
+    if (entries.length === 0) {
+      return;
+    }
+
+    const currentAyah = entries[0].ayahNumber;
+    const progressKey = `${selectedSurah}:${currentAyah}`;
+
+    if (
+      lastSavedProgressRef.current === progressKey
+    ) {
+      return;
+    }
+
+    lastSavedProgressRef.current = progressKey;
+
+    if (progressSaveTimeoutRef.current) {
+      clearTimeout(progressSaveTimeoutRef.current);
+    }
+
+    progressSaveTimeoutRef.current = setTimeout(() => {
+      saveQuranProgress(
+        selectedSurah,
+        currentAyah
+      ).catch((err) => {
+        console.error(
+          'Quran scroll progress save error:',
+          err
+        );
+      });
+
+      progressSaveTimeoutRef.current = null;
+    }, 250);
+  }
 
   async function initializeBookmarkState() {
     try {
@@ -392,6 +463,12 @@ export default function QuranScreen({
             styles.readerContent
           }
           showsVerticalScrollIndicator={false}
+          onScroll={(event) =>
+            handleReaderScroll(
+              event.nativeEvent.contentOffset.y
+            )
+          }
+          scrollEventThrottle={250}
         >
           <Pressable
             style={styles.backButton}
