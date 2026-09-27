@@ -24,6 +24,7 @@ import {
 import {
   auth,
   subscribeToAuth,
+  resetPassword,
 } from '../firebase/auth';
 
 import { isAdminEmail } from '../admin/adminConfig';
@@ -33,16 +34,24 @@ type AuthContextValue = {
   profile: FirestoreUserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+
   signUp: (
     email: string,
     password: string,
     displayName?: string
   ) => Promise<void>;
+
   signIn: (
     email: string,
     password: string
   ) => Promise<void>;
+
+  sendResetEmail: (
+    email: string
+  ) => Promise<void>;
+
   logout: () => Promise<void>;
+
   refreshProfile: () => Promise<void>;
 };
 
@@ -60,7 +69,9 @@ export function AuthProvider({
     useState<User | null>(null);
 
   const [profile, setProfile] =
-    useState<FirestoreUserProfile | null>(null);
+    useState<FirestoreUserProfile | null>(
+      null
+    );
 
   const [loading, setLoading] =
     useState(true);
@@ -70,33 +81,36 @@ export function AuthProvider({
   ) {
     try {
       let existingProfile =
-        await getUserProfile(firebaseUser.uid);
+        await getUserProfile(
+          firebaseUser.uid
+        );
 
       if (!existingProfile) {
         const now =
           new Date().toISOString();
 
-        const newProfile: FirestoreUserProfile = {
-          uid: firebaseUser.uid,
-          email:
-            firebaseUser.email ??
-            '',
-          displayName:
-            firebaseUser.displayName,
-          role: isAdminEmail(
-            firebaseUser.email
-          )
-            ? 'admin'
-            : 'user',
-          createdAt: now,
-          lastActiveAt: now,
-        };
+        const newProfile: FirestoreUserProfile =
+          {
+            uid: firebaseUser.uid,
+            email:
+              firebaseUser.email ?? '',
+            displayName:
+              firebaseUser.displayName,
+            role: isAdminEmail(
+              firebaseUser.email
+            )
+              ? 'admin'
+              : 'user',
+            createdAt: now,
+            lastActiveAt: now,
+          };
 
         await createUserProfile(
           newProfile
         );
 
-        existingProfile = newProfile;
+        existingProfile =
+          newProfile;
       } else {
         await updateUserLastActive(
           firebaseUser.uid
@@ -178,6 +192,12 @@ export function AuthProvider({
     );
   }
 
+  async function sendResetEmail(
+    email: string
+  ) {
+    await resetPassword(email);
+  }
+
   async function logout() {
     await signOut(auth);
   }
@@ -201,6 +221,7 @@ export function AuthProvider({
           isAdminEmail(user?.email),
         signUp,
         signIn,
+        sendResetEmail,
         logout,
         refreshProfile,
       }),
@@ -212,7 +233,9 @@ export function AuthProvider({
     );
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
   );
