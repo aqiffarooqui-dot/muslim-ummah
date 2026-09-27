@@ -17,6 +17,9 @@ import { useTheme } from './themes/ThemeProvider';
 import {
   formatCountdown,
   getNextPrayer,
+  getCurrentPrayerWindow,
+  getOptionalPrayerWindows,
+  getNightWindow,
   getTodayPrayerData,
   type PrayerData,
 } from './prayer/prayerService';
@@ -134,14 +137,38 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const nextPrayer = prayerData ? getNextPrayer(prayerData.prayers, new Date()) : null;
+  const now = new Date();
+  const nextPrayer = prayerData ? getNextPrayer(prayerData.prayers, now) : null;
+  const currentWindow = prayerData
+    ? getCurrentPrayerWindow(prayerData.prayers, now)
+    : null;
+  const optionalWindows = prayerData
+    ? getOptionalPrayerWindows(prayerData.prayers)
+    : null;
+  const nightWindow = prayerData
+    ? getNightWindow(prayerData.prayers, prayerData.sunsetMinutes)
+    : null;
+
+  const formatMinutes = (minutes?: number) => {
+    if (minutes === undefined) return '--:--';
+
+    const normalized = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    let hour = Math.floor(normalized / 60);
+    const minute = normalized % 60;
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+
+    hour %= 12;
+    if (hour === 0) hour = 12;
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${suffix}`;
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.back}>
-            <Ionicons name="arrow-back" size={21} color={theme.textPrimary} />
+            <Ionicons name="arrow-back" size={21} color={theme.text} />
           </Pressable>
           <View style={styles.headerInfo}>
             <Text style={styles.eyebrow}>SALAH</Text>
@@ -218,6 +245,94 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
           <Text style={styles.sunriseTime}>{prayerData?.prayers.find(p => p.key === 'Sunrise')?.time || '--:--'}</Text>
         </View>
 
+        <View style={styles.windowsCard}>
+          <View style={styles.windowsHeader}>
+            <View>
+              <Text style={styles.windowsTitle}>Live Prayer Windows</Text>
+              <Text style={styles.windowsSubtitle}>Current status and important daily windows</Text>
+            </View>
+            {isPremium ? (
+              <View style={styles.miniPremium}>
+                <Text style={styles.miniPremiumText}>PREMIUM</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.windowGrid}>
+            <View style={styles.windowItem}>
+              <Ionicons name="sunny-outline" size={17} color={theme.accent} />
+              <Text style={styles.windowLabel}>SUNRISE</Text>
+              <Text style={styles.windowValue}>
+                {prayerData?.prayers.find(p => p.key === 'Sunrise')?.time || '--:--'}
+              </Text>
+            </View>
+
+            <View style={styles.windowItem}>
+              <Ionicons name="sunny" size={17} color={theme.accent} />
+              <Text style={styles.windowLabel}>SUNSET</Text>
+              <Text style={styles.windowValue}>
+                {prayerData?.sunset || '--:--'}
+              </Text>
+            </View>
+
+            <View style={[styles.windowItem, currentWindow && styles.windowItemActive]}>
+              <Ionicons name="time-outline" size={17} color={currentWindow ? theme.accent : theme.textSecondary} />
+              <Text style={styles.windowLabel}>CURRENT</Text>
+              <Text style={[styles.windowValue, currentWindow && styles.accentText]}>
+                {currentWindow?.name || 'Between prayers'}
+              </Text>
+              {currentWindow ? (
+                <Text style={styles.windowSmall}>
+                  Ends in {formatCountdown(currentWindow.remainingSeconds)}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.windowItem}>
+              <Ionicons name="sunny-outline" size={17} color={theme.accent} />
+              <Text style={styles.windowLabel}>CHASHT</Text>
+              <Text style={styles.windowValue}>
+                {optionalWindows
+                  ? `${formatMinutes(optionalWindows.chashtStart)}`
+                  : '--:--'}
+              </Text>
+              <Text style={styles.windowSmall}>
+                to {optionalWindows ? formatMinutes(optionalWindows.chashtEnd) : '--:--'}
+              </Text>
+            </View>
+
+            <View style={styles.windowItem}>
+              <Ionicons name="alert-circle-outline" size={17} color={theme.warning} />
+              <Text style={styles.windowLabel}>ZAWAL</Text>
+              <Text style={styles.windowValue}>
+                {optionalWindows ? formatMinutes(optionalWindows.zawalStart) : '--:--'}
+              </Text>
+              <Text style={styles.windowSmall}>~10 min before Dhuhr</Text>
+            </View>
+
+            <View style={styles.windowItem}>
+              <Ionicons name="moon-outline" size={17} color={theme.accent} />
+              <Text style={styles.windowLabel}>TAHAJJUD</Text>
+              <Text style={styles.windowValue}>
+                {nightWindow ? formatMinutes(nightWindow.lastThirdStart) : '--:--'}
+              </Text>
+              <Text style={styles.windowSmall}>
+                to {nightWindow ? formatMinutes(nightWindow.lastThirdEnd) : '--:--'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.nextSummary}>
+            <Text style={styles.windowLabel}>NEXT PRAYER</Text>
+            <Text style={styles.nextSummaryName}>
+              {nextPrayer?.name || '--'} • {nextPrayer?.time || '--:--'}
+            </Text>
+            <Text style={styles.nextSummaryCountdown}>
+              {formatCountdown(countdown)} remaining
+            </Text>
+          </View>
+        </View>
+
         {isPremium ? (
           <>
             <View style={styles.sectionHeader}>
@@ -259,7 +374,7 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
               <View style={styles.cardTop}>
                 <View style={styles.locationIcon}><Ionicons name="notifications-outline" size={21} color={theme.accent} /></View>
                 <View style={styles.flex}>
-                  <Text style={styles.cardTitle}>Prayer Notifications</Text>
+                  <Text style={styles.cardTitle}>Prayer Alerts & Notifications</Text>
                   <Text style={styles.text}>{scheduledCount} scheduled notification(s)</Text>
                 </View>
                 <View style={styles.miniPremium}><Text style={styles.miniPremiumText}>PREMIUM</Text></View>
@@ -278,7 +393,7 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
                   </Pressable>
                 ))}
               </View>
-              <Text style={styles.text}>Notifications use device local time and require a native Android/iOS build.</Text>
+              <Text style={styles.text}>Prayer alerts are scheduled in your device local time. Android/iOS native builds are required.</Text>
             </View>
           </>
         ) : null}
@@ -333,7 +448,20 @@ function createStyles(theme: any) {
     accentText: { color: theme.accent },
     sunriseCard: { marginTop: 8, padding: 12, borderRadius: 15, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 9 },
     sunriseText: { flex: 1, color: theme.textSecondary, fontSize: 11, fontWeight: '800' },
-    sunriseTime: { color: theme.textPrimary, fontSize: 12, fontWeight: '900' },
+    sunriseTime: { color: theme.text, fontSize: 12, fontWeight: '900' },
+    windowsCard: { marginTop: 10, padding: 15, borderRadius: 20, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, gap: 12 },
+    windowsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    windowsTitle: { color: theme.text, fontSize: 16, fontWeight: '900' },
+    windowsSubtitle: { color: theme.textMuted, fontSize: 9, marginTop: 3 },
+    windowGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    windowItem: { width: '31.5%', minHeight: 88, padding: 10, borderRadius: 14, backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border },
+    windowItemActive: { borderColor: theme.accent, backgroundColor: theme.accentSoft },
+    windowLabel: { color: theme.textMuted, fontSize: 7, fontWeight: '900', letterSpacing: 0.8, marginTop: 6 },
+    windowValue: { color: theme.text, fontSize: 11, fontWeight: '900', marginTop: 3 },
+    windowSmall: { color: theme.textSecondary, fontSize: 7.5, lineHeight: 11, marginTop: 3 },
+    nextSummary: { padding: 12, borderRadius: 15, backgroundColor: theme.surfaceElevated, borderWidth: 1, borderColor: theme.border },
+    nextSummaryName: { color: theme.text, fontSize: 13, fontWeight: '900', marginTop: 3 },
+    nextSummaryCountdown: { color: theme.accent, fontSize: 10, fontWeight: '900', marginTop: 3 },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
     premiumBadge: { marginTop: 20, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 9, backgroundColor: theme.accent, flexDirection: 'row', alignItems: 'center', gap: 4 },
     premiumBadgeText: { color: theme.background, fontSize: 8, fontWeight: '900' },
