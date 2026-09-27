@@ -25,6 +25,7 @@ export default function AuthScreen() {
   const {
     signIn,
     signUp,
+    signInWithGoogle,
     sendResetEmail,
   } = useAuth();
 
@@ -125,6 +126,56 @@ export default function AuthScreen() {
       ) {
         message =
           'Password must be at least 6 characters.';
+      }
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setError('');
+    setSuccess('');
+
+    try {
+      setLoading(true);
+
+      await signInWithGoogle();
+    } catch (err: any) {
+      let message =
+        'Google Sign-In failed. Please try again.';
+
+      if (
+        err?.code ===
+        'auth/popup-closed-by-user'
+      ) {
+        message =
+          'Google Sign-In was cancelled.';
+      } else if (
+        err?.code ===
+        'auth/popup-blocked'
+      ) {
+        message =
+          'Google Sign-In popup was blocked. Please allow popups and try again.';
+      } else if (
+        err?.code ===
+        'auth/account-exists-with-different-credential'
+      ) {
+        message =
+          'An account already exists with this email using another sign-in method.';
+      } else if (
+        err?.code ===
+        'auth/unauthorized-domain'
+      ) {
+        message =
+          'This website is not authorized for Google Sign-In yet. Please add the current domain in Firebase Authentication settings.';
+      } else if (
+        err?.code ===
+        'auth/operation-not-allowed'
+      ) {
+        message =
+          'Google Sign-In is not enabled in Firebase Authentication.';
       }
 
       setError(message);
@@ -391,28 +442,43 @@ export default function AuthScreen() {
             </View>
 
             <Pressable
-              style={styles.googleButton}
-              onPress={() => {
-                setError(
-                  'Google Sign-In will be enabled in the next authentication batch.'
-                );
-              }}
+              style={[
+                styles.googleButton,
+                loading &&
+                  styles.disabledButton,
+              ]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
             >
-              <Text
-                style={styles.googleG}
-              >
-                G
-              </Text>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <>
+                  <Text
+                    style={
+                      styles.googleG
+                    }
+                  >
+                    G
+                  </Text>
 
-              <Text
-                style={styles.googleText}
-              >
-                Continue with Google
-              </Text>
+                  <Text
+                    style={
+                      styles.googleText
+                    }
+                  >
+                    Continue with Google
+                  </Text>
+                </>
+              )}
             </Pressable>
 
             <Pressable
               onPress={switchMode}
+              disabled={loading}
             >
               <Text
                 style={styles.switchText}
