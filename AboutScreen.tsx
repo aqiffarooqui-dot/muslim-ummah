@@ -7,6 +7,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from './src/themes/ThemeProvider';
+import { createThemedStyles } from './src/themes/themeStyleMapper';
 
 type AboutScreenProps = {
   onBack: () => void;
@@ -45,7 +47,9 @@ const features = [
   },
 ];
 
-export default function AboutScreen({ onBack }: AboutScreenProps) {
+export default function AboutScreen({
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme); onBack }: AboutScreenProps) {
   return (
     <View style={styles.container}>
       <ScrollView
@@ -210,7 +214,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   container: {
     flex: 1,
     backgroundColor: '#07100D',
