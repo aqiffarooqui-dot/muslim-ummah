@@ -111,12 +111,12 @@ const features: Array<{
 ];
 
 export default function PremiumToolsScreen({
-  const { theme } = useTheme();
-  const styles = createLegacyStyles(theme);
   onBack,
 }: {
   onBack: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   const { isPremium } = usePremium();
 
   const [bookmarks, setBookmarks] = useState(0);
