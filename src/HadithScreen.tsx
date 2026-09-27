@@ -409,8 +409,10 @@ export default function HadithScreen({
         </View>
       ) : (
         <ScrollView
+          style={s.listScroll}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
         >
           {shown.length === 0 ? (
             <View style={s.centerInline}>
@@ -647,6 +649,7 @@ const s = StyleSheet.create({
   },
 
   search: {
+    flexShrink: 0,
     height: 43,
     borderRadius: 13,
     borderWidth: 1,
@@ -657,9 +660,15 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
 
+  listScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
+
   list: {
     gap: 10,
-    paddingBottom: 30,
+    paddingTop: 2,
+    paddingBottom: 40,
   },
 
   card: {
