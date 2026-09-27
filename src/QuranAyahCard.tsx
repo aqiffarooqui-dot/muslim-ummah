@@ -13,6 +13,7 @@ import { usePremium } from './premium/PremiumProvider';
 import QuranArabicText from './QuranArabicText';
 
 type QuranAyahCardProps = {
+  surahNumber: number;
   ayahNumber: number;
   arabicText: string;
   translation?: string;
@@ -22,6 +23,7 @@ type QuranAyahCardProps = {
 };
 
 export default function QuranAyahCard({
+  surahNumber,
   ayahNumber,
   arabicText,
   translation,
@@ -30,7 +32,7 @@ export default function QuranAyahCard({
   onBookmarkPress,
 }: QuranAyahCardProps) {
   const { isPremium } = usePremium();
-  const audioUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(ayahNumber).padStart(3,'0')}.mp3`;
+  const audioUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3,'0')}${String(ayahNumber).padStart(3,'0')}.mp3`;
   const player = useAudioPlayer(audioUrl);
   const playAudio = () => {
     if (!isPremium) {
@@ -54,7 +56,14 @@ export default function QuranAyahCard({
           <Ionicons name={isPremium ? 'play-circle-outline' : 'lock-closed-outline'} size={21} color={isPremium ? '#D8B36A' : '#777D89'} />
         </Pressable>
         <Pressable
-          onPress={onBookmarkPress}
+          onPress={() => {
+            if (!isPremium) {
+              const message='Unlimited Quran Bookmarks are a Premium feature.';
+              if (Platform.OS === 'web') window.alert(message); else Alert.alert('Premium Feature',message);
+              return;
+            }
+            onBookmarkPress?.();
+          }}
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel={
