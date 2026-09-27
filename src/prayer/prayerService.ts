@@ -25,6 +25,8 @@ export type PrayerData = {
   latitude: number;
   longitude: number;
   timezone?: string;
+  sunset?: string;
+  sunsetMinutes?: number;
 };
 
 type AlAdhanResponse = {
@@ -316,6 +318,12 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
       latitude: location.latitude,
       longitude: location.longitude,
       timezone: json.data.meta?.timezone,
+      sunset: json.data.timings.Sunset
+        ? formatTime(json.data.timings.Sunset)
+        : undefined,
+      sunsetMinutes: json.data.timings.Sunset
+        ? toMinutes(json.data.timings.Sunset)
+        : undefined,
     };
 
     await writePrayerCache(
@@ -483,7 +491,8 @@ export function getOptionalPrayerWindows(
 }
 
 export function getNightWindow(
-  prayers: PrayerTime[]
+  prayers: PrayerTime[],
+  sunsetMinutes?: number
 ) {
   const maghrib =
     prayers.find(
@@ -500,25 +509,34 @@ export function getNightWindow(
       (prayer) => prayer.key === 'Isha'
     )?.minutes;
 
+  const nightStart = sunsetMinutes ?? maghrib;
+
   if (
-    maghrib === undefined ||
+    nightStart === undefined ||
     fajr === undefined ||
     isha === undefined
   ) {
     return null;
   }
 
-  const nightStart = isha;
-  const nightEnd = fajr + 24 * 60;
+  const nextFajr = fajr + 24 * 60;
+  const nightLength = nextFajr - nightStart;
+  const lastThirdStart =
+    Math.round(
+      nightStart + (nightLength * 2) / 3
+    ) % (24 * 60);
 
   return {
-    maghrib,
+    maghrib: nightStart,
     isha,
     nightStart,
-    nightEnd,
-    midnight: Math.round(
-      (isha + (fajr + 24 * 60)) / 2
-    ) % (24 * 60),
+    nightEnd: nextFajr,
+    midnight:
+      Math.round(
+        nightStart + nightLength / 2
+      ) % (24 * 60),
+    lastThirdStart,
+    lastThirdEnd: fajr,
   };
 }
 
