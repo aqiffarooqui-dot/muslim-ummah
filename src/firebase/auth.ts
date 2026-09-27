@@ -1,0 +1,45 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  initializeAuth,
+  onAuthStateChanged,
+  type User,
+} from 'firebase/auth';
+import { getReactNativePersistence } from 'firebase/auth/react-native';
+
+import { firebaseApp } from './firebaseConfig';
+
+let auth;
+
+try {
+  auth = initializeAuth(firebaseApp, {
+    persistence: getReactNativePersistence(
+      AsyncStorage
+    ),
+  });
+} catch {
+  auth = getAuth(firebaseApp);
+}
+
+export { auth };
+
+export async function registerWithEmail(
+  email: string,
+  password: string
+): Promise<User> {
+  const credential =
+    await createUserWithEmailAndPassword(
+      auth,
+      email.trim().toLowerCase(),
+      password
+    );
+
+  return credential.user;
+}
+
+export function subscribeToAuth(
+  callback: (user: User | null) => void
+) {
+  return onAuthStateChanged(auth, callback);
+}
