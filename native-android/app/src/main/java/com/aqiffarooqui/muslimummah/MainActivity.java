@@ -10,7 +10,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import androidx.appcompat.app.AppCompatActivity;
+import android.app.Activity;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private static final String APP_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/";
     private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
