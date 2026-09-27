@@ -31,6 +31,21 @@ import {
   TRANSLATION_FILE_URLS,
 } from './src/quranTranslations';
 import { parseTranslationText } from './src/quranTranslationParser';
+import { usePremium } from './src/premium/PremiumProvider';
+import {
+  DEFAULT_QURAN_READING_SETTINGS,
+  getQuranReadingSettings,
+  saveQuranReadingSettings,
+  type QuranReadingSettings,
+} from './src/quranReadingSettings';
+import {
+  getQuranInsights,
+  getQuranReadingHistory,
+  getQuranReadingSummary,
+  type QuranInsights,
+  type QuranReadingHistoryDay,
+  type QuranReadingSummary,
+} from './src/quranProgress';
 
 import QuranLanguageSelector from './src/QuranLanguageSelector';
 import QuranAyahCard from './src/QuranAyahCard';
@@ -93,6 +108,15 @@ export default function QuranScreen({
     useState('');
 
   const [search, setSearch] = useState('');
+  const { isPremium } = usePremium();
+  const [readingSettings, setReadingSettings] =
+    useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
+  const [quranInsights, setQuranInsights] =
+    useState<QuranInsights | null>(null);
+  const [readingHistory, setReadingHistory] =
+    useState<QuranReadingHistoryDay[]>([]);
+  const [readingSummary, setReadingSummary] =
+    useState<QuranReadingSummary | null>(null);
 
   const [bookmarkKeys, setBookmarkKeys] =
     useState<Set<string>>(new Set());
@@ -179,6 +203,28 @@ export default function QuranScreen({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isPremium) {
+      return;
+    }
+
+    Promise.all([
+      getQuranReadingSettings(),
+      getQuranInsights(),
+      getQuranReadingHistory(30),
+      getQuranReadingSummary(),
+    ])
+      .then(([settings, insights, history, summary]) => {
+        setReadingSettings(settings);
+        setQuranInsights(insights);
+        setReadingHistory(history);
+        setReadingSummary(summary);
+      })
+      .catch((err) =>
+        console.error('Quran premium tools load error:', err)
+      );
+  }, [isPremium]);
 
   useEffect(() => {
     if (language === 'arabic') {
@@ -1381,6 +1427,137 @@ export default function QuranScreen({
             color="#FFFFFF"
           />
         </Pressable>
+
+
+        {isPremium && (
+          <View style={styles.premiumToolsCard}>
+            <View style={styles.premiumToolsHeader}>
+              <View style={styles.premiumToolsTitleRow}>
+                <Ionicons name="sparkles" size={18} color="#D8B36A" />
+                <Text style={styles.premiumToolsTitle}>Premium Quran Tools</Text>
+              </View>
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+              </View>
+            </View>
+
+            <Text style={styles.premiumToolsText}>
+              Advanced reading controls, Quran insights and reading history.
+            </Text>
+
+            <Text style={styles.premiumControlLabel}>
+              Arabic text size · {readingSettings.fontSize}px
+            </Text>
+            <View style={styles.row}>
+              <Pressable
+                style={styles.premiumAction}
+                onPress={async () => {
+                  const next = {
+                    ...readingSettings,
+                    fontSize: Math.max(20, readingSettings.fontSize - 2),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                }}
+              >
+                <Text style={styles.premiumActionText}>A−</Text>
+              </Pressable>
+              <View style={styles.premiumValue}>
+                <Text style={styles.premiumValueText}>{readingSettings.fontSize}px</Text>
+              </View>
+              <Pressable
+                style={styles.premiumAction}
+                onPress={async () => {
+                  const next = {
+                    ...readingSettings,
+                    fontSize: Math.min(36, readingSettings.fontSize + 2),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                }}
+              >
+                <Text style={styles.premiumActionText}>A+</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.premiumControlLabel}>
+              Reading mode
+            </Text>
+            <View style={styles.row}>
+              {(['comfortable', 'compact'] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  style={[
+                    styles.premiumMode,
+                    readingSettings.mode === mode && styles.premiumModeActive,
+                  ]}
+                  onPress={async () => {
+                    const next = { ...readingSettings, mode };
+                    await saveQuranReadingSettings(next);
+                    setReadingSettings(next);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.premiumModeText,
+                      readingSettings.mode === mode && styles.premiumModeTextActive,
+                    ]}
+                  >
+                    {mode === 'comfortable' ? 'Comfortable' : 'Compact'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {quranInsights && readingSummary && (
+              <>
+                <View style={styles.premiumStatsRow}>
+                  <View style={styles.premiumStat}>
+                    <Text style={styles.premiumStatValue}>{quranInsights.currentStreak}</Text>
+                    <Text style={styles.premiumStatLabel}>Streak</Text>
+                  </View>
+                  <View style={styles.premiumStat}>
+                    <Text style={styles.premiumStatValue}>{readingSummary.last7Days}</Text>
+                    <Text style={styles.premiumStatLabel}>7 Days</Text>
+                  </View>
+                  <View style={styles.premiumStat}>
+                    <Text style={styles.premiumStatValue}>{readingSummary.last30Days}</Text>
+                    <Text style={styles.premiumStatLabel}>30 Days</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.premiumHistoryTitle}>Reading History · 30 Days</Text>
+                <View style={styles.premiumHistory}>
+                  {readingHistory.map((day) => (
+                    <View key={day.date} style={styles.premiumHistoryRow}>
+                      <Text style={styles.premiumHistoryDate}>
+                        {new Date(day.date + 'T12:00:00').toLocaleDateString(undefined, {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </Text>
+                      <View style={styles.premiumHistoryTrack}>
+                        <View
+                          style={[
+                            styles.premiumHistoryFill,
+                            {
+                              width:
+                                Math.min(
+                                  100,
+                                  day.goal > 0 ? (day.count / day.goal) * 100 : 0
+                                ) + '%',
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.premiumHistoryCount}>{day.count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        )}
 
         <View style={styles.searchContainer}>
           <Ionicons
