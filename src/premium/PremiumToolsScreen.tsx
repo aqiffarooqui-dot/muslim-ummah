@@ -515,7 +515,7 @@ export default function PremiumToolsScreen({
 
         <Text style={styles.controlLabel}>Asr calculation school</Text>
         <View style={styles.row}>
-          {[{id:0,label:'Standard / Shafi'i'}, {id:1,label:'Hanafi'}].map(option => (
+          {[{id:0,label:"Standard / Shafi'i"}, {id:1,label:"Hanafi"}].map(option => (
             <Pressable
               key={option.id}
               disabled={busy}
