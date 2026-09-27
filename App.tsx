@@ -12,8 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import QuranScreen from './QuranScreen';
 import QuranBookmarksScreen from './src/QuranBookmarksScreen';
 import AboutScreen from './AboutScreen';
+import ProfileScreen from './src/profile/ProfileScreen';
+import PremiumScreen from './src/premium/PremiumScreen';
+import AdminDashboard from './src/admin/AdminDashboard';
+
 import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
+import { useAuth } from './src/auth/AuthProvider';
 
 type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
 
@@ -54,9 +59,14 @@ const quickItems = [
 ];
 
 export default function App() {
+  const { isAdmin } = useAuth();
+
   const [activeTab, setActiveTab] = useState<Tab>('Home');
   const [showAbout, setShowAbout] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const [quranOpenRequest, setQuranOpenRequest] =
     useState<QuranOpenRequest>(null);
@@ -105,6 +115,9 @@ export default function App() {
   const openAbout = () => {
     setShowAbout(true);
     setShowBookmarks(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAdmin(false);
   };
 
   const closeAbout = () => {
@@ -114,15 +127,61 @@ export default function App() {
   const openBookmarks = () => {
     setShowBookmarks(true);
     setShowAbout(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAdmin(false);
   };
 
   const closeBookmarks = () => {
     setShowBookmarks(false);
   };
 
+  const openProfile = () => {
+    setShowProfile(true);
+    setShowAbout(false);
+    setShowBookmarks(false);
+    setShowPremium(false);
+    setShowAdmin(false);
+  };
+
+  const closeProfile = () => {
+    setShowProfile(false);
+  };
+
+  const openPremium = () => {
+    setShowPremium(true);
+    setShowProfile(false);
+    setShowAbout(false);
+    setShowBookmarks(false);
+    setShowAdmin(false);
+  };
+
+  const closePremium = () => {
+    setShowPremium(false);
+  };
+
+  const openAdmin = () => {
+    if (!isAdmin) {
+      return;
+    }
+
+    setShowAdmin(true);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAbout(false);
+    setShowBookmarks(false);
+  };
+
+  const closeAdmin = () => {
+    setShowAdmin(false);
+  };
+
   const openQuran = async () => {
     setShowBookmarks(false);
     setShowAbout(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAdmin(false);
 
     try {
       const progress = await getQuranProgress();
@@ -158,6 +217,9 @@ export default function App() {
   const openContinueQuran = async () => {
     setShowBookmarks(false);
     setShowAbout(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAdmin(false);
 
     try {
       const progress = await getQuranProgress();
@@ -196,6 +258,9 @@ export default function App() {
   ) => {
     setShowBookmarks(false);
     setShowAbout(false);
+    setShowProfile(false);
+    setShowPremium(false);
+    setShowAdmin(false);
 
     setQuranOpenRequest({
       surahNumber,
@@ -221,7 +286,10 @@ export default function App() {
           </Text>
         </View>
 
-        <Pressable style={styles.profileButton}>
+        <Pressable
+          style={styles.profileButton}
+          onPress={openProfile}
+        >
           <Ionicons
             name="person-outline"
             size={21}
@@ -606,6 +674,99 @@ export default function App() {
       </View>
 
       <Text style={styles.moreSectionTitle}>
+        Account
+      </Text>
+
+      <Pressable
+        style={styles.moreItem}
+        onPress={openProfile}
+      >
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="person-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>
+            Profile
+          </Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            Account, membership and security
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </Pressable>
+
+      <Pressable
+        style={styles.moreItem}
+        onPress={openPremium}
+      >
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="diamond-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>
+            Premium
+          </Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            Themes, audio and advanced features
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </Pressable>
+
+      {isAdmin && (
+        <Pressable
+          style={styles.moreItem}
+          onPress={openAdmin}
+        >
+          <View style={styles.moreItemIcon}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={21}
+              color="#D9C77A"
+            />
+          </View>
+
+          <View style={styles.moreItemInfo}>
+            <Text style={styles.moreItemTitle}>
+              Admin Control Center
+            </Text>
+
+            <Text style={styles.moreItemSubtitle}>
+              Users, premium, payments and analytics
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={19}
+            color="#59645E"
+          />
+        </Pressable>
+      )}
+
+      <Text style={styles.moreSectionTitle}>
         Quran
       </Text>
 
@@ -742,6 +903,30 @@ export default function App() {
   );
 
   const renderContent = () => {
+    if (showAdmin) {
+      return (
+        <AdminDashboard />
+      );
+    }
+
+    if (showPremium) {
+      return (
+        <PremiumScreen
+          onBack={closePremium}
+        />
+      );
+    }
+
+    if (showProfile) {
+      return (
+        <ProfileScreen
+          onBack={closeProfile}
+          onPremium={openPremium}
+          onAdmin={openAdmin}
+        />
+      );
+    }
+
     if (showAbout) {
       return (
         <AboutScreen
@@ -793,57 +978,61 @@ export default function App() {
 
       {renderContent()}
 
-      {!showAbout && !showBookmarks && (
-        <View style={styles.bottomNav}>
-          <NavItem
-            label="Home"
-            icon="home"
-            active={activeTab === 'Home'}
-            onPress={() => {
-              setQuranOpenRequest(null);
-              setActiveTab('Home');
-              loadQuranProgress();
-            }}
-          />
+      {!showAbout &&
+        !showBookmarks &&
+        !showProfile &&
+        !showPremium &&
+        !showAdmin && (
+          <View style={styles.bottomNav}>
+            <NavItem
+              label="Home"
+              icon="home"
+              active={activeTab === 'Home'}
+              onPress={() => {
+                setQuranOpenRequest(null);
+                setActiveTab('Home');
+                loadQuranProgress();
+              }}
+            />
 
-          <NavItem
-            label="Quran"
-            icon="book-outline"
-            active={activeTab === 'Quran'}
-            onPress={openQuran}
-          />
+            <NavItem
+              label="Quran"
+              icon="book-outline"
+              active={activeTab === 'Quran'}
+              onPress={openQuran}
+            />
 
-          <NavItem
-            label="Hadith"
-            icon="library-outline"
-            active={activeTab === 'Hadith'}
-            onPress={() => {
-              setQuranOpenRequest(null);
-              setActiveTab('Hadith');
-            }}
-          />
+            <NavItem
+              label="Hadith"
+              icon="library-outline"
+              active={activeTab === 'Hadith'}
+              onPress={() => {
+                setQuranOpenRequest(null);
+                setActiveTab('Hadith');
+              }}
+            />
 
-          <NavItem
-            label="Prayer"
-            icon="time-outline"
-            active={activeTab === 'Prayer'}
-            onPress={() => {
-              setQuranOpenRequest(null);
-              setActiveTab('Prayer');
-            }}
-          />
+            <NavItem
+              label="Prayer"
+              icon="time-outline"
+              active={activeTab === 'Prayer'}
+              onPress={() => {
+                setQuranOpenRequest(null);
+                setActiveTab('Prayer');
+              }}
+            />
 
-          <NavItem
-            label="More"
-            icon="grid-outline"
-            active={activeTab === 'More'}
-            onPress={() => {
-              setQuranOpenRequest(null);
-              setActiveTab('More');
-            }}
-          />
-        </View>
-      )}
+            <NavItem
+              label="More"
+              icon="grid-outline"
+              active={activeTab === 'More'}
+              onPress={() => {
+                setQuranOpenRequest(null);
+                setActiveTab('More');
+              }}
+            />
+          </View>
+        )}
     </View>
   );
 }
