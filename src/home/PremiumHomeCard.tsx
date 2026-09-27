@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -233,6 +234,19 @@ export default function PremiumHomeCard({
 
       {hadith ? (
         <Pressable onPress={onOpenHadith} style={styles.hadithBlock}>
+          <ImageBackground
+            source={{
+              uri: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=85',
+            }}
+            imageStyle={styles.hadithImage}
+            style={styles.hadithImageWrap}
+          >
+            <View style={styles.hadithImageOverlay} />
+            <View style={styles.hadithImageContent}>
+              <Text style={styles.hadithImageKicker}>DAILY HADITH</Text>
+              <Ionicons name="book-outline" size={18} color="#FFFFFF" />
+            </View>
+          </ImageBackground>
           <Text style={[styles.hadithLabel, { color: theme.accent }]}>
             DAILY HADITH • ROMAN URDU
           </Text>
@@ -401,6 +415,32 @@ const styles = StyleSheet.create({
   },
   hadithBlock: {
     marginTop: 18,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  hadithImageWrap: {
+    height: 145,
+    marginBottom: 14,
+    justifyContent: 'flex-end',
+  },
+  hadithImage: {
+    borderRadius: 22,
+  },
+  hadithImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.38)',
+  },
+  hadithImageContent: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  hadithImageKicker: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.6,
   },
   hadithLabel: {
     fontSize: 8,
