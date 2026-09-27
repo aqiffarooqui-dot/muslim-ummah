@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import type { AppTheme } from './themeTypes';
 
 type StyleObject = Record<string, unknown>;
@@ -122,8 +123,6 @@ export function mapThemeColors(
 }
 
 
-import { StyleSheet } from 'react-native';
-
 export function createThemedStyles(theme: AppTheme, styles: Record<string, any>) {
   const map: Record<string, string> = {
     '#080A0F': theme.background, '#07100D': theme.background, '#000000': theme.background,
@@ -146,6 +145,7 @@ export function createThemedStyles(theme: AppTheme, styles: Record<string, any>)
   const walk = (v: any, key = ''): any => {
     if (typeof v === 'string' && map[v]) return map[v];
     if (typeof v === 'number' && key.toLowerCase().includes('borderradius')) {
+      if (v >= 100) return theme.radius.pill;
       return v <= 10 ? theme.radius.sm : v <= 17 ? theme.radius.md : theme.radius.lg;
     }
     if (Array.isArray(v)) return v.map((x) => walk(x, key));
