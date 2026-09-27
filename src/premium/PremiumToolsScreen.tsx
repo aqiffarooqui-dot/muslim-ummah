@@ -18,8 +18,12 @@ import {
   getQuranDailyGoal,
   getQuranInsights,
   getQuranProgress,
+  getQuranReadingHistory,
+  getQuranReadingSummary,
   setQuranDailyGoal,
   type QuranInsights,
+  type QuranReadingHistoryDay,
+  type QuranReadingSummary,
 } from '../quranProgress';
 import {
   getLastCloudSync,
@@ -170,6 +174,17 @@ export default function PremiumToolsScreen({
       longestStreak: 0,
       goalCompletedToday: false,
     });
+  const [readingHistory, setReadingHistory] =
+    useState<QuranReadingHistoryDay[]>([]);
+  const [readingSummary, setReadingSummary] =
+    useState<QuranReadingSummary>({
+      last7Days: 0,
+      last30Days: 0,
+      last90Days: 0,
+      activeDaysLast30: 0,
+      totalUniqueAyahsLast90: 0,
+      averagePerActiveDayLast30: 0,
+    });
 
   const load = useCallback(async () => {
     setBookmarks(getBookmarks().length);
@@ -184,6 +199,8 @@ export default function PremiumToolsScreen({
     setReminders(await getScheduledReminderCount());
     setReadingSettings(await getQuranReadingSettings());
     setQuranInsights(await getQuranInsights());
+    setReadingHistory(await getQuranReadingHistory(30));
+    setReadingSummary(await getQuranReadingSummary());
     setPrayerSettings(await getPrayerSettings());
     setPrayerNotifications(await getPrayerNotificationSettings());
     setScheduledPrayerNotifications(await getScheduledPrayerNotificationCount());
@@ -503,6 +520,107 @@ export default function PremiumToolsScreen({
             value={progress.ayahNumber}
           />
         </View>
+
+        <Text style={styles.section}>
+          Reading History & Analytics
+        </Text>
+
+        <View style={styles.statsGrid}>
+          <Stat
+            icon="calendar-outline"
+            label="Last 7 Days"
+            value={readingSummary.last7Days}
+          />
+          <Stat
+            icon="analytics-outline"
+            label="Last 30 Days"
+            value={readingSummary.last30Days}
+          />
+          <Stat
+            icon="library-outline"
+            label="Last 90 Days"
+            value={readingSummary.last90Days}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons
+              name="stats-chart-outline"
+              size={24}
+              color="#D8B36A"
+            />
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>
+              Reading consistency
+            </Text>
+            <Text style={styles.text}>
+              {readingSummary.activeDaysLast30} active day(s) in the last 30 days ·{' '}
+              {readingSummary.averagePerActiveDayLast30} unique Ayahs per active day.
+            </Text>
+            <Text style={styles.text}>
+              {readingSummary.totalUniqueAyahsLast90} unique Ayahs recorded in the last 90 days.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.historyCard}>
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>
+              Last 30 days
+            </Text>
+            <Text style={styles.historyLegend}>
+              Goal = {quranInsights.dailyGoal}
+            </Text>
+          </View>
+
+          {readingHistory.map((day) => {
+            const date = new Date(day.date + 'T12:00:00');
+            const label = date.toLocaleDateString(undefined, {
+              day: 'numeric',
+              month: 'short',
+            });
+
+            return (
+              <View key={day.date} style={styles.historyRow}>
+                <Text style={styles.historyDate}>
+                  {label}
+                </Text>
+
+                <View style={styles.historyTrack}>
+                  <View
+                    style={[
+                      styles.historyFill,
+                      {
+                        width:
+                          Math.min(
+                            100,
+                            day.goal > 0
+                              ? (day.count / day.goal) * 100
+                              : 0
+                          ) + '%',
+                      },
+                    ]}
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.historyCount,
+                    day.goalCompleted && styles.historyCountComplete,
+                  ]}
+                >
+                  {day.count}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <Text style={styles.text}>
+          History is stored locally on this device and currently keeps up to 90 days of unique-Ayah activity.
+        </Text>
 
         <Text style={styles.section}>
           Advanced Prayer
@@ -1407,6 +1525,74 @@ const styles = StyleSheet.create({
 
   prayerNotificationTextActive: {
     color: '#D8B36A',
+  },
+
+  historyCard: {
+    marginTop: 9,
+    padding: 15,
+    borderRadius: 18,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#252A35',
+  },
+
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+
+  historyTitle: {
+    color: '#eee',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  historyLegend: {
+    color: '#858B99',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 28,
+    gap: 8,
+  },
+
+  historyDate: {
+    width: 44,
+    color: '#858B99',
+    fontSize: 8,
+    fontWeight: '700',
+  },
+
+  historyTrack: {
+    flex: 1,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#252A35',
+    overflow: 'hidden',
+  },
+
+  historyFill: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#D8B36A',
+  },
+
+  historyCount: {
+    width: 24,
+    textAlign: 'right',
+    color: '#858B99',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+
+  historyCountComplete: {
+    color: '#8DD8B0',
   },
 
   actionActive: {
