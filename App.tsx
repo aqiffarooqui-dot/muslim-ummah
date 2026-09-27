@@ -1389,6 +1389,14 @@ export default function App() {
         />
       );
     }
+    if (showPremiumTools) {
+      return (
+        <PremiumToolsScreen
+          onBack={closePremiumTools}
+        />
+      );
+    }
+
 
     if (showProfile) {
       return (
