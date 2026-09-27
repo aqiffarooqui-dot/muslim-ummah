@@ -91,12 +91,10 @@ export default function ThemeSelector() {
               style={[
                 styles.themeCard,
                 {
-                  backgroundColor:
-                    item.background,
-                  borderColor:
-                    selected
-                      ? item.accent
-                      : item.border,
+                  backgroundColor: item.background,
+                  borderColor: selected ? item.accent : item.border,
+                  borderRadius: item.radius.lg,
+                  shadowOpacity: item.shadowOpacity,
                 },
               ]}
             >
@@ -113,8 +111,8 @@ export default function ThemeSelector() {
                   style={[
                     styles.previewHeader,
                     {
-                      backgroundColor:
-                        item.surfaceElevated,
+                      backgroundColor: item.surfaceElevated,
+                      borderRadius: item.style.includes('glass') ? item.radius.pill : item.radius.sm,
                     },
                   ]}
                 >
@@ -143,10 +141,9 @@ export default function ThemeSelector() {
                   style={[
                     styles.previewCard,
                     {
-                      backgroundColor:
-                        item.card,
-                      borderColor:
-                        item.border,
+                      backgroundColor: item.card,
+                      borderColor: item.border,
+                      borderRadius: item.radius.md,
                     },
                   ]}
                 >
@@ -175,8 +172,8 @@ export default function ThemeSelector() {
                   style={[
                     styles.previewNav,
                     {
-                      backgroundColor:
-                        item.tabBackground,
+                      backgroundColor: item.tabBackground,
+                      borderRadius: item.radius.pill,
                     },
                   ]}
                 >
@@ -237,6 +234,12 @@ export default function ThemeSelector() {
               </View>
 
               <View style={styles.cardBottom}>
+                <View style={styles.styleTag}>
+                  <Text style={[styles.styleTagText, { color: item.accent }]}>
+                    {item.style.replace('-', ' ').toUpperCase()}
+                  </Text>
+                </View>
+
                 <Text
                   numberOfLines={1}
                   style={[
@@ -342,9 +345,11 @@ const styles = StyleSheet.create({
 
   themeCard: {
     width: 190,
-    borderRadius: 22,
     borderWidth: 1.5,
     overflow: 'hidden',
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 18,
+    elevation: 4,
   },
 
   preview: {
@@ -461,5 +466,20 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     marginLeft: 3,
+  },
+
+  styleTag: {
+    alignSelf: 'flex-start',
+    marginBottom: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+
+  styleTagText: {
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });
