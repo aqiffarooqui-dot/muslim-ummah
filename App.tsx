@@ -1443,7 +1443,8 @@ export default function App() {
         !showBookmarks &&
         !showProfile &&
         !showPremium &&
-        !showAdmin && (
+        !showAdmin &&
+        activeTab !== 'Qibla' && (
           <View
             style={styles.bottomNav}
           >
