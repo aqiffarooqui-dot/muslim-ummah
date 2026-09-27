@@ -6,6 +6,9 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAudioPlayer } from 'expo-audio';
+import { Alert, Platform } from 'react-native';
+import { usePremium } from './premium/PremiumProvider';
 
 import QuranArabicText from './QuranArabicText';
 
@@ -26,6 +29,17 @@ export default function QuranAyahCard({
   bookmarked = false,
   onBookmarkPress,
 }: QuranAyahCardProps) {
+  const { isPremium } = usePremium();
+  const audioUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(ayahNumber).padStart(3,'0')}.mp3`;
+  const player = useAudioPlayer(audioUrl);
+  const playAudio = () => {
+    if (!isPremium) {
+      const message='Quran Audio is a Premium feature.';
+      if (Platform.OS === 'web') window.alert(message); else Alert.alert('Premium Feature',message);
+      return;
+    }
+    player.play();
+  };
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -35,6 +49,10 @@ export default function QuranAyahCard({
           </Text>
         </View>
 
+        <View style={styles.actions}>
+        <Pressable onPress={playAudio} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Play Ayah ${ayahNumber}`}>
+          <Ionicons name={isPremium ? 'play-circle-outline' : 'lock-closed-outline'} size={21} color={isPremium ? '#D8B36A' : '#777D89'} />
+        </Pressable>
         <Pressable
           onPress={onBookmarkPress}
           hitSlop={10}
@@ -51,6 +69,7 @@ export default function QuranAyahCard({
             color={bookmarked ? '#D8B36A' : '#8D91A3'}
           />
         </Pressable>
+        </View>
       </View>
 
       <QuranArabicText style={styles.arabicText}>
@@ -89,6 +108,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 13,
   },
+
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
 
   ayahNumber: {
     width: 31,
