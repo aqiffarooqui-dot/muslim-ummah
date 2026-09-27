@@ -33,13 +33,14 @@ export default function QuranAyahCard({
 }: QuranAyahCardProps) {
   const { isPremium } = usePremium();
   const audioUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3,'0')}${String(ayahNumber).padStart(3,'0')}.mp3`;
-  const player = useAudioPlayer(audioUrl);
+  const player = useAudioPlayer(null);
   const playAudio = () => {
     if (!isPremium) {
       const message='Quran Audio is a Premium feature.';
       if (Platform.OS === 'web') window.alert(message); else Alert.alert('Premium Feature',message);
       return;
     }
+    player.replace(audioUrl);
     player.play();
   };
   return (
