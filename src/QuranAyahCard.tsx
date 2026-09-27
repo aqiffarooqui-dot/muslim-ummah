@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,6 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
 import { Alert, Platform } from 'react-native';
 import { usePremium } from './premium/PremiumProvider';
+import {
+  DEFAULT_QURAN_READING_SETTINGS,
+  getQuranReadingSettings,
+  type QuranReadingSettings,
+} from './quranReadingSettings';
 
 import QuranArabicText from './QuranArabicText';
 
@@ -32,6 +37,21 @@ export default function QuranAyahCard({
   onBookmarkPress,
 }: QuranAyahCardProps) {
   const { isPremium } = usePremium();
+  const [readingSettings, setReadingSettings] =
+    useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
+
+  useEffect(() => {
+    if (!isPremium) {
+      setReadingSettings(DEFAULT_QURAN_READING_SETTINGS);
+      return;
+    }
+
+    getQuranReadingSettings()
+      .then(setReadingSettings)
+      .catch((err) =>
+        console.error('Quran reading settings load error:', err)
+      );
+  }, [isPremium]);
   const audioUrl = `https://everyayah.com/data/Alafasy_128kbps/${String(surahNumber).padStart(3,'0')}${String(ayahNumber).padStart(3,'0')}.mp3`;
   const player = useAudioPlayer(null);
   const playAudio = () => {
@@ -82,7 +102,17 @@ export default function QuranAyahCard({
         </View>
       </View>
 
-      <QuranArabicText style={styles.arabicText}>
+      <QuranArabicText
+        style={[
+          styles.arabicText,
+          {
+            fontSize: readingSettings.fontSize,
+            lineHeight: readingSettings.lineSpacing,
+            marginBottom:
+              readingSettings.mode === 'compact' ? 0 : 2,
+          },
+        ]}
+      >
         {arabicText}
       </QuranArabicText>
 
