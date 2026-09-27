@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -43,7 +44,10 @@ import {
 
 import { saveQuranProgress } from './src/quranProgress';
 
-const QURAN_TEXT_URL = '/quran-uthmani.txt';
+const QURAN_TEXT_URL =
+  Platform.OS === 'web'
+    ? '/quran-uthmani.txt'
+    : 'https://raw.githubusercontent.com/aqiffarooqui-dot/muslim-ummah/main/public/quran-uthmani.txt';
 
 type QuranScreenProps = {
   onBack?: () => void;
@@ -731,7 +735,12 @@ export default function QuranScreen({
       const text = await response.text();
       const parsed = parseQuranText(text);
 
-      if (parsed.length !== 114) {
+      const totalAyahs = parsed.reduce(
+        (sum, surah) => sum + surah.ayahs.length,
+        0
+      );
+
+      if (parsed.length !== 114 || totalAyahs < 6000) {
         throw new Error(
           `Expected 114 Surahs but received ${parsed.length}`
         );
