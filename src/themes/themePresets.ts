@@ -3,9 +3,13 @@ import type { AppTheme } from './themeTypes';
 export const THEME_PRESETS: AppTheme[] = [
   {
     id: 'midnight',
-    name: 'Midnight Gold',
+    style: 'ios-glass',
+    radius: {"sm":10,"md":16,"lg":22,"pill":999},
+    glass: true,
+    shadowOpacity: 0.22,
+    name: 'iOS Glass Gold',
     description:
-      'Cinematic dark luxury with soft Islamic gold.',
+      'iOS-inspired glass surfaces with cinematic gold accents.',
 
     background: '#080A0F',
     backgroundSecondary: '#0D1016',
@@ -50,9 +54,13 @@ export const THEME_PRESETS: AppTheme[] = [
 
   {
     id: 'amoled',
-    name: 'AMOLED Black',
+    style: 'minimal',
+    radius: {"sm":6,"md":12,"lg":16,"pill":999},
+    glass: false,
+    shadowOpacity: 0.12,
+    name: 'Pure Black Minimal',
     description:
-      'Pure black minimalism designed for OLED displays.',
+      'Minimal OLED-first surfaces with crisp contrast.',
 
     background: '#000000',
     backgroundSecondary: '#030303',
@@ -97,9 +105,13 @@ export const THEME_PRESETS: AppTheme[] = [
 
   {
     id: 'emerald',
-    name: 'Emerald Islamic',
+    style: 'islamic',
+    radius: {"sm":8,"md":14,"lg":20,"pill":999},
+    glass: false,
+    shadowOpacity: 0.2,
+    name: 'Islamic Emerald',
     description:
-      'Deep emerald tones inspired by traditional Islamic design.',
+      'Traditional Islamic emerald palette with soft modern surfaces.',
 
     background: '#06100C',
     backgroundSecondary: '#091711',
@@ -144,9 +156,13 @@ export const THEME_PRESETS: AppTheme[] = [
 
   {
     id: 'royal',
-    name: 'Royal Night',
+    style: 'royal-glass',
+    radius: {"sm":10,"md":17,"lg":24,"pill":999},
+    glass: true,
+    shadowOpacity: 0.25,
+    name: 'Royal Glass',
     description:
-      'Deep royal tones with a luxurious modern finish.',
+      'Royal purple glass with a premium cinematic finish.',
 
     background: '#0B0813',
     backgroundSecondary: '#100C1A',
@@ -191,9 +207,13 @@ export const THEME_PRESETS: AppTheme[] = [
 
   {
     id: 'sandstone',
-    name: 'Sandstone',
+    style: 'material',
+    radius: {"sm":6,"md":12,"lg":18,"pill":999},
+    glass: false,
+    shadowOpacity: 0.18,
+    name: 'Heritage Material',
     description:
-      'Warm architectural tones inspired by Islamic heritage.',
+      'Warm heritage palette with Material-style surfaces.',
 
     background: '#12100C',
     backgroundSecondary: '#18140F',
@@ -238,9 +258,13 @@ export const THEME_PRESETS: AppTheme[] = [
 
   {
     id: 'sapphire',
-    name: 'Sapphire Night',
+    style: 'sapphire',
+    radius: {"sm":8,"md":15,"lg":21,"pill":999},
+    glass: true,
+    shadowOpacity: 0.2,
+    name: 'Sapphire Material',
     description:
-      'Deep sapphire blue with elegant silver-gold highlights.',
+      'Sapphire blue with structured Material-style contrast.',
 
     background: '#060B14',
     backgroundSecondary: '#0A101C',
