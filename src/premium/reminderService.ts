@@ -1,0 +1,6 @@
+import * as Notifications from 'expo-notifications';
+Notifications.setNotificationHandler({handleNotification:async()=>({shouldPlaySound:false,shouldSetBadge:false,shouldShowBanner:true,shouldShowList:true})});
+export async function requestReminderPermission():Promise<boolean>{const current=await Notifications.getPermissionsAsync();if(current.granted)return true;const next=await Notifications.requestPermissionsAsync();return next.granted;}
+export async function scheduleDailyIslamicReminder(hour=9,minute=0):Promise<string>{if(!(await requestReminderPermission()))throw new Error('Notification permission was not granted.');return Notifications.scheduleNotificationAsync({content:{title:'Muslim Ummah',body:'Take a moment for Quran, dhikr and remembrance of Allah.'},trigger:{type:Notifications.SchedulableTriggerInputTypes.DAILY,hour,minute}});}
+export async function cancelAllReminders():Promise<void>{await Notifications.cancelAllScheduledNotificationsAsync();}
+export async function getScheduledReminderCount():Promise<number>{return (await Notifications.getAllScheduledNotificationsAsync()).length;}
