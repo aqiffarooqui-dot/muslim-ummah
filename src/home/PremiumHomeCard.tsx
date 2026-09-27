@@ -18,7 +18,7 @@ import {
   type DailyHadith,
   type LiveWeather,
 } from './homeDataService';
-import type { PrayerData } from '../prayer/prayerService';
+import { getNextPrayer, type PrayerData } from '../prayer/prayerService';
 
 type Props = {
   prayerData: PrayerData | null;
@@ -154,25 +154,11 @@ export default function PremiumHomeCard({
 
   const nextPrayer = useMemo(() => {
     if (!prayerData) return null;
-
-    const prayers = prayerData.prayers.filter(
-      (item) => item.key !== 'Sunrise'
+    return getNextPrayer(
+      prayerData.prayers,
+      new Date(),
+      prayerData.timezone
     );
-
-    return prayers.find((item) => {
-      const [hour, minute] = item.time
-        .replace(/\s?(AM|PM)$/i, '')
-        .split(':')
-        .map(Number);
-
-      const isPm = /PM$/i.test(item.time);
-      const normalizedHour =
-        isPm && hour !== 12 ? hour + 12 : !isPm && hour === 12 ? 0 : hour;
-
-      const now = new Date();
-      return normalizedHour * 60 + minute >
-        now.getHours() * 60 + now.getMinutes();
-    }) || prayers[0] || null;
   }, [prayerData]);
 
   const orbitTranslate = float.interpolate({
@@ -238,7 +224,7 @@ export default function PremiumHomeCard({
             source={{
               uri: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=85',
             }}
-            imageStyle={styles.hadithImage}
+            imageStyle={[styles.hadithImage, { borderRadius: theme.radius.md }]}
             style={styles.hadithImageWrap}
           >
             <View style={styles.hadithImageOverlay} />
