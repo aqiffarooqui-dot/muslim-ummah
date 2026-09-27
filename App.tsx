@@ -120,23 +120,72 @@ export default function App() {
     setShowBookmarks(false);
   };
 
-  const openQuran = () => {
+  const openQuran = async () => {
     setShowBookmarks(false);
     setShowAbout(false);
-    setQuranOpenRequest(null);
+
+    try {
+      const progress = await getQuranProgress();
+
+      if (progress) {
+        setQuranProgress(progress);
+
+        setQuranOpenRequest({
+          surahNumber: progress.surahNumber,
+          ayahNumber: progress.ayahNumber,
+        });
+      } else {
+        setQuranOpenRequest({
+          surahNumber: 1,
+          ayahNumber: 1,
+        });
+      }
+    } catch (err) {
+      console.error(
+        'Quran progress refresh error:',
+        err
+      );
+
+      setQuranOpenRequest({
+        surahNumber: quranProgress.surahNumber,
+        ayahNumber: quranProgress.ayahNumber,
+      });
+    }
+
     setActiveTab('Quran');
   };
 
-  const openContinueQuran = () => {
+  const openContinueQuran = async () => {
     setShowBookmarks(false);
     setShowAbout(false);
 
-    setQuranOpenRequest({
-      surahNumber:
-        quranProgress.surahNumber,
-      ayahNumber:
-        quranProgress.ayahNumber,
-    });
+    try {
+      const progress = await getQuranProgress();
+
+      if (progress) {
+        setQuranProgress(progress);
+
+        setQuranOpenRequest({
+          surahNumber: progress.surahNumber,
+          ayahNumber: progress.ayahNumber,
+        });
+      } else {
+        setQuranOpenRequest({
+          surahNumber: 1,
+          ayahNumber: 1,
+        });
+      }
+    } catch (err) {
+      console.error(
+        'Quran progress refresh error:',
+        err
+      );
+
+      setQuranOpenRequest({
+        surahNumber: quranProgress.surahNumber,
+        ayahNumber: quranProgress.ayahNumber,
+      });
+    }
 
     setActiveTab('Quran');
   };
