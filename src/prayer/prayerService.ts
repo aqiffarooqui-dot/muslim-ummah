@@ -373,47 +373,84 @@ export async function getTodayPrayerData(): Promise<PrayerData> {
   }
 }
 
+function getClockSeconds(
+  now: Date,
+  timezone?: string
+) {
+  if (!timezone) {
+    return (
+      now.getHours() * 3600 +
+      now.getMinutes() * 60 +
+      now.getSeconds()
+    );
+  }
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(now);
+
+    const values: Record<string, string> = {};
+    parts.forEach((part) => {
+      if (part.type !== 'literal') {
+        values[part.type] = part.value;
+      }
+    });
+
+    return (
+      Number(values.hour || 0) * 3600 +
+      Number(values.minute || 0) * 60 +
+      Number(values.second || 0)
+    );
+  } catch {
+    return (
+      now.getHours() * 3600 +
+      now.getMinutes() * 60 +
+      now.getSeconds()
+    );
+  }
+}
+
 export function getNextPrayer(
   prayers: PrayerTime[],
-  now = new Date()
+  now = new Date(),
+  timezone?: string
 ) {
-  const currentSeconds =
-    now.getHours() * 3600 +
-    now.getMinutes() * 60 +
-    now.getSeconds();
+  const currentSeconds = getClockSeconds(now, timezone);
 
-  const next =
-    prayers.find(
-      (prayer) =>
-        prayer.key !== 'Sunrise' &&
-        prayer.minutes * 60 > currentSeconds
-    ) ||
-    prayers.find(
-      (prayer) => prayer.key === 'Fajr'
-    );
+  const obligatory = prayers.filter(
+    (prayer) => prayer.key !== 'Sunrise'
+  );
 
-  if (!next) return null;
+  const next = obligatory.find(
+    (prayer) => prayer.minutes * 60 > currentSeconds
+  );
 
-  let targetSeconds =
-    next.minutes * 60;
-
-  if (
-    next.key === 'Fajr' &&
-    targetSeconds <= currentSeconds
-  ) {
-    targetSeconds += 24 * 60 * 60;
+  if (next) {
+    return {
+      ...next,
+      remainingSeconds:
+        next.minutes * 60 - currentSeconds,
+    };
   }
 
-  let remaining =
-    targetSeconds - currentSeconds;
+  // All of today's prayers have passed.
+  // The next prayer is tomorrow's Fajr.
+  const fajr = obligatory.find(
+    (prayer) => prayer.key === 'Fajr'
+  );
 
-  if (remaining < 0) {
-    remaining += 24 * 60 * 60;
-  }
+  if (!fajr) return null;
 
   return {
-    ...next,
-    remainingSeconds: remaining,
+    ...fajr,
+    remainingSeconds:
+      (24 * 60 * 60 - currentSeconds) +
+      fajr.minutes * 60,
   };
 }
 
