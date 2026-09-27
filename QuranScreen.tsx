@@ -41,6 +41,8 @@ import {
   toggleBookmark,
 } from './src/quranBookmarks';
 
+import { saveQuranProgress } from './src/quranProgress';
+
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
 type QuranScreenProps = {
@@ -130,7 +132,19 @@ export default function QuranScreen({
 
     initialNavigationHandled.current = true;
     setSelectedSurah(initialSurah);
-  }, [quran, initialSurah]);
+
+    saveQuranProgress(
+      initialSurah,
+      initialAyah && initialAyah > 0
+        ? initialAyah
+        : 1
+    ).catch((err) => {
+      console.error(
+        'Quran progress save error:',
+        err
+      );
+    });
+  }, [quran, initialSurah, initialAyah]);
 
   useEffect(() => {
     if (
@@ -575,6 +589,16 @@ export default function QuranScreen({
           style={styles.continueCard}
           onPress={() => {
             setSelectedSurah(1);
+
+            saveQuranProgress(
+              1,
+              1
+            ).catch((err) => {
+              console.error(
+                'Quran progress save error:',
+                err
+              );
+            });
           }}
         >
           <View style={styles.continueIcon}>
@@ -639,11 +663,21 @@ export default function QuranScreen({
             <Pressable
               key={surah.number}
               style={styles.surahCard}
-              onPress={() =>
+              onPress={() => {
                 setSelectedSurah(
                   surah.number
-                )
-              }
+                );
+
+                saveQuranProgress(
+                  surah.number,
+                  1
+                ).catch((err) => {
+                  console.error(
+                    'Quran progress save error:',
+                    err
+                  );
+                });
+              }}
             >
               <View
                 style={styles.surahNumberBox}
