@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SURAHS } from './QuranData';
 import { QuranBookmark, initializeBookmarks, getBookmarks, removeBookmark } from './quranBookmarks';
 import QuranArabicText from './QuranArabicText';
+import { usePremium } from './premium/PremiumProvider';
 
 type BookmarkItem = QuranBookmark & {
   surahName: string;
@@ -32,6 +33,7 @@ export default function QuranBookmarksScreen({
 }: QuranBookmarksScreenProps) {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     loadSavedBookmarks();
@@ -172,6 +174,21 @@ export default function QuranBookmarksScreen({
         <Text style={styles.loadingText}>
           Loading saved Ayahs...
         </Text>
+      </View>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <View style={styles.center}>
+        <View style={styles.emptyIcon}>
+          <Ionicons name="lock-closed" size={32} color="#D9C77A" />
+        </View>
+        <Text style={styles.emptyTitle}>Premium Feature</Text>
+        <Text style={styles.emptyText}>Unlimited Quran Bookmarks require Muslim Ummah Premium.</Text>
+        <Pressable style={styles.browseButton} onPress={onBack}>
+          <Text style={styles.browseButtonText}>Back</Text>
+        </Pressable>
       </View>
     );
   }
