@@ -1599,6 +1599,29 @@ const styles = StyleSheet.create({
     marginBottom: 13,
   },
 
+  juzList: { gap: 10 },
+
+  juzCard: {
+    flexDirection: 'row', alignItems: 'center', minHeight: 72,
+    backgroundColor: '#11141B', borderRadius: 19,
+    paddingVertical: 12, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: '#252A36',
+  },
+
+  juzNumberBox: {
+    width: 46, height: 46, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#1C2029', borderWidth: 1, borderColor: '#343A48',
+  },
+
+  juzNumberText: { color: '#D8B36A', fontSize: 15, fontWeight: '900' },
+
+  juzInfo: { flex: 1, minWidth: 0, marginLeft: 13 },
+
+  juzName: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', lineHeight: 21 },
+
+  juzRangeText: { color: '#9DA1AE', fontSize: 11, fontWeight: '500', marginTop: 4, lineHeight: 16 },
+
   surahList: {
     gap: 10,
   },
