@@ -74,6 +74,7 @@ export default function QiblaScreen({
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [heading, setHeading] = useState(0);
   const [headingAccuracy, setHeadingAccuracy] = useState(0);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let headingSubscription: Location.LocationSubscription | null = null;
@@ -142,7 +143,7 @@ export default function QiblaScreen({
       mounted = false;
       headingSubscription?.remove();
     };
-  }, []);
+  }, [retryNonce]);
 
   const qiblaBearing = useMemo(() => {
     if (!location) return 0;
