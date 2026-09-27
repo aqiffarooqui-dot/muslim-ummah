@@ -31,11 +31,11 @@ type QuranBookmarksScreenProps = {
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
 export default function QuranBookmarksScreen({
-  const { theme } = useTheme();
-  const styles = createLegacyStyles(theme);
   onBack,
   onOpenAyah,
 }: QuranBookmarksScreenProps) {
+  const { theme } = useTheme();
+  const styles = createLegacyStyles(theme);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
