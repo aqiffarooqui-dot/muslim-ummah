@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,7 +16,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { SURAHS } from './src/QuranData';
-import { parseQuranText, QuranSurah } from './src/quranParser';
+import {
+  parseQuranText,
+  QuranSurah,
+} from './src/quranParser';
 import {
   QuranLanguage,
   getTranslation,
@@ -35,6 +43,12 @@ import {
 
 const QURAN_TEXT_URL = '/quran-uthmani.txt';
 
+type QuranScreenProps = {
+  onBack?: () => void;
+  initialSurah?: number;
+  initialAyah?: number;
+};
+
 function getBookmarkKey(
   surahNumber: number,
   ayahNumber: number
@@ -42,12 +56,20 @@ function getBookmarkKey(
   return `${surahNumber}:${ayahNumber}`;
 }
 
-export default function QuranScreen() {
+export default function QuranScreen({
+  onBack,
+  initialSurah,
+  initialAyah,
+}: QuranScreenProps) {
   const [quran, setQuran] = useState<QuranSurah[]>([]);
-  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
+  const [selectedSurah, setSelectedSurah] = useState<
+    number | null
+  >(null);
 
   const [language, setLanguage] =
-    useState<QuranLanguage>(DEFAULT_QURAN_LANGUAGE);
+    useState<QuranLanguage>(
+      DEFAULT_QURAN_LANGUAGE
+    );
 
   const [translation, setTranslation] =
     useState<TranslationMap>({});
@@ -65,6 +87,15 @@ export default function QuranScreen() {
   const [bookmarkKeys, setBookmarkKeys] =
     useState<Set<string>>(new Set());
 
+  const readerScrollRef =
+    useRef<ScrollView>(null);
+
+  const ayahOffsetsRef =
+    useRef<Record<number, number>>({});
+
+  const initialNavigationHandled =
+    useRef(false);
+
   useEffect(() => {
     loadQuran();
     initializeBookmarkState();
@@ -79,11 +110,66 @@ export default function QuranScreen() {
     }
   }, [language]);
 
+  useEffect(() => {
+    if (
+      initialNavigationHandled.current ||
+      !initialSurah ||
+      quran.length === 0
+    ) {
+      return;
+    }
+
+    const requestedSurah = quran.find(
+      (surah) =>
+        surah.number === initialSurah
+    );
+
+    if (!requestedSurah) {
+      return;
+    }
+
+    initialNavigationHandled.current = true;
+
+    setSelectedSurah(initialSurah);
+  }, [quran, initialSurah]);
+
+  useEffect(() => {
+    if (
+      selectedSurah === null ||
+      !initialAyah ||
+      initialAyah <= 0
+    ) {
+      return;
+    }
+
+    const requestedOffset =
+      ayahOffsetsRef.current[initialAyah];
+
+    if (
+      typeof requestedOffset !== 'number'
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      readerScrollRef.current?.scrollTo({
+        y: Math.max(
+          requestedOffset - 20,
+          0
+        ),
+        animated: true,
+      });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [selectedSurah, initialAyah]);
+
   async function initializeBookmarkState() {
     try {
       await initializeBookmarks();
 
-      const storedBookmarks = getBookmarks();
+      const storedBookmarks =
+        getBookmarks();
 
       const keys = new Set(
         storedBookmarks.map((bookmark) =>
@@ -108,10 +194,11 @@ export default function QuranScreen() {
     ayahNumber: number
   ) {
     try {
-      const bookmarked = await toggleBookmark(
-        surahNumber,
-        ayahNumber
-      );
+      const bookmarked =
+        await toggleBookmark(
+          surahNumber,
+          ayahNumber
+        );
 
       const key = getBookmarkKey(
         surahNumber,
@@ -142,9 +229,12 @@ export default function QuranScreen() {
       setLoading(true);
       setError('');
 
-      const response = await fetch(QURAN_TEXT_URL, {
-        cache: 'no-store',
-      });
+      const response = await fetch(
+        QURAN_TEXT_URL,
+        {
+          cache: 'no-store',
+        }
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -184,7 +274,9 @@ export default function QuranScreen() {
     }
 
     const url =
-      TRANSLATION_FILE_URLS[selectedLanguage];
+      TRANSLATION_FILE_URLS[
+        selectedLanguage
+      ];
 
     if (!url) {
       return;
@@ -205,7 +297,8 @@ export default function QuranScreen() {
       }
 
       const text = await response.text();
-      const parsed = parseTranslationText(text);
+      const parsed =
+        parseTranslationText(text);
 
       setTranslation(parsed);
     } catch (err) {
@@ -225,7 +318,8 @@ export default function QuranScreen() {
   }
 
   const filteredSurahs = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query =
+      search.trim().toLowerCase();
 
     if (!query) {
       return SURAHS;
@@ -239,12 +333,15 @@ export default function QuranScreen() {
         surah.englishName
           .toLowerCase()
           .includes(query) ||
-        String(surah.number).includes(query)
+        String(surah.number).includes(
+          query
+        )
     );
   }, [search]);
 
   const currentSurah = quran.find(
-    (surah) => surah.number === selectedSurah
+    (surah) =>
+      surah.number === selectedSurah
   );
 
   if (loading) {
@@ -282,16 +379,55 @@ export default function QuranScreen() {
     return (
       <View style={styles.container}>
         <ScrollView
+          ref={readerScrollRef}
           contentContainerStyle={
             styles.readerContent
           }
           showsVerticalScrollIndicator={false}
+          onLayout={() => {
+            if (
+              initialAyah &&
+              ayahOffsetsRef.current[
+                initialAyah
+              ] !== undefined
+            ) {
+              const timer = setTimeout(() => {
+                const offset =
+                  ayahOffsetsRef.current[
+                    initialAyah
+                  ];
+
+                if (
+                  typeof offset === 'number'
+                ) {
+                  readerScrollRef.current?.scrollTo(
+                    {
+                      y: Math.max(
+                        offset - 20,
+                        0
+                      ),
+                      animated: true,
+                    }
+                  );
+                }
+              }, 100);
+
+              return () =>
+                clearTimeout(timer);
+            }
+
+            return undefined;
+          }}
         >
           <Pressable
             style={styles.backButton}
-            onPress={() =>
-              setSelectedSurah(null)
-            }
+            onPress={() => {
+              setSelectedSurah(null);
+
+              if (onBack) {
+                onBack();
+              }
+            }}
           >
             <Ionicons
               name="arrow-back"
@@ -310,13 +446,17 @@ export default function QuranScreen() {
             </Text>
 
             <Text
-              style={styles.arabicSurahName}
+              style={
+                styles.arabicSurahName
+              }
             >
               {currentSurah.arabicName}
             </Text>
 
             <Text
-              style={styles.surahEnglishName}
+              style={
+                styles.surahEnglishName
+              }
             >
               {currentSurah.englishName}
             </Text>
@@ -357,7 +497,9 @@ export default function QuranScreen() {
                   styles.translationLoading
                 }
               >
-                <ActivityIndicator size="small" />
+                <ActivityIndicator
+                  size="small"
+                />
 
                 <Text
                   style={
@@ -410,26 +552,36 @@ export default function QuranScreen() {
                 );
 
               return (
-                <QuranAyahCard
+                <View
                   key={`${currentSurah.number}-${ayah.number}`}
-                  ayahNumber={ayah.number}
-                  arabicText={ayah.text}
-                  translation={
-                    translatedText || undefined
-                  }
-                  isUrdu={
-                    language === 'urdu'
-                  }
-                  bookmarked={bookmarkKeys.has(
-                    bookmarkKey
-                  )}
-                  onBookmarkPress={() =>
-                    handleBookmarkPress(
-                      currentSurah.number,
+                  onLayout={(event) => {
+                    ayahOffsetsRef.current[
                       ayah.number
-                    )
-                  }
-                />
+                    ] =
+                      event.nativeEvent.layout.y;
+                  }}
+                >
+                  <QuranAyahCard
+                    ayahNumber={ayah.number}
+                    arabicText={ayah.text}
+                    translation={
+                      translatedText ||
+                      undefined
+                    }
+                    isUrdu={
+                      language === 'urdu'
+                    }
+                    bookmarked={bookmarkKeys.has(
+                      bookmarkKey
+                    )}
+                    onBookmarkPress={() =>
+                      handleBookmarkPress(
+                        currentSurah.number,
+                        ayah.number
+                      )
+                    }
+                  />
+                </View>
               );
             }
           )}
@@ -459,7 +611,12 @@ export default function QuranScreen() {
           </Text>
         </View>
 
-        <View style={styles.continueCard}>
+        <Pressable
+          style={styles.continueCard}
+          onPress={() => {
+            setSelectedSurah(1);
+          }}
+        >
           <View style={styles.continueIcon}>
             <Ionicons
               name="book-outline"
@@ -495,7 +652,7 @@ export default function QuranScreen() {
             size={22}
             color="#FFFFFF"
           />
-        </View>
+        </Pressable>
 
         <View style={styles.searchContainer}>
           <Ionicons
@@ -902,4 +1059,3 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-
