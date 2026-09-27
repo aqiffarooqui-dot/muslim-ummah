@@ -92,7 +92,7 @@ function firstToonRow(content: string): string[] | null {
       continue;
     }
 
-    if (char === '\\r' && content[i + 1] === '\\n' && !quoted) {
+    if (char === '\\n' && !quoted) {
       break;
     }
 
