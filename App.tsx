@@ -8,10 +8,17 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+
 import QuranScreen from './QuranScreen';
+import QuranBookmarksScreen from './src/QuranBookmarksScreen';
 import AboutScreen from './AboutScreen';
 
 type Tab = 'Home' | 'Quran' | 'Hadith' | 'Prayer' | 'More';
+
+type QuranOpenRequest = {
+  surahNumber: number;
+  ayahNumber: number;
+} | null;
 
 const prayers = [
   { name: 'Fajr', time: '05:02 AM', icon: 'sunny-outline' as const },
@@ -47,13 +54,49 @@ const quickItems = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('Home');
   const [showAbout, setShowAbout] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+
+  const [quranOpenRequest, setQuranOpenRequest] =
+    useState<QuranOpenRequest>(null);
 
   const openAbout = () => {
     setShowAbout(true);
+    setShowBookmarks(false);
   };
 
   const closeAbout = () => {
     setShowAbout(false);
+  };
+
+  const openBookmarks = () => {
+    setShowBookmarks(true);
+    setShowAbout(false);
+  };
+
+  const closeBookmarks = () => {
+    setShowBookmarks(false);
+  };
+
+  const openQuran = () => {
+    setShowBookmarks(false);
+    setShowAbout(false);
+    setQuranOpenRequest(null);
+    setActiveTab('Quran');
+  };
+
+  const openBookmarkedAyah = (
+    surahNumber: number,
+    ayahNumber: number
+  ) => {
+    setShowBookmarks(false);
+    setShowAbout(false);
+
+    setQuranOpenRequest({
+      surahNumber,
+      ayahNumber,
+    });
+
+    setActiveTab('Quran');
   };
 
   const renderHome = () => (
@@ -68,7 +111,11 @@ export default function App() {
         </View>
 
         <Pressable style={styles.profileButton}>
-          <Ionicons name="person-outline" size={21} color="#E8E7D8" />
+          <Ionicons
+            name="person-outline"
+            size={21}
+            color="#E8E7D8"
+          />
         </Pressable>
       </View>
 
@@ -78,10 +125,16 @@ export default function App() {
 
         <View style={styles.heroTop}>
           <View style={styles.smallIconCircle}>
-            <Ionicons name="sparkles-outline" size={18} color="#D9C77A" />
+            <Ionicons
+              name="sparkles-outline"
+              size={18}
+              color="#D9C77A"
+            />
           </View>
 
-          <Text style={styles.heroLabel}>TODAY'S REMINDER</Text>
+          <Text style={styles.heroLabel}>
+            TODAY'S REMINDER
+          </Text>
         </View>
 
         <Text style={styles.heroTitle}>
@@ -89,39 +142,67 @@ export default function App() {
         </Text>
 
         <Text style={styles.heroDescription}>
-          Take a moment to pause, reflect and reconnect with your faith.
+          Take a moment to pause, reflect and reconnect
+          with your faith.
         </Text>
 
         <Pressable
           style={styles.heroButton}
-          onPress={() => setActiveTab('Quran')}
+          onPress={openQuran}
         >
-          <Text style={styles.heroButtonText}>Open Quran</Text>
-          <Ionicons name="arrow-forward" size={17} color="#101512" />
+          <Text style={styles.heroButtonText}>
+            Open Quran
+          </Text>
+
+          <Ionicons
+            name="arrow-forward"
+            size={17}
+            color="#101512"
+          />
         </Pressable>
       </View>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Next Prayer</Text>
+          <Text style={styles.sectionTitle}>
+            Next Prayer
+          </Text>
+
           <Text style={styles.sectionSubtitle}>
             Your daily prayer schedule
           </Text>
         </View>
 
-        <Ionicons name="location-outline" size={19} color="#8C938D" />
+        <Ionicons
+          name="location-outline"
+          size={19}
+          color="#8C938D"
+        />
       </View>
 
       <View style={styles.prayerCard}>
         <View>
-          <Text style={styles.nextPrayerLabel}>NEXT PRAYER</Text>
-          <Text style={styles.nextPrayerName}>Asr</Text>
-          <Text style={styles.nextPrayerTime}>04:42 PM</Text>
+          <Text style={styles.nextPrayerLabel}>
+            NEXT PRAYER
+          </Text>
+
+          <Text style={styles.nextPrayerName}>
+            Asr
+          </Text>
+
+          <Text style={styles.nextPrayerTime}>
+            04:42 PM
+          </Text>
         </View>
 
         <View style={styles.countdownBox}>
-          <Text style={styles.countdownLabel}>STARTS IN</Text>
-          <Text style={styles.countdown}>01:24:18</Text>
+          <Text style={styles.countdownLabel}>
+            STARTS IN
+          </Text>
+
+          <Text style={styles.countdown}>
+            01:24:18
+          </Text>
         </View>
       </View>
 
@@ -131,37 +212,61 @@ export default function App() {
         contentContainerStyle={styles.prayerRow}
       >
         {prayers.map((prayer) => (
-          <View key={prayer.name} style={styles.prayerMiniCard}>
-            <Ionicons name={prayer.icon} size={19} color="#B9C1BA" />
-            <Text style={styles.prayerMiniName}>{prayer.name}</Text>
-            <Text style={styles.prayerMiniTime}>{prayer.time}</Text>
+          <View
+            key={prayer.name}
+            style={styles.prayerMiniCard}
+          >
+            <Ionicons
+              name={prayer.icon}
+              size={19}
+              color="#B9C1BA"
+            />
+
+            <Text style={styles.prayerMiniName}>
+              {prayer.name}
+            </Text>
+
+            <Text style={styles.prayerMiniTime}>
+              {prayer.time}
+            </Text>
           </View>
         ))}
       </ScrollView>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Continue Quran</Text>
+          <Text style={styles.sectionTitle}>
+            Continue Quran
+          </Text>
+
           <Text style={styles.sectionSubtitle}>
             Pick up where you left off
           </Text>
         </View>
 
-        <Pressable onPress={() => setActiveTab('Quran')}>
-          <Text style={styles.seeAll}>See all</Text>
+        <Pressable onPress={openQuran}>
+          <Text style={styles.seeAll}>
+            See all
+          </Text>
         </Pressable>
       </View>
 
       <Pressable
         style={styles.quranCard}
-        onPress={() => setActiveTab('Quran')}
+        onPress={openQuran}
       >
         <View style={styles.quranIcon}>
-          <Ionicons name="book" size={25} color="#D9C77A" />
+          <Ionicons
+            name="book"
+            size={25}
+            color="#D9C77A"
+          />
         </View>
 
         <View style={styles.quranInfo}>
-          <Text style={styles.quranSurah}>Surah Al-Baqarah</Text>
+          <Text style={styles.quranSurah}>
+            Surah Al-Baqarah
+          </Text>
 
           <Text style={styles.quranAyah}>
             Ayah 255 • Ayat-ul-Kursi
@@ -171,15 +276,24 @@ export default function App() {
             <View style={styles.progressFill} />
           </View>
 
-          <Text style={styles.progressText}>Continue reading</Text>
+          <Text style={styles.progressText}>
+            Continue reading
+          </Text>
         </View>
 
-        <Ionicons name="play-circle" size={34} color="#D9C77A" />
+        <Ionicons
+          name="play-circle"
+          size={34}
+          color="#D9C77A"
+        />
       </Pressable>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>For Your Day</Text>
+          <Text style={styles.sectionTitle}>
+            For Your Day
+          </Text>
+
           <Text style={styles.sectionSubtitle}>
             Small reminders, every day
           </Text>
@@ -193,36 +307,57 @@ export default function App() {
       >
         <View style={styles.dailyCard}>
           <View style={styles.dailyIcon}>
-            <Ionicons name="book-outline" size={20} color="#D9C77A" />
+            <Ionicons
+              name="book-outline"
+              size={20}
+              color="#D9C77A"
+            />
           </View>
 
-          <Text style={styles.dailyLabel}>AYAH OF THE DAY</Text>
-
-          <Text style={styles.dailyText}>
-            “Indeed, in the remembrance of Allah do hearts find rest.”
+          <Text style={styles.dailyLabel}>
+            AYAH OF THE DAY
           </Text>
 
-          <Text style={styles.dailyReference}>Quran 13:28</Text>
+          <Text style={styles.dailyText}>
+            “Indeed, in the remembrance of Allah do hearts
+            find rest.”
+          </Text>
+
+          <Text style={styles.dailyReference}>
+            Quran 13:28
+          </Text>
         </View>
 
         <View style={styles.dailyCard}>
           <View style={styles.dailyIcon}>
-            <Ionicons name="heart-outline" size={20} color="#D9C77A" />
+            <Ionicons
+              name="heart-outline"
+              size={20}
+              color="#D9C77A"
+            />
           </View>
 
-          <Text style={styles.dailyLabel}>DUA OF THE DAY</Text>
-
-          <Text style={styles.dailyText}>
-            “Our Lord, give us good in this world and good in the Hereafter.”
+          <Text style={styles.dailyLabel}>
+            DUA OF THE DAY
           </Text>
 
-          <Text style={styles.dailyReference}>Quran 2:201</Text>
+          <Text style={styles.dailyText}>
+            “Our Lord, give us good in this world and good
+            in the Hereafter.”
+          </Text>
+
+          <Text style={styles.dailyReference}>
+            Quran 2:201
+          </Text>
         </View>
       </ScrollView>
 
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Explore</Text>
+          <Text style={styles.sectionTitle}>
+            Explore
+          </Text>
+
           <Text style={styles.sectionSubtitle}>
             Everything you need in one place
           </Text>
@@ -236,7 +371,7 @@ export default function App() {
             style={styles.exploreCard}
             onPress={() => {
               if (item.title === 'Quran') {
-                setActiveTab('Quran');
+                openQuran();
               }
 
               if (item.title === 'Hadith') {
@@ -249,11 +384,20 @@ export default function App() {
             }}
           >
             <View style={styles.exploreIcon}>
-              <Ionicons name={item.icon} size={23} color="#D9C77A" />
+              <Ionicons
+                name={item.icon}
+                size={23}
+                color="#D9C77A"
+              />
             </View>
 
-            <Text style={styles.exploreTitle}>{item.title}</Text>
-            <Text style={styles.exploreSubtitle}>{item.subtitle}</Text>
+            <Text style={styles.exploreTitle}>
+              {item.title}
+            </Text>
+
+            <Text style={styles.exploreSubtitle}>
+              {item.subtitle}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -278,17 +422,22 @@ export default function App() {
         />
       </View>
 
-      <Text style={styles.placeholderTitle}>{activeTab}</Text>
+      <Text style={styles.placeholderTitle}>
+        {activeTab}
+      </Text>
 
       <Text style={styles.placeholderText}>
-        This section is being prepared for the Muslim Ummah experience.
+        This section is being prepared for the Muslim
+        Ummah experience.
       </Text>
 
       <Pressable
         style={styles.backHomeButton}
         onPress={() => setActiveTab('Home')}
       >
-        <Text style={styles.backHomeText}>Back to Home</Text>
+        <Text style={styles.backHomeText}>
+          Back to Home
+        </Text>
       </Pressable>
     </View>
   );
@@ -300,22 +449,37 @@ export default function App() {
     >
       <View style={styles.moreHeader}>
         <View>
-          <Text style={styles.eyebrow}>MUSLIM UMMAH</Text>
-          <Text style={styles.moreTitle}>More</Text>
+          <Text style={styles.eyebrow}>
+            MUSLIM UMMAH
+          </Text>
+
+          <Text style={styles.moreTitle}>
+            More
+          </Text>
         </View>
 
         <View style={styles.moreHeaderIcon}>
-          <Ionicons name="grid-outline" size={21} color="#D9C77A" />
+          <Ionicons
+            name="grid-outline"
+            size={21}
+            color="#D9C77A"
+          />
         </View>
       </View>
 
       <View style={styles.moreHero}>
         <View style={styles.moreHeroIcon}>
-          <Ionicons name="moon-outline" size={30} color="#D9C77A" />
+          <Ionicons
+            name="moon-outline"
+            size={30}
+            color="#D9C77A"
+          />
         </View>
 
         <View style={styles.moreHeroInfo}>
-          <Text style={styles.moreHeroTitle}>Muslim Ummah</Text>
+          <Text style={styles.moreHeroTitle}>
+            Muslim Ummah
+          </Text>
 
           <Text style={styles.moreHeroText}>
             Your modern Islamic companion
@@ -323,9 +487,47 @@ export default function App() {
         </View>
       </View>
 
-      <Text style={styles.moreSectionTitle}>App</Text>
+      <Text style={styles.moreSectionTitle}>
+        Quran
+      </Text>
 
-      <Pressable style={styles.moreItem} onPress={openAbout}>
+      <Pressable
+        style={styles.moreItem}
+        onPress={openBookmarks}
+      >
+        <View style={styles.moreItemIcon}>
+          <Ionicons
+            name="bookmark-outline"
+            size={21}
+            color="#D9C77A"
+          />
+        </View>
+
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>
+            Saved Ayahs
+          </Text>
+
+          <Text style={styles.moreItemSubtitle}>
+            Your bookmarked Quran verses
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={19}
+          color="#59645E"
+        />
+      </Pressable>
+
+      <Text style={styles.moreSectionTitle}>
+        App
+      </Text>
+
+      <Pressable
+        style={styles.moreItem}
+        onPress={openAbout}
+      >
         <View style={styles.moreItemIcon}>
           <Ionicons
             name="information-circle-outline"
@@ -335,7 +537,9 @@ export default function App() {
         </View>
 
         <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>About Muslim Ummah</Text>
+          <Text style={styles.moreItemTitle}>
+            About Muslim Ummah
+          </Text>
 
           <Text style={styles.moreItemSubtitle}>
             Features, developer and app information
@@ -359,7 +563,9 @@ export default function App() {
         </View>
 
         <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>Privacy</Text>
+          <Text style={styles.moreItemTitle}>
+            Privacy
+          </Text>
 
           <Text style={styles.moreItemSubtitle}>
             Your privacy and app data information
@@ -383,7 +589,9 @@ export default function App() {
         </View>
 
         <View style={styles.moreItemInfo}>
-          <Text style={styles.moreItemTitle}>Settings</Text>
+          <Text style={styles.moreItemTitle}>
+            Settings
+          </Text>
 
           <Text style={styles.moreItemSubtitle}>
             App preferences and customization
@@ -398,9 +606,13 @@ export default function App() {
       </View>
 
       <View style={styles.moreVersionCard}>
-        <Text style={styles.moreVersionLabel}>APP VERSION</Text>
+        <Text style={styles.moreVersionLabel}>
+          APP VERSION
+        </Text>
 
-        <Text style={styles.moreVersion}>1.0.0</Text>
+        <Text style={styles.moreVersion}>
+          1.0.0
+        </Text>
 
         <Text style={styles.moreVersionText}>
           Muslim Ummah • Free Islamic Companion
@@ -413,11 +625,37 @@ export default function App() {
 
   const renderContent = () => {
     if (showAbout) {
-      return <AboutScreen onBack={closeAbout} />;
+      return (
+        <AboutScreen
+          onBack={closeAbout}
+        />
+      );
+    }
+
+    if (showBookmarks) {
+      return (
+        <QuranBookmarksScreen
+          onBack={closeBookmarks}
+          onOpenAyah={openBookmarkedAyah}
+        />
+      );
     }
 
     if (activeTab === 'Quran') {
-      return <QuranScreen onBack={() => setActiveTab('Home')} />;
+      return (
+        <QuranScreen
+          onBack={() => {
+            setQuranOpenRequest(null);
+            setActiveTab('Home');
+          }}
+          initialSurah={
+            quranOpenRequest?.surahNumber
+          }
+          initialAyah={
+            quranOpenRequest?.ayahNumber
+          }
+        />
+      );
     }
 
     if (activeTab === 'Home') {
@@ -437,41 +675,53 @@ export default function App() {
 
       {renderContent()}
 
-      {!showAbout && (
+      {!showAbout && !showBookmarks && (
         <View style={styles.bottomNav}>
           <NavItem
             label="Home"
             icon="home"
             active={activeTab === 'Home'}
-            onPress={() => setActiveTab('Home')}
+            onPress={() => {
+              setQuranOpenRequest(null);
+              setActiveTab('Home');
+            }}
           />
 
           <NavItem
             label="Quran"
             icon="book-outline"
             active={activeTab === 'Quran'}
-            onPress={() => setActiveTab('Quran')}
+            onPress={openQuran}
           />
 
           <NavItem
             label="Hadith"
             icon="library-outline"
             active={activeTab === 'Hadith'}
-            onPress={() => setActiveTab('Hadith')}
+            onPress={() => {
+              setQuranOpenRequest(null);
+              setActiveTab('Hadith');
+            }}
           />
 
           <NavItem
             label="Prayer"
             icon="time-outline"
             active={activeTab === 'Prayer'}
-            onPress={() => setActiveTab('Prayer')}
+            onPress={() => {
+              setQuranOpenRequest(null);
+              setActiveTab('Prayer');
+            }}
           />
 
           <NavItem
             label="More"
             icon="grid-outline"
             active={activeTab === 'More'}
-            onPress={() => setActiveTab('More')}
+            onPress={() => {
+              setQuranOpenRequest(null);
+              setActiveTab('More');
+            }}
           />
         </View>
       )}
@@ -493,14 +743,22 @@ function NavItem({
   onPress,
 }: NavItemProps) {
   return (
-    <Pressable style={styles.navItem} onPress={onPress}>
+    <Pressable
+      style={styles.navItem}
+      onPress={onPress}
+    >
       <Ionicons
         name={icon}
         size={21}
         color={active ? '#D9C77A' : '#6F7771'}
       />
 
-      <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+      <Text
+        style={[
+          styles.navLabel,
+          active && styles.navLabelActive,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
