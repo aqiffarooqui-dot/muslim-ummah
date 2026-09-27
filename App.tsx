@@ -16,6 +16,7 @@ import QuranBookmarksScreen from './src/QuranBookmarksScreen';
 import AboutScreen from './AboutScreen';
 import ProfileScreen from './src/profile/ProfileScreen';
 import PremiumScreen from './src/premium/PremiumScreen';
+import PremiumToolsScreen from './src/premium/PremiumToolsScreen';
 import AdminDashboard from './src/admin/AdminDashboard';
 import QiblaScreen from './src/qibla/QiblaScreen';
 
@@ -114,6 +115,9 @@ export default function App() {
   const [showPremium, setShowPremium] =
     useState(false);
 
+  const [showPremiumTools, setShowPremiumTools] =
+    useState(false);
+
   const [showAdmin, setShowAdmin] =
     useState(false);
 
@@ -206,6 +210,7 @@ export default function App() {
 
   const openPremium = () => {
     setShowPremium(true);
+    setShowPremiumTools(false);
     setShowProfile(false);
     setShowAbout(false);
     setShowBookmarks(false);
@@ -214,6 +219,20 @@ export default function App() {
 
   const closePremium = () => {
     setShowPremium(false);
+  };
+
+  const openPremiumTools = () => {
+    setShowPremiumTools(true);
+    setShowPremium(false);
+    setShowProfile(false);
+    setShowAbout(false);
+    setShowBookmarks(false);
+    setShowAdmin(false);
+  };
+
+  const closePremiumTools = () => {
+    setShowPremiumTools(false);
+    setShowPremium(true);
   };
 
   const openAdmin = () => {
@@ -232,6 +251,7 @@ export default function App() {
     setShowAdmin(false);
     setShowProfile(true);
     setShowPremium(false);
+    setShowPremiumTools(false);
     setShowAbout(false);
     setShowBookmarks(false);
   };
@@ -1013,7 +1033,21 @@ export default function App() {
         />
       </Pressable>
 
-      {isAdmin && (
+    
+
+      <Pressable
+        style={styles.moreItem}
+        onPress={openPremiumTools}
+      >
+        <View style={styles.moreItemIcon}>
+          <Ionicons name="analytics-outline" size={21} color={theme.accent}/>
+        </View>
+        <View style={styles.moreItemInfo}>
+          <Text style={styles.moreItemTitle}>Premium Tools</Text>
+          <Text style={styles.moreItemSubtitle}>Insights, Cloud Sync and reminders</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={19} color={theme.textMuted}/>
+      </Pressable>  {isAdmin && (
         <Pressable
           style={styles.moreItem}
           onPress={openAdmin}
