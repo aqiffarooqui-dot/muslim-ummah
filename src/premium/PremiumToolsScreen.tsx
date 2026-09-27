@@ -26,6 +26,12 @@ import {
   scheduleDailyIslamicReminder,
 } from './reminderService';
 import ThemeSelector from '../themes/ThemeSelector';
+import {
+  DEFAULT_QURAN_READING_SETTINGS,
+  getQuranReadingSettings,
+  saveQuranReadingSettings,
+  type QuranReadingSettings,
+} from '../quranReadingSettings';
 
 type FeatureState = 'active' | 'available' | 'planned';
 
@@ -123,6 +129,8 @@ export default function PremiumToolsScreen({
   const [sync, setSync] = useState<string | null>(null);
   const [reminders, setReminders] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [readingSettings, setReadingSettings] =
+    useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
 
   const load = useCallback(async () => {
     setBookmarks(getBookmarks().length);
@@ -135,6 +143,7 @@ export default function PremiumToolsScreen({
 
     setSync(await getLastCloudSync());
     setReminders(await getScheduledReminderCount());
+    setReadingSettings(await getQuranReadingSettings());
   }, []);
 
   useEffect(() => {
@@ -269,6 +278,164 @@ export default function PremiumToolsScreen({
         </Text>
 
         <ThemeSelector />
+
+        <Text style={styles.section}>
+          Advanced Quran
+        </Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons
+              name="text-outline"
+              size={24}
+              color="#D8B36A"
+            />
+          </View>
+
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>
+              Reading preferences
+            </Text>
+            <Text style={styles.text}>
+              Change Arabic text size, line spacing and reading density.
+              Settings are saved on this device.
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.controlLabel}>Arabic text size</Text>
+        <View style={styles.row}>
+          <Pressable
+            disabled={busy || readingSettings.fontSize <= 20}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  const next = {
+                    ...readingSettings,
+                    fontSize: Math.max(20, readingSettings.fontSize - 2),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                },
+                'Quran Arabic text size decreased.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>A−</Text>
+          </Pressable>
+
+          <View style={styles.valuePill}>
+            <Text style={styles.valueText}>
+              {readingSettings.fontSize}px
+            </Text>
+          </View>
+
+          <Pressable
+            disabled={busy || readingSettings.fontSize >= 36}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  const next = {
+                    ...readingSettings,
+                    fontSize: Math.min(36, readingSettings.fontSize + 2),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                },
+                'Quran Arabic text size increased.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>A+</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.controlLabel}>Line spacing</Text>
+        <View style={styles.row}>
+          <Pressable
+            disabled={busy || readingSettings.lineSpacing <= 34}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  const next = {
+                    ...readingSettings,
+                    lineSpacing: Math.max(34, readingSettings.lineSpacing - 4),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                },
+                'Quran line spacing reduced.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>Compact</Text>
+          </Pressable>
+
+          <View style={styles.valuePill}>
+            <Text style={styles.valueText}>
+              {readingSettings.lineSpacing}px
+            </Text>
+          </View>
+
+          <Pressable
+            disabled={busy || readingSettings.lineSpacing >= 70}
+            style={[styles.action, busy && styles.disabled]}
+            onPress={() =>
+              run(
+                async () => {
+                  const next = {
+                    ...readingSettings,
+                    lineSpacing: Math.min(70, readingSettings.lineSpacing + 4),
+                  };
+                  await saveQuranReadingSettings(next);
+                  setReadingSettings(next);
+                },
+                'Quran line spacing increased.'
+              )
+            }
+          >
+            <Text style={styles.actionText}>Relaxed</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.controlLabel}>Reading mode</Text>
+        <View style={styles.row}>
+          {(['comfortable', 'compact'] as const).map((mode) => (
+            <Pressable
+              key={mode}
+              disabled={busy}
+              style={[
+                styles.modeButton,
+                readingSettings.mode === mode && styles.modeButtonActive,
+                busy && styles.disabled,
+              ]}
+              onPress={() =>
+                run(
+                  async () => {
+                    const next = { ...readingSettings, mode };
+                    await saveQuranReadingSettings(next);
+                    setReadingSettings(next);
+                  },
+                  mode === 'comfortable'
+                    ? 'Comfortable Quran reading mode enabled.'
+                    : 'Compact Quran reading mode enabled.'
+                )
+              }
+            >
+              <Text
+                style={[
+                  styles.modeText,
+                  readingSettings.mode === mode && styles.modeTextActive,
+                ]}
+              >
+                {mode === 'comfortable' ? 'Comfortable' : 'Compact'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         <Text style={styles.section}>
           Reading Insights
@@ -809,6 +976,59 @@ const styles = StyleSheet.create({
     color: '#eee',
     fontSize: 12,
     fontWeight: '800',
+  },
+
+  controlLabel: {
+    color: '#9DA1AE',
+    fontSize: 10,
+    fontWeight: '800',
+    marginTop: 13,
+    marginBottom: 7,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+
+  valuePill: {
+    flex: 1,
+    minWidth: 70,
+    padding: 12,
+    borderRadius: 13,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#252A35',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  valueText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  modeButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 13,
+    backgroundColor: '#10131A',
+    borderWidth: 1,
+    borderColor: '#252A35',
+    alignItems: 'center',
+  },
+
+  modeButtonActive: {
+    backgroundColor: '#211F18',
+    borderColor: '#806B3D',
+  },
+
+  modeText: {
+    color: '#858B99',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  modeTextActive: {
+    color: '#D8B36A',
   },
 
   row: {
