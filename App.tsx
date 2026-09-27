@@ -172,9 +172,13 @@ export default function App() {
     setShowBookmarks(false);
   };
 
-  const closeAdmin = () => {
-    setShowAdmin(false);
-  };
+const closeAdmin = () => {
+  setShowAdmin(false);
+  setShowProfile(true);
+  setShowPremium(false);
+  setShowAbout(false);
+  setShowBookmarks(false);
+};
 
   const openQuran = async () => {
     setShowBookmarks(false);
@@ -904,11 +908,12 @@ export default function App() {
 
   const renderContent = () => {
     if (showAdmin) {
-      return (
-        <AdminDashboard />
-      );
-    }
-
+  return (
+    <AdminDashboard
+      onBack={closeAdmin}
+    />
+  );
+}
     if (showPremium) {
       return (
         <PremiumScreen
