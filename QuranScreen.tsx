@@ -42,6 +42,7 @@ import {
 } from './src/quranBookmarks';
 
 import { saveQuranProgress } from './src/quranProgress';
+import { JUZ_RANGES, getJuzRange } from './src/juz/juzRanges';
 
 const QURAN_TEXT_URL =
   'https://raw.githubusercontent.com/cchartm16/quran/master/quran-uthmani.txt';
@@ -66,6 +67,9 @@ export default function QuranScreen({
 }: QuranScreenProps) {
   const [quran, setQuran] = useState<QuranSurah[]>([]);
   const [selectedSurah, setSelectedSurah] =
+    useState<number | null>(null);
+
+  const [selectedJuz, setSelectedJuz] =
     useState<number | null>(null);
 
   const [language, setLanguage] =
@@ -867,6 +871,136 @@ export default function QuranScreen({
     );
   }
 
+  if (selectedJuz !== null && !currentSurah) {
+    const juz = getJuzRange(selectedJuz);
+
+    if (juz) {
+      const juzSurahs = quran.filter(
+        (surah) =>
+          surah.number >= juz.startSurah &&
+          surah.number <= juz.endSurah
+      );
+
+      return (
+        <View style={styles.container}>
+          <ScrollView
+            contentContainerStyle={styles.readerContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Pressable
+              style={styles.backButton}
+              onPress={() => setSelectedJuz(null)}
+            >
+              <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+              <Text style={styles.backText}>Quran • Paras</Text>
+            </Pressable>
+
+            <View style={styles.readerHero}>
+              <Text style={styles.surahNumber}>PARA {juz.juz}</Text>
+              <Text style={styles.arabicSurahName}>الجزء {juz.juz}</Text>
+              <Text style={styles.surahEnglishName}>{juz.name}</Text>
+              <Text style={styles.surahMeta}>
+                {juz.startSurah}:{juz.startAyah} → {juz.endSurah}:{juz.endAyah}
+              </Text>
+            </View>
+
+            <QuranLanguageSelector
+              selectedLanguage={language}
+              onLanguageChange={setLanguage}
+            />
+
+            {translationLoading && language !== 'arabic' && (
+              <View style={styles.translationLoading}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.translationLoadingText}>
+                  Loading translation...
+                </Text>
+              </View>
+            )}
+
+            {translationError && language !== 'arabic' && (
+              <View style={styles.translationNotice}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#F4C76B"
+                />
+                <Text style={styles.translationNoticeText}>
+                  {translationError}
+                </Text>
+              </View>
+            )}
+
+            {juzSurahs.map((surah) => {
+              const fromAyah =
+                surah.number === juz.startSurah ? juz.startAyah : 1;
+              const toAyah =
+                surah.number === juz.endSurah
+                  ? juz.endAyah
+                  : surah.ayahCount;
+
+              const ayahs = surah.ayahs.filter(
+                (ayah) =>
+                  ayah.number >= fromAyah &&
+                  ayah.number <= toAyah
+              );
+
+              return (
+                <View key={surah.number}>
+                  <View style={styles.juzSurahHeader}>
+                    <Text style={styles.juzSurahNumber}>
+                      SURAH {surah.number}
+                    </Text>
+                    <Text style={styles.juzSurahName}>
+                      {surah.englishName}
+                    </Text>
+                    <Text style={styles.juzSurahArabic}>
+                      {surah.arabicName}
+                    </Text>
+                  </View>
+
+                  {ayahs.map((ayah) => {
+                    const translatedText =
+                      language === 'arabic'
+                        ? ''
+                        : getTranslation(
+                            translation,
+                            surah.number,
+                            ayah.number
+                          );
+
+                    const bookmarkKey = getBookmarkKey(
+                      surah.number,
+                      ayah.number
+                    );
+
+                    return (
+                      <QuranAyahCard
+                        key={`juz-${selectedJuz}-${surah.number}-${ayah.number}`}
+                        surahNumber={surah.number}
+                        ayahNumber={ayah.number}
+                        arabicText={ayah.text}
+                        translation={translatedText || undefined}
+                        isUrdu={language === 'urdu'}
+                        bookmarked={bookmarkKeys.has(bookmarkKey)}
+                        onBookmarkPress={() =>
+                          handleBookmarkPress(
+                            surah.number,
+                            ayah.number
+                          )
+                        }
+                      />
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      );
+    }
+  }
+
   if (currentSurah) {
     return (
       <View style={styles.container}>
@@ -1177,6 +1311,40 @@ export default function QuranScreen({
             placeholderTextColor="#777B8A"
             style={styles.searchInput}
           />
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          30 Paras / Juz
+        </Text>
+
+        <View style={styles.juzList}>
+          {JUZ_RANGES.map((juz) => (
+            <Pressable
+              key={juz.juz}
+              style={styles.juzCard}
+              onPress={() => {
+                setSelectedSurah(null);
+                setSelectedJuz(juz.juz);
+              }}
+            >
+              <View style={styles.juzNumberBox}>
+                <Text style={styles.juzNumberText}>{juz.juz}</Text>
+              </View>
+
+              <View style={styles.juzInfo}>
+                <Text style={styles.juzName}>Para {juz.juz} • {juz.name}</Text>
+                <Text style={styles.juzRangeText}>
+                  {juz.startSurah}:{juz.startAyah} → {juz.endSurah}:{juz.endAyah}
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color="#6F7382"
+              />
+            </Pressable>
+          ))}
         </View>
 
         <Text style={styles.sectionTitle}>
