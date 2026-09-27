@@ -47,9 +47,9 @@ const features = [
   },
 ];
 
-export default function AboutScreen({
+export default function AboutScreen({ onBack }: AboutScreenProps) {
   const { theme } = useTheme();
-  const styles = createLegacyStyles(theme); onBack }: AboutScreenProps) {
+  const styles = createLegacyStyles(theme);
   return (
     <View style={styles.container}>
       <ScrollView
