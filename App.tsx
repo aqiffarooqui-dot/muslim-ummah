@@ -1699,7 +1699,7 @@ function NavItem({
 }: NavItemProps) {
   return (
     <Pressable
-      style={stylesStatic.navItem}
+      style={[stylesStatic.navItem, active && { backgroundColor: theme.accentSoft, borderRadius: theme.radius.pill, marginHorizontal: 4 }]}
       onPress={onPress}
     >
       <Ionicons
@@ -2390,9 +2390,13 @@ function createStyles(
       right: 10,
       bottom: 10,
       height: 67,
-      borderRadius: 24,
+      borderRadius: theme.radius.lg,
       backgroundColor:
         theme.tabBackground,
+      shadowColor: theme.glow,
+      shadowOpacity: theme.glass ? theme.shadowOpacity : 0,
+      shadowRadius: theme.glass ? 18 : 0,
+      elevation: theme.glass ? 5 : 0,
       borderWidth: 1,
       borderColor: theme.border,
       flexDirection: 'row',
