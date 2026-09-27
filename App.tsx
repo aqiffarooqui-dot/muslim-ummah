@@ -20,6 +20,9 @@ import PremiumScreen from './src/premium/PremiumScreen';
 import PremiumToolsScreen from './src/premium/PremiumToolsScreen';
 import AdminDashboard from './src/admin/AdminDashboard';
 import QiblaScreen from './src/qibla/QiblaScreen';
+import HadithScreen from './src/HadithScreen';
+import DuasScreen from './src/DuasScreen';
+import IslamicCalendarScreen from './src/IslamicCalendarScreen';
 
 import { SURAHS } from './src/QuranData';
 import { getQuranProgress } from './src/quranProgress';
@@ -127,6 +130,9 @@ export default function App() {
 
   const [showAdmin, setShowAdmin] =
     useState(false);
+
+  const [showDuas, setShowDuas] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const [
     quranOpenRequest,
@@ -236,6 +242,13 @@ export default function App() {
           100
       )
     );
+
+  const openDuas = () => {
+    setShowDuas(true); setShowCalendar(false); setShowAbout(false); setShowBookmarks(false); setShowProfile(false); setShowPremium(false); setShowPremiumTools(false); setShowAdmin(false);
+  };
+  const openCalendar = () => {
+    setShowCalendar(true); setShowDuas(false); setShowAbout(false); setShowBookmarks(false); setShowProfile(false); setShowPremium(false); setShowPremiumTools(false); setShowAdmin(false);
+  };
 
   const openAbout = () => {
     setShowAbout(true);
@@ -822,6 +835,10 @@ export default function App() {
 
               if (item.title === 'Hadith') {
                 setActiveTab('Hadith');
+              }
+
+              if (item.title === 'Duas') {
+                openDuas();
               }
 
               if (item.title === 'Prayer') {
@@ -1457,6 +1474,9 @@ export default function App() {
     }
 
 
+    if (showDuas) return <DuasScreen onBack={() => setShowDuas(false)} />;
+    if (showCalendar) return <IslamicCalendarScreen onBack={() => setShowCalendar(false)} />;
+
     if (showProfile) {
       return (
         <ProfileScreen
@@ -1484,6 +1504,10 @@ export default function App() {
           }
         />
       );
+    }
+
+    if (activeTab === 'Hadith') {
+      return <HadithScreen onBack={() => setActiveTab('Home')} />;
     }
 
     if (activeTab === 'Quran') {
