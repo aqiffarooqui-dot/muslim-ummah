@@ -1,6 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TextStyle } from 'react-native';
 
+import { useTheme } from './themes/ThemeProvider';
+
 import {
   DEFAULT_QURAN_DISPLAY_SETTINGS,
   getArabicTextStyle,
@@ -17,6 +19,7 @@ export default function QuranArabicText({
   children,
   style,
 }: QuranArabicTextProps) {
+  const { theme } = useTheme();
   const arabicStyle = getArabicTextStyle(
     DEFAULT_QURAN_DISPLAY_SETTINGS
   );
@@ -39,7 +42,7 @@ export default function QuranArabicText({
 
 const styles = StyleSheet.create({
   base: {
-    color: '#F2EBDD',
+    color: theme.text,
     textAlign: 'right',
     writingDirection: 'rtl',
     includeFontPadding: true,
