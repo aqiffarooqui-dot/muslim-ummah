@@ -274,6 +274,7 @@ export function AuthProvider({
         user,
         profile,
         loading,
+        adminClaim,
       ]
     );
 
