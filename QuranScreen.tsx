@@ -41,7 +41,7 @@ import {
   toggleBookmark,
 } from './src/quranBookmarks';
 
-import { saveQuranProgress } from './src/quranProgress';
+import { getQuranProgress, saveQuranProgress } from './src/quranProgress';
 import { JUZ_RANGES, getJuzRange } from './src/juz/juzRanges';
 
 const QURAN_TEXT_URL =
@@ -66,6 +66,10 @@ export default function QuranScreen({
   initialAyah,
 }: QuranScreenProps) {
   const [quran, setQuran] = useState<QuranSurah[]>([]);
+  const [quranProgress, setQuranProgress] = useState<{
+    surahNumber: number;
+    ayahNumber: number;
+  } | null>(null);
   const [selectedSurah, setSelectedSurah] =
     useState<number | null>(null);
 
@@ -147,6 +151,9 @@ export default function QuranScreen({
   useEffect(() => {
     loadQuran();
     initializeBookmarkState();
+    getQuranProgress()
+      .then((progress) => setQuranProgress(progress))
+      .catch((err) => console.error('Quran progress load error:', err));
 
     return () => {
       if (
@@ -1247,11 +1254,16 @@ export default function QuranScreen({
         <Pressable
           style={styles.continueCard}
           onPress={() => {
-            setSelectedSurah(1);
+            const surahNumber =
+              quranProgress?.surahNumber ?? 1;
+            const ayahNumber =
+              quranProgress?.ayahNumber ?? 1;
+
+            setSelectedSurah(surahNumber);
 
             saveQuranProgress(
-              1,
-              1
+              surahNumber,
+              ayahNumber
             ).catch((err) => {
               console.error(
                 'Quran progress save error:',
@@ -1282,11 +1294,15 @@ export default function QuranScreen({
             <Text
               style={styles.continueTitle}
             >
-              Al-Fatihah
+              {quranProgress
+                ? SURAHS[quranProgress.surahNumber - 1]?.englishName ?? 'Continue Quran'
+                : 'Al-Fatihah'}
             </Text>
 
             <Text style={styles.continueMeta}>
-              Ayah 1
+              {quranProgress
+                ? `Ayah ${quranProgress.ayahNumber}`
+                : 'Ayah 1'}
             </Text>
           </View>
 
