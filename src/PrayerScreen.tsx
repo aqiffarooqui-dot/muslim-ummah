@@ -77,7 +77,11 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (!prayerData) return;
-    const tick = () => setCountdown(getNextPrayer(prayerData.prayers, new Date())?.remainingSeconds ?? 0);
+    const tick = () => setCountdown(getNextPrayer(
+        prayerData.prayers,
+        new Date(),
+        prayerData.timezone
+      )?.remainingSeconds ?? 0);
     tick();
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
@@ -138,7 +142,7 @@ export default function PrayerScreen({ onBack }: { onBack: () => void }) {
   };
 
   const now = new Date();
-  const nextPrayer = prayerData ? getNextPrayer(prayerData.prayers, now) : null;
+  const nextPrayer = prayerData ? getNextPrayer(prayerData.prayers, now, prayerData.timezone) : null;
   const currentWindow = prayerData
     ? getCurrentPrayerWindow(prayerData.prayers, now)
     : null;
