@@ -38,3 +38,5 @@ jobs:
         with:
           name: muslim-ummah-web
           path: dist
+
+# Trigger a fresh production deployment after the latest Quran navigation fix.
