@@ -38,6 +38,7 @@ import {
   saveQuranReadingSettings,
   type QuranReadingSettings,
 } from '../quranReadingSettings';
+import { getPrayerSettings, PRAYER_METHODS, savePrayerSettings, type PrayerSettings } from '../prayer/prayerSettings';
 
 type FeatureState = 'active' | 'available' | 'planned';
 
@@ -137,6 +138,7 @@ export default function PremiumToolsScreen({
   const [busy, setBusy] = useState(false);
   const [readingSettings, setReadingSettings] =
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
+  const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>({ method: 1, school: 1 });
   const [quranInsights, setQuranInsights] =
     useState<QuranInsights>({
       todayCount: 0,
@@ -159,6 +161,7 @@ export default function PremiumToolsScreen({
     setReminders(await getScheduledReminderCount());
     setReadingSettings(await getQuranReadingSettings());
     setQuranInsights(await getQuranInsights());
+    setPrayerSettings(await getPrayerSettings());
   }, []);
 
   useEffect(() => {
@@ -474,6 +477,57 @@ export default function PremiumToolsScreen({
             label="Current Ayah"
             value={progress.ayahNumber}
           />
+        </View>
+
+        <Text style={styles.section}>
+          Advanced Prayer
+        </Text>
+
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons name="time-outline" size={24} color="#D8B36A" />
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>Calculation method</Text>
+            <Text style={styles.text}>
+              {PRAYER_METHODS.find(x => x.id === prayerSettings.method)?.name || 'Selected method'}
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalOptions}>
+          {PRAYER_METHODS.map(method => (
+            <Pressable
+              key={method.id}
+              disabled={busy}
+              style={[styles.optionPill, prayerSettings.method === method.id && styles.optionPillActive]}
+              onPress={() => run(async () => {
+                const next = { ...prayerSettings, method: method.id };
+                await savePrayerSettings(next);
+              }, 'Prayer calculation method saved.')}
+            >
+              <Text style={[styles.optionText, prayerSettings.method === method.id && styles.optionTextActive]}>
+                {method.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        <Text style={styles.controlLabel}>Asr calculation school</Text>
+        <View style={styles.row}>
+          {[{id:0,label:'Standard / Shafi'i'}, {id:1,label:'Hanafi'}].map(option => (
+            <Pressable
+              key={option.id}
+              disabled={busy}
+              style={[styles.action, prayerSettings.school === option.id && styles.actionActive]}
+              onPress={() => run(async () => {
+                const next = { ...prayerSettings, school: option.id as 0 | 1 };
+                await savePrayerSettings(next);
+              }, 'Asr school saved.')}
+            >
+              <Text style={styles.actionText}>{option.label}</Text>
+            </Pressable>
+          ))}
         </View>
 
         <Text style={styles.section}>
