@@ -1,11 +1,12 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.3",
+  "versionCode": 4,
   "title": "Muslim Ummah",
-  "changes": [
-    "Initial Muslim Ummah release",
-    "Quran, Hadith, Duas and Prayer features",
-    "Location-based prayer times and live countdown"
-  ],
   "mandatory": false,
-  "apkUrl": ""
+  "apkUrl": "https://github.com/aqiffarooqui-dot/muslim-ummah/releases/download/v1.0.3/muslim-ummah-1.0.3.apk",
+  "changes": [
+    "Signed Android release.",
+    "Automatic OTA update checking and installation.",
+    "Quran stability fixes."
+  ]
 }
