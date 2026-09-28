@@ -281,7 +281,6 @@ export default function QuranScreen({
           const parts = String(verse?.verse_key ?? '').split(':');
           const ayahNumber = Number(parts[1]);
           const pageNumber = Number(verse?.page_number);
-          const imageUrl = String(verse?.image_url ?? '').trim();
           if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) {
             map[ayahNumber] = pageNumber;
           }
