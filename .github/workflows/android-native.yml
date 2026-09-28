@@ -1,4 +1,5 @@
 name: Build Muslim Ummah Native APK
+# Triggered for the latest fixed app build
 
 on:
   workflow_dispatch:
