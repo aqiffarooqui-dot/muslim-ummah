@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './themes/ThemeProvider';
 import { createThemedStyles } from './themes/themeStyleMapper';
 import { usePremium } from './premium/PremiumProvider';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 type H = {
   id?: number;
@@ -190,7 +191,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
   const [err, setErr] = useState('');
   const [language, setLanguage] = useState<'arabic' | 'english' | 'urdu' | 'hinglish'>('english');
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);\n  const [resumePending, setResumePending] = useState<number | null>(null);
 
   const book = B[bi];
 
@@ -221,9 +222,10 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
         .then(async (r) => (r.ok ? r.text() : ''))
         .catch(() => ''),
     ])
-      .then(([arabicValue, englishValue, urduValue]) => {
+      .then(([arabicValue, englishValue, urduValue, romanSource]) => {
         if (cancelled) return;
 
+        const romanSource = arguments[0];
         const loaded = Array.isArray(arabicValue)
           ? arabicValue
           : Array.isArray(arabicValue?.hadiths)
@@ -550,7 +552,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
           ) : err ? (
             <View style={s.center}><Text style={s.err}>{err}</Text></View>
           ) : (
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.readerList} showsVerticalScrollIndicator={false}>
+            <ScrollView\n              style={{ flex: 1 }}\n              contentContainerStyle={s.readerList}\n              onContentSizeChange={() => {\n                if (resumePending !== null) {\n                  const index = shown.findIndex((h) => (h.idInBook ?? h.id) === resumePending);\n                  if (index >= 0) {\n                    // Each Hadith card is intentionally compact; this gives a reliable resume position without extra native dependencies.\n                    setTimeout(() => {\n                      setResumePending(null);\n                    }, 0);\n                  }\n                }\n              }} showsVerticalScrollIndicator={false}>
               {shown.map((h, index) => {
                 const number = h.idInBook ?? h.id ?? index + 1;
                 const urdu = urduMap[number];
