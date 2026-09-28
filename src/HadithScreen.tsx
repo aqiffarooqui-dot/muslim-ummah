@@ -675,7 +675,7 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   readerCounter: { backgroundColor: '#12161E', borderRadius: 12, paddingHorizontal: 9, paddingVertical: 7 },
   readerCounterText: { color: '#8D948F', fontSize: 8, fontWeight: '800' },
   languageRow: { gap: 7, paddingVertical: 7, paddingBottom: 12 },
-  languagePill: { borderRadius: 14, borderWidth: 1, borderColor: '#252A35', backgroundColor: '#11141B', paddingHorizontal: 12, paddingVertical: 8 },
+  languagePill: { borderRadius: 999, borderWidth: 1, borderColor: '#252A35', backgroundColor: '#11141B', paddingHorizontal: 11, paddingVertical: 7, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   languageActive: { backgroundColor: '#211F18', borderColor: '#806B3D' },
   languageText: { color: '#858B99', fontSize: 10, fontWeight: '800' },
   languageActiveText: { color: '#D9C77A' },
