@@ -11,10 +11,7 @@ import {
 import AuthScreen from './AuthScreen';
 import { useTheme } from '../themes/ThemeProvider';
 import { createThemedStyles } from '../themes/themeStyleMapper';
-import {
-  AuthProvider,
-  useAuth,
-} from './AuthProvider';
+import { useAuth } from './AuthProvider';
 
 function AuthGateContent({
   children,
@@ -66,11 +63,9 @@ export default function AuthGate({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      <AuthGateContent>
-        {children}
-      </AuthGateContent>
-    </AuthProvider>
+    <AuthGateContent>
+      {children}
+    </AuthGateContent>
   );
 }
 
