@@ -1,5 +1,4 @@
-name: Build Muslim Ummah Native APK
-# Triggered for the latest fixed app build
+name: Build and Release Muslim Ummah Android
 
 on:
   workflow_dispatch:
@@ -7,36 +6,68 @@ on:
     paths:
       - 'native-android/**'
       - '.github/workflows/android-native.yml'
-      - 'public/update.json'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: native-android
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-
-      - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
-
-      - name: Upload APK
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(sed -n "s/.*versionName ['\"]\([^'\"]*\).*/\1/p" native-android/app/build.gradle | head -n1)
+          VERSION_CODE=$(sed -n "s/.*versionCode \([0-9]*\).*/\1/p" native-android/app/build.gradle | head -n1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+      - name: Build signed release APK
+        working-directory: native-android
+        run: gradle assembleRelease --no-daemon
+      - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: muslim-ummah-debug-apk
-          path: native-android/app/build/outputs/apk/debug/app-debug.apk
+          name: muslim-ummah-release-apk-${{ steps.version.outputs.version }}
+          path: native-android/app/build/outputs/apk/release/app-release.apk
+      - name: Publish GitHub release and OTA manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          APK="native-android/app/build/outputs/apk/release/app-release.apk"
+          RELEASE_APK="muslim-ummah-${VERSION}.apk"
+          cp "$APK" "$RELEASE_APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; no duplicate release created."
+            exit 0
+          fi
+          gh release create "$TAG" "$RELEASE_APK#Muslim Ummah $VERSION APK" --target "$GITHUB_SHA" --title "Muslim Ummah $VERSION" --generate-notes
+          cat > public/update.json <<EOF
+{
+  "version": "${VERSION}",
+  "versionCode": ${VERSION_CODE},
+  "apkUrl": "https://github.com/aqiffarooqui-dot/muslim-ummah/releases/download/${TAG}/muslim-ummah-${VERSION}.apk",
+  "changes": [
+    "Native Android release with signed APK updates.",
+    "OTA update checking and in-app update installation are enabled."
+  ]
+}
+EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/update.json
+          git commit -m "Publish OTA manifest for ${TAG}"
+          git push origin HEAD:main
