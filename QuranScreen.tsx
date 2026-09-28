@@ -1486,24 +1486,6 @@ export default function QuranScreen({
                   <Text style={styles.sliderLetterLarge}>A</Text>
                 </View>
               </View>
-                  <Text style={styles.sliderLetterLarge}>A</Text>
-                </View>
-                <View style={styles.sliderTouchRow}>
-                  {[20,22,24,26,28,30,32,34,36].map((size) => (
-                    <Pressable
-                      key={size}
-                      style={styles.sliderTouch}
-                      onPress={() =>
-                        updateReadingSettings({
-                          ...readingSettings,
-                          fontSize: size,
-                          lineSpacing: Math.round(size * 1.92),
-                        })
-                      }
-                    />
-                  ))}
-                </View>
-              </View>
 
               <View style={styles.settingsSection}>
                 <Text style={styles.settingsLabel}>Translation</Text>
