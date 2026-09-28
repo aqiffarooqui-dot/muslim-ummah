@@ -5,16 +5,12 @@ import android.content.SharedPreferences;
 
 import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-
 /**
  * Central Premium entitlement state.
  *
  * The cached state is only a continuity cache. It is never sufficient to
- * create a Premium entitlement by itself. A future server verification step
- * must call setVerifiedEntitlement() after validating the signed/server
- * response.
+ * create a Premium entitlement by itself. A trusted server verification step
+ * must call setVerifiedEntitlement() after validating the server response.
  */
 public final class PremiumManager {
     private static final String PREFS = "premium_entitlement";
@@ -32,6 +28,10 @@ public final class PremiumManager {
                 && !isExpired(p.getLong(KEY_EXPIRES_AT, 0L));
     }
 
+    public static boolean isFeatureUnlocked(Context context, String feature) {
+        return !PremiumFeatures.requiresPremium(feature) || isPremium(context);
+    }
+
     public static String getUserId(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_UID, "");
@@ -44,8 +44,7 @@ public final class PremiumManager {
 
     /**
      * Stores only an entitlement that has already been verified by the app's
-     * trusted server path. Passing an arbitrary local flag is deliberately not
-     * exposed.
+     * trusted server path. Arbitrary local flags are deliberately not exposed.
      */
     public static void setVerifiedEntitlement(
             Context context,
