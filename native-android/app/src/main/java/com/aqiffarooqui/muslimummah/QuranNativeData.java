@@ -76,7 +76,7 @@ public final class QuranNativeData {
     private static String readAsset(Context ctx,String path)throws Exception{
         StringBuilder b=new StringBuilder();
         try(BufferedReader r=new BufferedReader(new InputStreamReader(ctx.getAssets().open(path),"UTF-8"))){
-            String l; while((l=r.readLine())!=null)b.append(l).append('\\n');
+            String l; while((l=r.readLine())!=null)b.append(l).append('\n');
         }
         return b.toString();
     }
