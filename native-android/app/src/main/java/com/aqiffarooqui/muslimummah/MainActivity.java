@@ -256,12 +256,10 @@ public class MainActivity extends Activity {
         if(!m.find())return;
         String[] columns=m.group(1).split(",");
         String body=source.substring(m.end()); StringBuilder current=new StringBuilder(); boolean quoted=false;
-        String[] lines=body.split("\\r?\
-");
+        String[] lines=body.split("\\r?\\n");
         for(String line:lines){
             if(line.trim().isEmpty())continue;
-            if(current.length()>0)current.append("\
-"); current.append(line);
+            if(current.length()>0)current.append("\n"); current.append(line);
             int quotes=0; for(int i=0;i<line.length();i++)if(line.charAt(i)=='"') {if(i+1<line.length()&&line.charAt(i+1)=='"')i++;else quotes++;}
             if((quotes%2)==1)quoted=!quoted;
             if(!quoted){
@@ -280,8 +278,7 @@ public class MainActivity extends Activity {
 
     private String getText(String url)throws Exception{
         HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection(); c.setConnectTimeout(8000); c.setReadTimeout(12000); c.setRequestMethod("GET");
-        try{BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line).append("
-");return s.toString();}finally{c.disconnect();}
+        try{BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line).append("\n");return s.toString();}finally{c.disconnect();}
     }
 
     private void openHadithSearchResult(int bookIndex,int bookNo,int hadithNo){
