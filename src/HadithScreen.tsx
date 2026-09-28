@@ -554,8 +554,12 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
             <View style={s.center}><Text style={s.err}>{err}</Text></View>
           ) : (
             <ScrollView
-              style={{ flex: 1 }}\n              contentContainerStyle={s.readerList}\n              onContentSizeChange={() => {
-                if (resumePending !== null) {\n                  const index = shown.findIndex((h) => (h.idInBook ?? h.id) === resumePending);\n                  if (index >= 0) {
+              style={{ flex: 1 }}
+              contentContainerStyle={s.readerList}
+              onContentSizeChange={() => {
+                if (resumePending !== null) {
+                  const index = shown.findIndex((h) => (h.idInBook ?? h.id) === resumePending);
+                  if (index >= 0) {
                     // Each Hadith card is intentionally compact; this gives a reliable resume position without extra native dependencies.
                     setTimeout(() => {
                       setResumePending(null);
