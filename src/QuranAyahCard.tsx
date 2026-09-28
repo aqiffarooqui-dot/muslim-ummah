@@ -27,6 +27,8 @@ type QuranAyahCardProps = {
   bookmarked?: boolean;
   onBookmarkPress?: () => void;
   onPlayAyah?: () => void;
+  onBookPress?: () => void;
+  isPlaying?: boolean;
   fontSize?: number;
   lineSpacing?: number;
 };
@@ -40,6 +42,8 @@ export default function QuranAyahCard({
   bookmarked = false,
   onBookmarkPress,
   onPlayAyah,
+  onBookPress,
+  isPlaying = false,
   fontSize,
   lineSpacing,
 }: QuranAyahCardProps) {
@@ -117,7 +121,7 @@ export default function QuranAyahCard({
     player.play();
   };
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isPlaying && styles.cardPlaying]}>
       <View style={styles.header}>
         <View style={styles.ayahNumber}>
           <Text style={styles.ayahNumberText}>
@@ -132,12 +136,15 @@ export default function QuranAyahCard({
               <Text style={styles.premiumMiniBadgeText}>PREMIUM</Text>
             </View>
 
-            <Pressable onPress={openTafsir} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Open Tafsir for Ayah ${ayahNumber}`}>
+            <Pressable onPress={() => onBookPress?.()} hitSlop={10} accessibilityRole="button" accessibilityLabel="Open full Quran book">
               <Ionicons name="book-outline" size={21} color="#D8B36A" />
+            </Pressable>
+            <Pressable onPress={openTafsir} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Open Tafsir for Ayah ${ayahNumber}`}>
+              <Ionicons name="information-circle-outline" size={21} color="#D8B36A" />
             </Pressable>
 
             <Pressable onPress={playAudio} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Play Ayah ${ayahNumber}`}>
-              <Ionicons name="play-circle-outline" size={21} color="#D8B36A" />
+              <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle-outline'} size={21} color="#D8B36A" />
             </Pressable>
 
             <Pressable
@@ -306,6 +313,11 @@ const rawStyles = {
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#202530',
+  },
+
+  cardPlaying: {
+    borderColor: '#D8B36A',
+    backgroundColor: '#17150F',
   },
 
   header: {
