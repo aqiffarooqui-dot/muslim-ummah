@@ -112,7 +112,7 @@ public class MainActivity extends Activity {
         row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text("›",28,green,false)); c.addView(row); list.addView(c);
     }
     private void showAdvancedQuranSearch(){
-        if(!PremiumManager.isFeatureUnlocked(this,PremiumFeatures.ADVANCED_SEARCH)){ showPremiumRequired("Advanced Qur'an search"); return; }
+        if(!PremiumManager.isFeatureUnlocked(this,PremiumFeatures.ADVANCED_QURAN_SEARCH)){ showPremiumRequired("Advanced Qur'an search"); return; }
         content.removeAllViews(); title.setText("Advanced Qur'an Search");
         addSection("Search the Qur'an","Search bundled English translation across all 114 Surahs.");
         EditText q=new EditText(this); q.setHint("Search words, topics or phrases"); q.setSingleLine(true); content.addView(q,new LinearLayout.LayoutParams(-1,-2));
