@@ -126,17 +126,6 @@ public class MainActivity extends Activity {
     private static final String HADITH_BASE="https://raw.githubusercontent.com/AhmedBaset/hadith-json/v1.2.0/db/by_chapter/the_9_books";
     private static final String HADITH_FA="https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions";
     private static final String HADITH_TOON="https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions";
-    private static final HadithBook[] HADITH_BOOKS={
-        new HadithBook("bukhari","Sahih al-Bukhari","Bukhari",97,"eng-bukhari"),
-        new HadithBook("muslim","Sahih Muslim","Muslim",56,"eng-muslim"),
-        new HadithBook("abudawud","Sunan Abi Dawud","Abu Dawud",43,"eng-abudawud"),
-        new HadithBook("tirmidhi","Jami at-Tirmidhi","Tirmidhi",49,"eng-tirmidhi"),
-        new HadithBook("nasai","Sunan an-Nasa'i","Nasa'i",52,"eng-nasai"),
-        new HadithBook("ibnmajah","Sunan Ibn Majah","Ibn Majah",37,"eng-ibnmajah"),
-        new HadithBook("malik","Muwatta Malik","Malik",61,"eng-malik"),
-        new HadithBook("ahmad","Musnad Ahmad","Ahmad",8,"eng-ahmad"),
-        new HadithBook("darimi","Sunan al-Darimi","Darimi",23,"eng-darimi")
-    };
     private int hadithBookIndex=0;
     private String hadithChapterId="";
     private String hadithLanguage="english";
@@ -393,6 +382,41 @@ public class MainActivity extends Activity {
     private void download(String url){if(Build.VERSION.SDK_INT>=26&&!getPackageManager().canRequestPackageInstalls()){startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));return;}try{DownloadManager m=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);DownloadManager.Request r=new DownloadManager.Request(Uri.parse(url));r.setTitle("Muslim Ummah Update").setMimeType("application/vnd.android.package-archive").setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);r.setDestinationInExternalFilesDir(this,Environment.DIRECTORY_DOWNLOADS,"muslim-ummah-update.apk");downloadId=m.enqueue(r);}catch(Exception ignored){}}
     private void install(Uri uri){try{Intent i=new Intent(Intent.ACTION_VIEW).setDataAndType(uri,"application/vnd.android.package-archive");i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(i);}catch(Exception ignored){}}
     @Override protected void onDestroy(){if(downloadReceiver!=null)try{unregisterReceiver(downloadReceiver);}catch(Exception ignored){}super.onDestroy();}
+    private JSONObject getJson(String url) throws Exception{
+        if(url.startsWith(HADITH_BASE+"/")){
+            String rel=url.substring((HADITH_BASE+"/").length());
+            try(java.io.InputStream in=getAssets().open("hadith/the_9_books/"+rel)){
+                BufferedReader r=new BufferedReader(new InputStreamReader(in));
+                StringBuilder b=new StringBuilder(); String line;
+                while((line=r.readLine())!=null)b.append(line).append('\\n');
+                return new JSONObject(b.toString());
+            }catch(Exception assetError){
+                // Fall back to network for data not bundled in the APK.
+            }
+        }
+        HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection();
+        c.setConnectTimeout(8000); c.setReadTimeout(12000); c.setRequestMethod("GET");
+        try{
+            BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));
+            StringBuilder b=new StringBuilder(); String line;
+            while((line=r.readLine())!=null)b.append(line).append('\\n');
+            return new JSONObject(b.toString());
+        }finally{c.disconnect();}
+    }
+
+    private void loadHadithBookmarks(){
+        hadithBookmarks.clear();
+        String raw=getPreferences(MODE_PRIVATE).getString("hadith_bookmarks","");
+        if(raw.isEmpty())return;
+        for(String x:raw.split("\\|"))if(!x.trim().isEmpty())hadithBookmarks.add(x);
+    }
+
+    private void saveHadithBookmarks(){
+        StringBuilder b=new StringBuilder();
+        for(String x:hadithBookmarks){if(b.length()>0)b.append('|');b.append(x);}
+        getPreferences(MODE_PRIVATE).edit().putString("hadith_bookmarks",b.toString()).apply();
+    }
+
     private void renderHadithItems(LinearLayout list,java.util.List<HadithItem> items){
         list.removeAllViews(); if(items.isEmpty()){addRow("No Hadith found","This chapter has no readable entries.");return;}
         for(HadithItem h:items){LinearLayout c=card(); c.addView(text(HADITH_BOOKS[hadithBookIndex].shortName+" • Hadith "+h.number,13,green,true)); if(!h.arabic.isEmpty()){TextView a=text(h.arabic,22,Color.rgb(20,24,20),false);a.setGravity(Gravity.RIGHT);a.setTextIsSelectable(true);a.setPadding(0,12,0,12);c.addView(a);}
