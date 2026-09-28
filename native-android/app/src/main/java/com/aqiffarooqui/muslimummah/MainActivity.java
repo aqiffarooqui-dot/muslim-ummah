@@ -18,6 +18,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.webkit.WebViewAssetLoader;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -28,7 +30,7 @@ import java.net.URL;
 
 public class MainActivity extends Activity {
 
-    private static final String APP_URL = "file:///android_asset/web/index.html";
+    private static final String APP_URL = "https://appassets.androidplatform.net/assets/web/index.html";
     private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
     private static final String CURRENT_VERSION = "1.0.3";
 
@@ -47,15 +49,28 @@ public class MainActivity extends Activity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setDatabaseEnabled(true);
-        webView.getSettings().setAllowFileAccess(true);
-        webView.getSettings().setAllowContentAccess(true);
+        webView.getSettings().setAllowFileAccess(false);
+        webView.getSettings().setAllowContentAccess(false);
         webView.getSettings().setBuiltInZoomControls(false);
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url));
+            }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
-                    if (uri.toString().startsWith("file:///android_asset/")) {
+                    if ("appassets.androidplatform.net".equals(uri.getHost())) {
                         return false;
                     }
                     startActivity(new Intent(Intent.ACTION_VIEW, uri));
