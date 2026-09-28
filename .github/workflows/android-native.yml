@@ -59,6 +59,7 @@ jobs:
           path: native-android/app/build/outputs/apk/release/app-release.apk
 
       - name: Publish GitHub Release v1.0.3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.3
