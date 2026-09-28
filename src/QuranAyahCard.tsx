@@ -14,11 +14,7 @@ import { Alert, Platform } from 'react-native';
 import { usePremium } from './premium/PremiumProvider';
 import { useTheme } from './themes/ThemeProvider';
 import { createThemedStyles } from './themes/themeStyleMapper';
-import {
-  DEFAULT_QURAN_READING_SETTINGS,
-  getQuranReadingSettings,
-  type QuranReadingSettings,
-} from './quranReadingSettings';
+import { DEFAULT_QURAN_READING_SETTINGS } from './quranReadingSettings';
 
 import QuranArabicText from './QuranArabicText';
 
@@ -30,6 +26,9 @@ type QuranAyahCardProps = {
   isUrdu?: boolean;
   bookmarked?: boolean;
   onBookmarkPress?: () => void;
+  onPlayAyah?: () => void;
+  fontSize?: number;
+  lineSpacing?: number;
 };
 
 export default function QuranAyahCard({
@@ -40,29 +39,19 @@ export default function QuranAyahCard({
   isUrdu = false,
   bookmarked = false,
   onBookmarkPress,
+  onPlayAyah,
+  fontSize,
+  lineSpacing,
 }: QuranAyahCardProps) {
   const { isPremium } = usePremium();
   const { theme } = useTheme();
   const styles = createThemedStyles(theme, rawStyles);
-  const [readingSettings, setReadingSettings] =
-    useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
+  const [readingSettings] = useState(DEFAULT_QURAN_READING_SETTINGS);
   const [tafsirVisible, setTafsirVisible] = useState(false);
   const [tafsirLoading, setTafsirLoading] = useState(false);
   const [tafsirText, setTafsirText] = useState('');
   const [tafsirError, setTafsirError] = useState('');
 
-  useEffect(() => {
-    if (!isPremium) {
-      setReadingSettings(DEFAULT_QURAN_READING_SETTINGS);
-      return;
-    }
-
-    getQuranReadingSettings()
-      .then(setReadingSettings)
-      .catch((err) =>
-        console.error('Quran reading settings load error:', err)
-      );
-  }, [isPremium]);
 
   const openTafsir = async () => {
     if (!isPremium) {
@@ -120,6 +109,10 @@ export default function QuranAyahCard({
       if (Platform.OS === 'web') window.alert(message); else Alert.alert('Premium Feature',message);
       return;
     }
+    if (onPlayAyah) {
+      onPlayAyah();
+      return;
+    }
     player.replace(audioUrl);
     player.play();
   };
@@ -171,8 +164,8 @@ export default function QuranAyahCard({
         style={[
           styles.arabicText,
           {
-            fontSize: readingSettings.fontSize,
-            lineHeight: readingSettings.lineSpacing,
+            fontSize: fontSize ?? readingSettings.fontSize,
+            lineHeight: lineSpacing ?? readingSettings.lineSpacing,
             marginBottom:
               readingSettings.mode === 'compact' ? 0 : 2,
           },
