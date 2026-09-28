@@ -15,7 +15,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.widget.*;
+import android.widget.*;\nimport java.util.List;
 
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -67,11 +67,58 @@ public class MainActivity extends Activity {
     private void showSurah(QuranData.Surah x){
         content.removeAllViews(); title.setText(x.name);
         addSection(x.arabicName+"  •  "+x.englishName,x.revelation+" • "+x.ayahCount+" Ayahs");
-        addRow("Read Surah","Open native Arabic reader");
-        addRow("Translations","Hindi • English • Urdu • Hinglish");
-        addRow("Bookmark","Save reading position / Ayah");
-        addRow("Reading progress","Continue from last position");
+        addActionRow("Read Surah","Arabic • offline after first load",()->openReader(x,"arabic"));
+        addActionRow("Translations","Hindi/English/Urdu/Hinglish",()->openReader(x,"english"));
+        addActionRow("Bookmark","Open saved Ayah",()->openBookmarked(x));
         TextView back=text("‹  Back to Surahs",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showQuran()); content.addView(back);
+    }
+    private void addActionRow(String h,String body,final Runnable action){
+        LinearLayout c=card(); c.setOnClickListener(v->action.run());
+        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text(h,17,Color.rgb(20,24,20),true)); labels.addView(text(body,13,Color.GRAY,false));
+        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text("›",28,green,false)); c.addView(row); content.addView(c);
+    }
+    private void openReader(QuranData.Surah x,String lang){
+        content.removeAllViews(); title.setText(x.name+" • "+(lang.equals("arabic")?"Arabic":"Translation"));
+        LinearLayout controls=new LinearLayout(this); controls.setGravity(Gravity.CENTER_VERTICAL);
+        Spinner spinner=new Spinner(this);
+        String[] langs={"Arabic","English","Urdu","Hinglish"}; ArrayAdapter<String> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,langs); spinner.setAdapter(adapter);
+        if(lang.equals("urdu"))spinner.setSelection(2); else if(lang.equals("hinglish"))spinner.setSelection(3); else if(lang.equals("english"))spinner.setSelection(1);
+        controls.addView(spinner,new LinearLayout.LayoutParams(0,-2,1));
+        Button bookmark=new Button(this); bookmark.setText("Bookmarks"); bookmark.setAllCaps(false); controls.addView(bookmark,new LinearLayout.LayoutParams(-2,-2)); content.addView(controls);
+        TextView status=text("Loading Qur'an…",15,Color.GRAY,false); status.setPadding(22,16,22,16); content.addView(status);
+        LinearLayout list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); content.addView(list);
+        Runnable[] load={null};
+        load[0]=()->{
+            String selected=spinner.getSelectedItem().toString();
+            String key=selected.equals("Urdu")?"urdu":selected.equals("Hinglish")?"hinglish":selected.equals("English")?"english":"arabic";
+            title.setText(x.name+" • "+selected); status.setText("Loading…");
+            list.removeAllViews();
+            QuranNativeData.load(this,x.number,key,(ayahs,error)->runOnUiThread(()->{
+                if(error!=null){status.setText("Unable to load this Surah. Internet is required once, then it works offline.");return;}
+                status.setText(ayahs.size()+" Ayahs • cached for offline reading");
+                for(QuranNativeData.Ayah a:ayahs) addAyahCard(list,x,a,key);
+            }));
+        };
+        spinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onNothingSelected(android.widget.AdapterView<?> p){} public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){load[0].run();}});
+        bookmark.setOnClickListener(v->openBookmarked(x));
+        TextView back=text("‹  Back to Surah",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showSurah(x)); content.addView(back);
+    }
+    private void addAyahCard(LinearLayout list,QuranData.Surah x,QuranNativeData.Ayah a,String lang){
+        LinearLayout c=card();
+        TextView n=text("Ayah "+a.number,13,green,true); c.addView(n);
+        TextView body=text(a.text,lang.equals("arabic")?25:17,Color.rgb(20,24,20),false);
+        if(lang.equals("arabic")) body.setGravity(Gravity.RIGHT); body.setTextIsSelectable(true); body.setPadding(4,12,4,12); c.addView(body);
+        Button b=new Button(this); b.setText(isBookmarked(x.number,a.number)?"★ Bookmarked":"☆ Bookmark"); b.setAllCaps(false); b.setOnClickListener(v->{toggleBookmark(x.number,a.number);b.setText(isBookmarked(x.number,a.number)?"★ Bookmarked":"☆ Bookmark");}); c.addView(b);
+        list.addView(c);
+        getPreferences(MODE_PRIVATE).edit().putString("quran_progress",x.number+":"+a.number).apply();
+    }
+    private void toggleBookmark(int s,int a){String k="quran_bookmark_"+s+"_"+a;android.content.SharedPreferences p=getPreferences(MODE_PRIVATE);p.edit().putBoolean(k,!p.getBoolean(k,false)).apply();}
+    private boolean isBookmarked(int s,int a){return getPreferences(MODE_PRIVATE).getBoolean("quran_bookmark_"+s+"_"+a,false);}
+    private void openBookmarked(QuranData.Surah x){
+        for(int i=1;i<=x.ayahCount;i++) if(isBookmarked(x.number,i)){openReader(x,"arabic");return;}
+        new AlertDialog.Builder(this).setTitle("No bookmark").setMessage("No saved Ayah in "+x.name+" yet.").setPositiveButton("OK",null).show();
     }
     private void showHadith(){title.setText("Hadith");addSection("Hadith Library","Native nested navigation: Books → Chapters → Hadiths. Search and bookmarks will be integrated into the native reader.");addRow("Sahih al-Bukhari","Books and chapters");addRow("Sahih Muslim","Books and chapters");addRow("Abu Dawud","Books and chapters");addRow("Search Hadith","Search across the library");}
     private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
