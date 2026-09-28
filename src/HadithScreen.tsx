@@ -116,27 +116,51 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
       const hMap: Record<number, string> = {}; parseToonRows(hindiToon).forEach((row) => { const n = Number(row.hadithnumber); if (Number.isFinite(n) && row.text?.trim()) hMap[n] = row.text.trim(); });
       const rMap: Record<number, string> = {}; parseToonRows(romanToon).forEach((row) => { const n = Number(row.hadithnumber); if (Number.isFinite(n) && row.text?.trim()) rMap[n] = row.text.trim(); });
       const toonRows = parseToonRows(sectionToon);
-      const toonByNumber: Record<number, string> = {};
+      // Build a reliable hadith-number -> chapter-title map from the TOON source.
+      // chapter_intro is present on the first hadith of each chapter; carry that
+      // title forward until the next chapter marker.
+      const chapterTitleByNumber: Record<number, string> = {};
+      const orderedChapterTitles: { title: string; hadithNumbers: number[] }[] = [];
+      let activeChapter = '';
       toonRows.forEach((row) => {
         const n = Number(row.hadithnumber);
-        if (Number.isFinite(n) && row.chapter_intro?.trim()) toonByNumber[n] = row.chapter_intro.trim();
+        if (!Number.isFinite(n)) return;
+        const intro = row.chapter_intro?.trim();
+        if (intro) {
+          activeChapter = intro;
+          if (!orderedChapterTitles.some((x) => x.title.toLowerCase() === activeChapter.toLowerCase())) {
+            orderedChapterTitles.push({ title: activeChapter, hadithNumbers: [] });
+          }
+        }
+        if (activeChapter) {
+          chapterTitleByNumber[n] = activeChapter;
+          const target = orderedChapterTitles.find((x) => x.title.toLowerCase() === activeChapter.toLowerCase());
+          if (target && !target.hadithNumbers.includes(n)) target.hadithNumbers.push(n);
+        }
       });
+
+      // Fallback to chapterId when TOON chapter markers are unavailable.
       const chapterMap = new Map<string, HadithChapter>();
       source.forEach((item: any) => {
         const n = Number(item.idInBook ?? item.id);
         if (!Number.isFinite(n)) return;
         const chapterId = Number(item.chapterId);
-        const title = toonByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : 'Chapter');
+        const title = chapterTitleByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : 'Chapter');
         const key = title.toLowerCase();
         const existing = chapterMap.get(key);
         if (existing) existing.hadithNumbers.push(n);
         else chapterMap.set(key, { key, title, hadithNumbers: [n] });
       });
+      orderedChapterTitles.forEach((chapter) => {
+        const key = chapter.title.toLowerCase();
+        if (!chapterMap.has(key)) chapterMap.set(key, { key, title: chapter.title, hadithNumbers: chapter.hadithNumbers });
+      });
+
       const merged: Hadith[] = source.map((item: any) => {
         const n = Number(item.idInBook ?? item.id);
         const en = enMap[n];
         const chapterId = Number(item.chapterId);
-        const chapterIntro = toonByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : '');
+        const chapterIntro = chapterTitleByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : '');
         return { ...item, english: { narrator: en?.text ? '' : item.english?.narrator, text: en?.text || item.english?.text }, chapterIntro };
       });
       if (cancelled) return;
