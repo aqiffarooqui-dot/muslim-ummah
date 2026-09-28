@@ -7,9 +7,6 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "scheme": "muslimummah",
-    "experiments": {
-      "baseUrl": "/muslim-ummah"
-    },
     "web": {
       "bundler": "metro",
       "output": "single"
