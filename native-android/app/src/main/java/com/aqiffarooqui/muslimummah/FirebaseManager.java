@@ -9,7 +9,7 @@ import com.google.firebase.auth.FirebaseUser;
 public final class FirebaseManager {
     private static final String PROJECT_ID = "muslim-ummah-d970c";
     private static final String APPLICATION_ID = "1:518938483883:web:97f907714aa09be8ee2bee";
-    private static final String API_KEY = "REPLACE_WITH_FIREBASE_WEB_API_KEY";
+    private static final String API_KEY = "AIzaSyCJJWZ0tNnFqKyGHqjf9jKW3q4L2D294CE";
     private static FirebaseAuth auth;
 
     private FirebaseManager(){}
