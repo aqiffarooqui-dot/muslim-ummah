@@ -1,16 +1,22 @@
 package com.aqiffarooqui.muslimummah;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
-import android.app.Activity;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,9 +30,11 @@ public class MainActivity extends Activity {
 
     private static final String APP_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/";
     private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
-    private static final String CURRENT_VERSION = "1.0.0";
+    private static final String CURRENT_VERSION = "1.0.1";
 
     private WebView webView;
+    private BroadcastReceiver downloadReceiver;
+    private long downloadId = -1L;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -57,15 +65,62 @@ public class MainActivity extends Activity {
             }
         });
 
+        registerDownloadReceiver();
         webView.loadUrl(APP_URL);
         checkForUpdate();
+    }
+
+    private void registerDownloadReceiver() {
+        downloadReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L);
+                if (id != downloadId) return;
+
+                DownloadManager manager =
+                        (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                if (manager == null) return;
+
+                DownloadManager.Query query = new DownloadManager.Query();
+                query.setFilterById(downloadId);
+
+                android.database.Cursor cursor = manager.query(query);
+                if (cursor == null) return;
+
+                try {
+                    if (cursor.moveToFirst()) {
+                        int status = cursor.getInt(
+                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+                        );
+
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            String uriString = cursor.getString(
+                                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI)
+                            );
+                            installDownloadedApk(Uri.parse(uriString));
+                        } else {
+                            showMessage("Update download failed. Please try again.");
+                        }
+                    }
+                } finally {
+                    cursor.close();
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(downloadReceiver, filter);
+        }
     }
 
     private void checkForUpdate() {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                URL url = new URL(UPDATE_URL);
+                URL url = new URL(UPDATE_URL + "?t=" + System.currentTimeMillis());
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
@@ -92,8 +147,8 @@ public class MainActivity extends Activity {
                     if (changes != null) {
                         for (int i = 0; i < changes.length(); i++) {
                             message.append("• ")
-                                   .append(changes.optString(i))
-                                   .append("\n");
+                                    .append(changes.optString(i))
+                                    .append("\n");
                         }
                     }
 
@@ -139,17 +194,90 @@ public class MainActivity extends Activity {
         builder.setMessage("Version " + version + "\n\nWhat's New:\n" +
                 (changes.isEmpty() ? "New improvements and fixes." : changes));
 
-        builder.setPositiveButton("Update Now", (dialog, which) -> {
-            if (!apkUrl.isEmpty()) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)));
-            } else {
-                webView.reload();
-            }
-        });
+        if (!apkUrl.isEmpty()) {
+            builder.setPositiveButton("Update Now", (dialog, which) -> downloadAndInstall(apkUrl));
+        }
 
         builder.setNegativeButton("Later", null);
         builder.setCancelable(true);
         builder.show();
+    }
+
+    private void downloadAndInstall(String apkUrl) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getPackageManager().canRequestPackageInstalls()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Allow app updates")
+                    .setMessage("Please allow Muslim Ummah to install updates, then tap Update again.")
+                    .setPositiveButton("Open Settings", (dialog, which) -> {
+                        Intent intent = new Intent(
+                                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:" + getPackageName())
+                        );
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
+        DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        if (manager == null) {
+            showMessage("Download service is unavailable.");
+            return;
+        }
+
+        try {
+            Uri uri = Uri.parse(apkUrl);
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle("Muslim Ummah Update");
+            request.setDescription("Downloading the latest Muslim Ummah update");
+            request.setMimeType("application/vnd.android.package-archive");
+            request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            );
+            request.setDestinationInExternalFilesDir(
+                    this,
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "muslim-ummah-update.apk"
+            );
+
+            downloadId = manager.enqueue(request);
+            showMessage("Update download started. Installation will open when ready.");
+        } catch (Exception e) {
+            showMessage("Could not start the update download.");
+        }
+    }
+
+    private void installDownloadedApk(Uri apkUri) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        } catch (Exception e) {
+            showMessage("The APK downloaded, but Android could not open the installer.");
+        }
+    }
+
+    private void showMessage(String message) {
+        runOnUiThread(() ->
+                new AlertDialog.Builder(this)
+                        .setMessage(message)
+                        .setPositiveButton("OK", null)
+                        .show()
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (downloadReceiver != null) {
+            try {
+                unregisterReceiver(downloadReceiver);
+            } catch (Exception ignored) {
+            }
+        }
+        super.onDestroy();
     }
 
     @Override
