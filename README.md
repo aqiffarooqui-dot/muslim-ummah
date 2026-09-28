@@ -25,6 +25,6 @@ npm run build:web
 
 The primary target is Android and iOS.
 
-The web version is maintained separately for preview purposes. 
+The web version is maintained separately for preview purposes.
 
- 
+<!-- web deployment refresh -->
