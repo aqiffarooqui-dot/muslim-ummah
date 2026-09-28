@@ -37,6 +37,15 @@ const PremiumContext =
     PremiumContextValue | undefined
   >(undefined);
 
+// Premium entitlement must be refreshed from the server regularly.
+// This prevents a user from disabling network access and keeping an old
+// in-memory ACTIVE entitlement indefinitely.
+const PREMIUM_VERIFICATION_WINDOW_MS =
+  5 * 60 * 1000;
+
+const PREMIUM_REFRESH_INTERVAL_MS =
+  5 * 60 * 1000;
+
 export function PremiumProvider({
   children,
 }: {
@@ -52,12 +61,18 @@ export function PremiumProvider({
       null
     );
 
+  const [
+    verifiedAt,
+    setVerifiedAt
+  ] = useState<number>(0);
+
   const [loading, setLoading] =
     useState(true);
 
   async function refreshPremium() {
     if (!user) {
       setSubscription(null);
+      setVerifiedAt(0);
       setLoading(false);
       return;
     }
@@ -65,19 +80,24 @@ export function PremiumProvider({
     try {
       setLoading(true);
 
+      // getPremiumSubscription() uses getDocFromServer(), so an offline
+      // Firestore cache can never silently grant Premium.
       const result =
         await getPremiumSubscription(
           user.uid
         );
 
       setSubscription(result);
+      setVerifiedAt(Date.now());
     } catch (error) {
       console.error(
-        'Premium loading error:',
+        'Premium server verification failed:',
         error
       );
 
+      // Fail closed: no network/server verification = no Premium.
       setSubscription(null);
+      setVerifiedAt(0);
     } finally {
       setLoading(false);
     }
@@ -85,6 +105,15 @@ export function PremiumProvider({
 
   useEffect(() => {
     refreshPremium();
+
+    const intervalId =
+      window.setInterval(
+        refreshPremium,
+        PREMIUM_REFRESH_INTERVAL_MS
+      );
+
+    return () =>
+      window.clearInterval(intervalId);
   }, [user?.uid]);
 
   const effectiveSubscription =
@@ -101,7 +130,16 @@ export function PremiumProvider({
         }
       : subscription;
 
+  const serverVerificationFresh =
+    isAdmin ||
+    (
+      verifiedAt > 0 &&
+      Date.now() - verifiedAt <
+        PREMIUM_VERIFICATION_WINDOW_MS
+    );
+
   const isPremium =
+    serverVerificationFresh &&
     isPremiumActive(
       effectiveSubscription
     );
@@ -118,6 +156,7 @@ export function PremiumProvider({
         effectiveSubscription,
         isPremium,
         loading,
+        verifiedAt,
       ]
     );
 
