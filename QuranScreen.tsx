@@ -299,43 +299,6 @@ export default function QuranScreen({
     };
   }, [selectedSurah]);
 
-  useEffect(() => {
-    if (
-      !audioStatus.didJustFinish ||
-      readingSettings.audioMode !== 'continuous' ||
-      !currentSurah ||
-      audioAyahIndex === null ||
-      audioCompletionRef.current
-    ) {
-      return;
-    }
-
-    audioCompletionRef.current = true;
-    const nextIndex = audioAyahIndex + 1;
-
-    if (nextIndex >= currentSurah.ayahs.length) {
-      setAudioAyahIndex(null);
-      return;
-    }
-
-    const nextAyah = currentSurah.ayahs[nextIndex];
-    setAudioAyahIndex(nextIndex);
-    audioPlayer.replace(
-      `https://everyayah.com/data/Alafasy_128kbps/${String(currentSurah.number).padStart(3, '0')}${String(nextAyah.number).padStart(3, '0')}.mp3`
-    );
-    audioPlayer.play();
-
-    setTimeout(() => {
-      audioCompletionRef.current = false;
-    }, 300);
-  }, [
-    audioStatus.didJustFinish,
-    readingSettings.audioMode,
-    audioAyahIndex,
-    currentSurah,
-    audioPlayer,
-  ]);
-
   /*
    * Handle EVERY navigation request coming
    * from App.tsx.
@@ -1127,6 +1090,44 @@ export default function QuranScreen({
     }
     return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
   }, [currentSurah, pageMap]);
+
+  useEffect(() => {
+    if (
+      !audioStatus.didJustFinish ||
+      readingSettings.audioMode !== 'continuous' ||
+      !currentSurah ||
+      audioAyahIndex === null ||
+      audioCompletionRef.current
+    ) {
+      return;
+    }
+
+    audioCompletionRef.current = true;
+    const nextIndex = audioAyahIndex + 1;
+
+    if (nextIndex >= currentSurah.ayahs.length) {
+      setAudioAyahIndex(null);
+      return;
+    }
+
+    const nextAyah = currentSurah.ayahs[nextIndex];
+    setAudioAyahIndex(nextIndex);
+    audioPlayer.replace(
+      `https://everyayah.com/data/Alafasy_128kbps/${String(currentSurah.number).padStart(3, '0')}${String(nextAyah.number).padStart(3, '0')}.mp3`
+    );
+    audioPlayer.play();
+
+    setTimeout(() => {
+      audioCompletionRef.current = false;
+    }, 300);
+  }, [
+    audioStatus.didJustFinish,
+    readingSettings.audioMode,
+    audioAyahIndex,
+    currentSurah,
+    audioPlayer,
+  ]);
+
 
   if (loading) {
     return (
