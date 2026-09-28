@@ -190,7 +190,8 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
   const [err, setErr] = useState('');
   const [language, setLanguage] = useState<'arabic' | 'english' | 'urdu' | 'hinglish'>('english');
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);\n  const [resumePending, setResumePending] = useState<number | null>(null);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [resumePending, setResumePending] = useState<number | null>(null);
   const readerRef = useRef<ScrollView>(null);
 
   const book = B[bi];
@@ -552,7 +553,16 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
           ) : err ? (
             <View style={s.center}><Text style={s.err}>{err}</Text></View>
           ) : (
-            <ScrollView\n              style={{ flex: 1 }}\n              contentContainerStyle={s.readerList}\n              onContentSizeChange={() => {\n                if (resumePending !== null) {\n                  const index = shown.findIndex((h) => (h.idInBook ?? h.id) === resumePending);\n                  if (index >= 0) {\n                    // Each Hadith card is intentionally compact; this gives a reliable resume position without extra native dependencies.\n                    setTimeout(() => {\n                      setResumePending(null);\n                    }, 0);\n                  }\n                }\n              }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flex: 1 }}\n              contentContainerStyle={s.readerList}\n              onContentSizeChange={() => {
+                if (resumePending !== null) {\n                  const index = shown.findIndex((h) => (h.idInBook ?? h.id) === resumePending);\n                  if (index >= 0) {
+                    // Each Hadith card is intentionally compact; this gives a reliable resume position without extra native dependencies.
+                    setTimeout(() => {
+                      setResumePending(null);
+                    }, 0);
+                  }
+                }
+              }} showsVerticalScrollIndicator={false}>
               {shown.map((h, index) => {
                 const number = h.idInBook ?? h.id ?? index + 1;
                 const urdu = urduMap[number];
