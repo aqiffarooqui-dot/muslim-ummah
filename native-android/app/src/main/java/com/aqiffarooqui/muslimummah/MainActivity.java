@@ -48,7 +48,50 @@ public class MainActivity extends Activity {
         root.addView(nav);setContentView(root);showTab(0);
     }
     private void showTab(int tab){content.removeAllViews();if(tab==0)showHome();else if(tab==1)showQuran();else if(tab==2)showHadith();else if(tab==3)showPrayer();else showProfile();}
-    private void showHome(){title.setText("Assalamu Alaikum");addCard("Today's Reminder","A beautiful reminder from the Qur'an & Sunnah.","Read reminder");addCard("Qur'an","Continue your reading and keep your daily progress.","Open Qur'an");addCard("Hadith","Browse books → chapters → hadiths in a native reader.","Open Hadith");addCard("Prayer","Your prayer times, Qibla and daily worship tools.","Prayer times");}
+    private void showHome(){
+        title.setText("Assalamu Alaikum");
+        addSection("Muslim Ummah","Your daily Qur'an, Hadith & worship companion");
+
+        LinearLayout reminder=card();
+        reminder.addView(text("TODAY'S REMINDER",12,green,true));
+        reminder.addView(text("“Indeed, in the remembrance of Allah do hearts find rest.”",19,Color.rgb(20,24,20),true));
+        reminder.addView(text("Qur'an 13:28",13,Color.GRAY,false));
+        Button openReminder=new Button(this); openReminder.setText("Read Qur'an"); openReminder.setAllCaps(false);
+        openReminder.setOnClickListener(v->showQuran()); reminder.addView(openReminder);
+        content.addView(reminder);
+
+        LinearLayout continueCard=card();
+        continueCard.addView(text("CONTINUE READING",12,green,true));
+        String progress=getPreferences(MODE_PRIVATE).getString("quran_progress","");
+        continueCard.addView(text(progress.isEmpty()?"Start your Qur'an journey":"Continue from your saved Ayah",18,Color.rgb(20,24,20),true));
+        continueCard.addView(text(progress.isEmpty()?"114 Surahs available offline":"Your reading progress is saved on this device",13,Color.GRAY,false));
+        Button q=new Button(this); q.setText(progress.isEmpty()?"Open Qur'an":"Continue"); q.setAllCaps(false); q.setOnClickListener(v->showQuran()); continueCard.addView(q);
+        content.addView(continueCard);
+
+        LinearLayout quick=card();
+        quick.addView(text("QUICK ACCESS",12,green,true));
+        addQuickButton(quick,"📖  Qur'an","114 Surahs • Offline reading",()->showQuran());
+        addQuickButton(quick,"📚  Hadith","9 books • Chapters • Search",()->showHadith());
+        addQuickButton(quick,"🕌  Prayer","Prayer times • Qibla",()->showPrayer());
+        content.addView(quick);
+
+        LinearLayout premium=card();
+        premium.addView(text(PremiumManager.isPremium(this)?"PREMIUM ACTIVE":"MUSLIM UMMAH PREMIUM",12,green,true));
+        premium.addView(text(PremiumManager.isPremium(this)?"Premium features are unlocked":"Translations, Tafsir, audio, advanced tools & more",17,Color.rgb(20,24,20),true));
+        Button p=new Button(this); p.setText(PremiumManager.isPremium(this)?"View Premium":"Explore Premium"); p.setAllCaps(false); p.setOnClickListener(v->showPremiumFeatures()); premium.addView(p);
+        content.addView(premium);
+    }
+
+    private void addQuickButton(LinearLayout parent,String heading,String sub,Runnable action){
+        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(4,10,4,10);
+        LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text(heading,16,Color.rgb(20,24,20),true));
+        labels.addView(text(sub,12,Color.GRAY,false));
+        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+        TextView arrow=text("›",26,green,true); row.addView(arrow);
+        row.setOnClickListener(v->action.run()); parent.addView(row);
+    }
+
     private void showQuran(){
         title.setText("Qur'an");
         addSection("Qur'an Reader","114 Surahs • Arabic • translations • bookmarks • progress");
