@@ -1,5 +1,6 @@
 name: Build Muslim Ummah Native APK
 
+# Release trigger check: keep version 1.0.3 until an explicit version bump.
 on:
   workflow_dispatch:
   push:
@@ -70,7 +71,7 @@ jobs:
           if gh release view v1.0.3 >/dev/null 2>&1; then
             gh release upload v1.0.3 "$APK" --clobber
           else
-            gh release create v1.0.3 "$APK"               --target "$GITHUB_SHA"               --title "Muslim Ummah 1.0.3"               --generate-notes
+            gh release create v1.0.3 "$APK" --target "$GITHUB_SHA" --title "Muslim Ummah 1.0.3" --generate-notes
           fi
 
           cd ..
