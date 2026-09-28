@@ -10,8 +10,24 @@ android {
         applicationId 'com.aqiffarooqui.muslimummah'
         minSdk 24
         targetSdk 35
-        versionCode 3
-        versionName '1.0.2'
+        versionCode 4
+        versionName '1.0.3'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../release-key.jks')
+            storePassword 'MuslimUmmahRelease2026!'
+            keyAlias 'muslimummah'
+            keyPassword 'MuslimUmmahRelease2026!'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
     }
 }
 
