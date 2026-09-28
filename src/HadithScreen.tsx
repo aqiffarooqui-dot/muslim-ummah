@@ -116,15 +116,28 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
       const hMap: Record<number, string> = {}; parseToonRows(hindiToon).forEach((row) => { const n = Number(row.hadithnumber); if (Number.isFinite(n) && row.text?.trim()) hMap[n] = row.text.trim(); });
       const rMap: Record<number, string> = {}; parseToonRows(romanToon).forEach((row) => { const n = Number(row.hadithnumber); if (Number.isFinite(n) && row.text?.trim()) rMap[n] = row.text.trim(); });
       const toonRows = parseToonRows(sectionToon);
-      const chapterMap = new Map<string, HadithChapter>();
+      const toonByNumber: Record<number, string> = {};
       toonRows.forEach((row) => {
-        const n = Number(row.hadithnumber); if (!Number.isFinite(n)) return;
-        const title = row.chapter_intro?.trim() || 'Chapter'; const key = title.toLowerCase(); const existing = chapterMap.get(key);
-        if (existing) existing.hadithNumbers.push(n); else chapterMap.set(key, { key, title, hadithNumbers: [n] });
+        const n = Number(row.hadithnumber);
+        if (Number.isFinite(n) && row.chapter_intro?.trim()) toonByNumber[n] = row.chapter_intro.trim();
+      });
+      const chapterMap = new Map<string, HadithChapter>();
+      source.forEach((item: any) => {
+        const n = Number(item.idInBook ?? item.id);
+        if (!Number.isFinite(n)) return;
+        const chapterId = Number(item.chapterId);
+        const title = toonByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : 'Chapter');
+        const key = title.toLowerCase();
+        const existing = chapterMap.get(key);
+        if (existing) existing.hadithNumbers.push(n);
+        else chapterMap.set(key, { key, title, hadithNumbers: [n] });
       });
       const merged: Hadith[] = source.map((item: any) => {
-        const n = Number(item.idInBook ?? item.id); const en = enMap[n]; const toon = toonRows.find((row) => Number(row.hadithnumber) === n);
-        return { ...item, english: { narrator: en?.text ? '' : item.english?.narrator, text: en?.text || item.english?.text }, chapterIntro: toon?.chapter_intro?.trim() || '' };
+        const n = Number(item.idInBook ?? item.id);
+        const en = enMap[n];
+        const chapterId = Number(item.chapterId);
+        const chapterIntro = toonByNumber[n] || (Number.isFinite(chapterId) ? 'Chapter ' + chapterId : '');
+        return { ...item, english: { narrator: en?.text ? '' : item.english?.narrator, text: en?.text || item.english?.text }, chapterIntro };
       });
       if (cancelled) return;
       setItems(merged); setChapters(Array.from(chapterMap.values())); setUrduMap(uMap); setHindiMap(hMap); setRomanMap(rMap);
