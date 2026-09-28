@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import {
+  BackHandler,
   Linking,
   Pressable,
   ScrollView,
@@ -165,6 +166,60 @@ export default function App() {
     loadQuranProgress();
     loadPrayerData();
   }, []);
+
+  useEffect(() => {
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (showAdmin) {
+        setShowAdmin(false);
+        return true;
+      }
+      if (showPremiumTools) {
+        setShowPremiumTools(false);
+        return true;
+      }
+      if (showPremium) {
+        setShowPremium(false);
+        return true;
+      }
+      if (showProfile) {
+        setShowProfile(false);
+        return true;
+      }
+      if (showBookmarks) {
+        setShowBookmarks(false);
+        return true;
+      }
+      if (showAbout) {
+        setShowAbout(false);
+        return true;
+      }
+      if (showDuas) {
+        setShowDuas(false);
+        return true;
+      }
+      if (showCalendar) {
+        setShowCalendar(false);
+        return true;
+      }
+      if (activeTab !== 'Home') {
+        setQuranOpenRequest(null);
+        setActiveTab('Home');
+        return true;
+      }
+      return false;
+    });
+    return () => handler.remove();
+  }, [
+    activeTab,
+    showAbout,
+    showBookmarks,
+    showProfile,
+    showPremium,
+    showPremiumTools,
+    showAdmin,
+    showDuas,
+    showCalendar,
+  ]);
 
   useEffect(() => {
     if (!prayerData) {
