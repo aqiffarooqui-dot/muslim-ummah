@@ -7,6 +7,9 @@ on:
       - 'native-android/**'
       - '.github/workflows/android-native.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,3 +57,14 @@ jobs:
         with:
           name: muslim-ummah-release-apk
           path: native-android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish GitHub Release v1.0.3
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.3
+          name: Muslim Ummah v1.0.3
+          body: |
+            Muslim Ummah v1.0.3 signed Android release.
+            Includes automatic OTA update checking and Quran stability fixes.
+          files: native-android/app/build/outputs/apk/release/app-release.apk
+          fail_on_unmatched_files: true
