@@ -16,6 +16,8 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.*;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -149,10 +151,10 @@ public class MainActivity extends Activity {
         LinearLayout top=card(); top.addView(text("Hadith Library",21,Color.rgb(20,24,20),true));
         top.addView(text("Books → Chapters → Hadiths • Search • Bookmarks",14,Color.DKGRAY,false));
         Button search=new Button(this); search.setText("Search Hadith"); search.setAllCaps(false); search.setOnClickListener(v->showHadithSearch()); top.addView(search); content.addView(top);
-        for(int i=0;i<HADITH_BOOKS.length;i++){final int index=i; HadithBook b=HADITH_BOOKS[i]; LinearLayout c=card(); c.setOnClickListener(v->openHadithBook(index)); c.addView(text("📖  "+b.name,18,Color.rgb(20,24,20),true)); c.addView(text(b.books+" Books • English + Arabic",13,Color.GRAY,false)); c.addView(text("Open collection  ›",13,green,true)); content.addView(c);}
+        for(int i=0;i<HADITH_BOOKS.length;i++){final int index=i; HadithBook b=HADITH_BOOKS[i]; LinearLayout c=card(); c.setOrientation(LinearLayout.HORIZONTAL); c.setOnClickListener(v->openHadithBook(index)); ImageView cover=new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setImageResource(android.R.drawable.ic_menu_gallery); LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(92,132); cp.setMargins(0,0,16,0); c.addView(cover,cp); LinearLayout info=new LinearLayout(this); info.setOrientation(LinearLayout.VERTICAL); info.setGravity(Gravity.CENTER_VERTICAL); info.addView(text(b.name,18,Color.rgb(20,24,20),true)); info.addView(text(b.books+" Books • Arabic + English",13,Color.GRAY,false)); info.addView(text("Open collection  ›",13,green,true)); c.addView(info,new LinearLayout.LayoutParams(0,-1,1)); loadHadithCover(cover,index); content.addView(c);}
     }
 
-    private void openHadithBook(int index){
+    private void loadHadithCover(ImageView view,int index){\n        final String[] urls={"https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20al-Bukhari.jpg","https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20Muslim.jpg","https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20Abi%20Dawud.jpg","https://commons.wikimedia.org/wiki/Special:FilePath/Jami%20at-Tirmidhi.jpg","https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20an-Nasa%27i.jpg","https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20Ibn%20Majah.jpg"};\n        new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(urls[index]).openConnection();c.setConnectTimeout(6000);c.setReadTimeout(8000);Bitmap b=BitmapFactory.decodeStream(c.getInputStream());c.disconnect();if(b!=null)runOnUiThread(()->view.setImageBitmap(b));}catch(Exception ignored){}}).start();\n    }\n\n    private void openHadithBook(int index){
         hadithBookIndex=index; hadithBookNo=1; hadithChapter="";
         title.setText(HADITH_BOOKS[index].name); content.removeAllViews();
         addSection(HADITH_BOOKS[index].name,HADITH_BOOKS[index].books+" Books • Select a Book to see its Chapters");
