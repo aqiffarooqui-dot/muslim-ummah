@@ -994,13 +994,30 @@ export default function QuranScreen({
           Number(exactReference[1]) === surah.number &&
           Number(exactReference[2]) === ayah.number;
 
-        const textMatches =
+        const arabicMatches =
           normalizedSearch(ayah.text).includes(query);
 
-        if (referenceMatches || textMatches) {
+        const translationText =
+          language !== 'arabic'
+            ? getTranslation(
+                translation,
+                surah.number,
+                ayah.number
+              )
+            : '';
+
+        const translationMatches =
+          Boolean(translationText) &&
+          normalizedSearch(translationText).includes(query);
+
+        if (
+          referenceMatches ||
+          arabicMatches ||
+          translationMatches
+        ) {
           results.push({
             surahNumber: surah.number,
-            ayahNumber: ayah.ayahNumber,
+            ayahNumber: ayah.number,
             text: ayah.text,
           });
         }
@@ -1012,7 +1029,7 @@ export default function QuranScreen({
     }
 
     return results;
-  }, [quran, search]);
+  }, [quran, search, language, translation]);
 
   function openAyahFromSearch(
     surahNumber: number,
