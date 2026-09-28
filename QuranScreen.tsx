@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -16,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import Slider from '@react-native-community/slider';
 
 import { SURAHS } from './src/QuranData';
 import {
@@ -121,6 +123,7 @@ export default function QuranScreen({
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [pageMap, setPageMap] = useState<Record<number, number>>({});
+  const [pageImageMap, setPageImageMap] = useState<Record<number, string>>({});
   const [pageLoading, setPageLoading] = useState(false);
   const [audioAyahIndex, setAudioAyahIndex] = useState<number | null>(null);
   const audioCompletionRef = useRef(false);
@@ -258,6 +261,7 @@ export default function QuranScreen({
   useEffect(() => {
     if (!selectedSurah) {
       setPageMap({});
+      setPageImageMap({});
       return;
     }
 
@@ -276,18 +280,27 @@ export default function QuranScreen({
 
         const data = await response.json();
         const map: Record<number, number> = {};
+        const imageMap: Record<number, string> = {};
         for (const verse of data?.verses ?? []) {
           const parts = String(verse?.verse_key ?? '').split(':');
           const ayahNumber = Number(parts[1]);
           const pageNumber = Number(verse?.page_number);
+          const imageUrl = String(verse?.image_url ?? '').trim();
           if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) {
             map[ayahNumber] = pageNumber;
+            if (imageUrl && !imageMap[pageNumber]) imageMap[pageNumber] = imageUrl.startsWith('//') ? 'https:' + imageUrl : imageUrl;
           }
         }
-        if (!cancelled) setPageMap(map);
+        if (!cancelled) {
+          setPageMap(map);
+          setPageImageMap(imageMap);
+        }
       } catch (err) {
         console.error('Quran page metadata load error:', err);
-        if (!cancelled) setPageMap({});
+        if (!cancelled) {
+          setPageMap({});
+          setPageImageMap({});
+        }
       } finally {
         if (!cancelled) setPageLoading(false);
       }
@@ -1399,6 +1412,46 @@ export default function QuranScreen({
                 </Text>
               </View>
             )}
+          {readingSettings.viewMode === 'page' ? (
+            <View style={styles.pageView}>
+              {pageLoading && (
+                <View style={styles.pageLoading}>
+                  <ActivityIndicator size="small" />
+                  <Text style={styles.translationLoadingText}>Preparing Mushaf page layout...</Text>
+                </View>
+              )}
+              {pageGroups.map(([pageNumber, ayahs]) => (
+                <View key={`page-${pageNumber}`} style={styles.mushafPage}>
+                  <View style={styles.pageHeader}>
+                    <Text style={styles.pageHeaderText}>{pageNumber > 0 ? `PAGE ${pageNumber}` : 'QURAN PAGE'}</Text>
+                  </View>
+                  {pageImageMap[pageNumber] ? (
+                    <Image source={{ uri: pageImageMap[pageNumber] }} style={styles.mushafPageImage} resizeMode="contain" />
+                  ) : (
+                    <View style={styles.mushafArabicBlock}>
+                      {ayahs.map((ayah) => (
+                        <Text key={`page-${pageNumber}-ayah-${ayah.number}`} style={[styles.mushafArabicText,{fontSize: readingSettings.fontSize,lineHeight: readingSettings.lineSpacing}]}>
+                          {ayah.text}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                  {readingSettings.showTranslation && language !== 'arabic' && (
+                    <View style={styles.pageTranslationBlock}>
+                      {ayahs.map((ayah) => (
+                        <Text key={`translation-${pageNumber}-${ayah.number}`} style={[styles.mushafTranslationText,language === 'urdu' && styles.urduTranslationText]}>
+                          {getTranslation(translation, currentSurah.number, ayah.number)}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : (
+            currentSurah.ayahs.map(renderAyahCard)
+          )}
+
         </ScrollView>
 
         <Modal
@@ -1426,16 +1479,13 @@ export default function QuranScreen({
                 </View>
                 <View style={styles.fontSliderRow}>
                   <Text style={styles.sliderLetterSmall}>A</Text>
-                  <View style={styles.fontSlider}>
-                    <View style={[
-                      styles.fontSliderFill,
-                      { width: `${((readingSettings.fontSize - 20) / 16) * 100}%` },
-                    ]} />
-                    <View style={[
-                      styles.fontSliderThumb,
-                      { left: `${((readingSettings.fontSize - 20) / 16) * 100}%` },
-                    ]} />
-                  </View>
+                  <Slider style={styles.nativeFontSlider} minimumValue={20} maximumValue={36} step={1} value={readingSettings.fontSize}
+                    minimumTrackTintColor="#D8B36A" maximumTrackTintColor="#3A3F49" thumbTintColor="#FFFFFF"
+                    onValueChange={(size) => updateReadingSettings({...readingSettings,fontSize:Math.round(size),lineSpacing:Math.round(size*1.92)})}
+                  />
+                  <Text style={styles.sliderLetterLarge}>A</Text>
+                </View>
+              </View>
                   <Text style={styles.sliderLetterLarge}>A</Text>
                 </View>
                 <View style={styles.sliderTouchRow}>
@@ -1731,17 +1781,12 @@ export default function QuranScreen({
                 <View style={styles.premiumHistory}>
                   {readingHistory.slice(-14).map((day) => (
                     <View key={day.date} style={styles.compactHistoryItem}>
-                      <Text style={styles.compactHistoryDate}>
-                        {new Date(day.date + 'T12:00:00').toLocaleDateString(undefined, {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                      </Text>
                       <Text style={styles.compactHistoryCount}>{day.count}</Text>
                     </View>
                   ))}
                 </View>
               </>
+            )}
           </View>
         )}
 
@@ -2311,6 +2356,8 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   pageHeader: { alignItems: 'center', marginBottom: 10 },
   pageHeaderText: { color: '#8D6B37', fontSize: 9, fontWeight: '900', letterSpacing: 1.6 },
   mushafArabicBlock: { alignItems: 'stretch' },
+  mushafPageImage: { width: '100%', height: 430, marginBottom: 10 },
+  pageTranslationBlock: { marginTop: 8 },
   mushafArabicText: {
     color: '#17130E', textAlign: 'right', writingDirection: 'rtl',
     fontWeight: '500', marginBottom: 6,
@@ -2335,7 +2382,8 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   settingsLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   settingsLabel: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', marginBottom: 8 },
   settingsValue: { color: '#D8B36A', fontSize: 11, fontWeight: '900' },
-  fontSliderRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  fontSliderRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  nativeFontSlider: { flex: 1, height: 34 },
   sliderLetterSmall: { color: '#8D91A3', fontSize: 12, fontWeight: '800' },
   sliderLetterLarge: { color: '#FFFFFF', fontSize: 21, fontWeight: '800' },
   fontSlider: { flex: 1, height: 5, borderRadius: 5, backgroundColor: '#2B303A', position: 'relative' },
@@ -2357,17 +2405,6 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   juzFooterHint: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
   juzFooterHintText: { color: '#777D8B', fontSize: 10 },
   compactHistoryItem: { width: 48, minHeight: 48, borderRadius: 12, backgroundColor: '#151922', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#252A35' },
-  compactHistoryDate: { color: '#7D8290', fontSize: 8, fontWeight: '700' },
-  compactHistoryCount: { color: '#D8B36A', fontSize: 15, fontWeight: '900', marginTop: 2 },
-
-  sourceCard: {
-    backgroundColor: '#11141B',
-    borderRadius: 17,
-    padding: 15,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#202530',
-  },
 
   sourceTitle: {
     color: '#D8B36A',
