@@ -27,7 +27,7 @@ export default function QuranArabicText({
   return (
     <Text
       style={[
-        { color: theme.text },
+        { color: theme.text, textAlign: 'right', writingDirection: 'rtl', includeFontPadding: true },
         arabicStyle,
         {
           fontFamily: getQuranArabicFontFamily(),
