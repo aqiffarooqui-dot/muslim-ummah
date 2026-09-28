@@ -95,6 +95,7 @@ public class MainActivity extends Activity {
     private void showQuran(){
         title.setText("Qur'an");
         addSection("Qur'an Reader","114 Surahs • Arabic • translations • bookmarks • progress");
+        Button advanced=new Button(this); advanced.setText("Premium • Advanced Qur'an Search"); advanced.setAllCaps(false); advanced.setOnClickListener(v->showAdvancedQuranSearch()); content.addView(advanced,new LinearLayout.LayoutParams(-1,-2));
         EditText search=new EditText(this); search.setHint("Search Surah"); search.setSingleLine(true); search.setPadding(22,12,22,12); content.addView(search,new LinearLayout.LayoutParams(-1,-2));
         LinearLayout list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); content.addView(list,new LinearLayout.LayoutParams(-1,-2));
         Runnable render=()->{ list.removeAllViews(); String q=search.getText().toString().trim().toLowerCase(); for(QuranData.Surah x:QuranData.SURAHS){ if(q.length()>0 && !(x.name.toLowerCase().contains(q)||x.englishName.toLowerCase().contains(q)||x.arabicName.contains(q)||String.valueOf(x.number).equals(q))) continue; addSurahRow(list,x); } };
@@ -110,6 +111,41 @@ public class MainActivity extends Activity {
         labels.addView(text(x.englishName+" • "+x.revelation+" • "+x.ayahCount+" Ayahs",13,Color.GRAY,false));
         row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text("›",28,green,false)); c.addView(row); list.addView(c);
     }
+    private void showAdvancedQuranSearch(){
+        if(!PremiumManager.isFeatureUnlocked(this,PremiumFeatures.ADVANCED_SEARCH)){ showPremiumRequired("Advanced Qur'an search"); return; }
+        content.removeAllViews(); title.setText("Advanced Qur'an Search");
+        addSection("Search the Qur'an","Search bundled English translation across all 114 Surahs.");
+        EditText q=new EditText(this); q.setHint("Search words, topics or phrases"); q.setSingleLine(true); content.addView(q,new LinearLayout.LayoutParams(-1,-2));
+        Button go=new Button(this); go.setText("Search"); go.setAllCaps(false); content.addView(go,new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout results=new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); content.addView(results);
+        go.setOnClickListener(v->{
+            String query=q.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
+            results.removeAllViews();
+            if(query.length()<2){results.addView(text("Enter at least 2 characters.",14,Color.GRAY,false));return;}
+            results.addView(text("Searching bundled Qur'an…",14,Color.GRAY,false));
+            new Thread(()->{
+                java.util.List<QuranNativeData.Ayah> matches=new java.util.ArrayList<>();
+                for(QuranData.Surah s:QuranData.SURAHS){
+                    final Object lock=new Object(); final boolean[] done={false};
+                    QuranNativeData.load(this,s.number,"english",(a,e)->{if(e==null)for(QuranNativeData.Ayah x:a)if(x.text.toLowerCase(java.util.Locale.ROOT).contains(query)&&matches.size()<30)matches.add(x); synchronized(lock){done[0]=true;lock.notifyAll();}});
+                    synchronized(lock){while(!done[0])try{lock.wait(3000);}catch(Exception ignored){}}
+                    if(matches.size()>=30)break;
+                }
+                runOnUiThread(()->{
+                    results.removeAllViews();
+                    if(matches.isEmpty()){results.addView(text("No matching Ayah found.",15,Color.GRAY,false));return;}
+                    results.addView(text(matches.size()+" result(s)",14,green,true));
+                    for(QuranNativeData.Ayah a:matches){
+                        LinearLayout row=card(); QuranData.Surah s=QuranData.SURAHS[a.surah-1];
+                        row.addView(text(s.name+" • Ayah "+a.number,16,green,true)); row.addView(text(a.text,16,Color.rgb(20,24,20),false));
+                        row.setOnClickListener(v->openReader(s,"english")); results.addView(row);
+                    }
+                });
+            }).start();
+        });
+        TextView back=text("‹  Back to Qur'an",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showQuran()); content.addView(back);
+    }
+
     private void showSurah(QuranData.Surah x){
         content.removeAllViews(); title.setText(x.name);
         addSection(x.arabicName+"  •  "+x.englishName,x.revelation+" • "+x.ayahCount+" Ayahs");
