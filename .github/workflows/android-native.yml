@@ -10,9 +10,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: native-android
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,22 +30,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Restore stable signing key
-        uses: actions/cache@v4
-        with:
-          path: native-android/release-key.jks
-          key: muslim-ummah-signing-key-v1
-
-      - name: Create stable signing key if missing
+      - name: Create signing key
         run: |
           if [ ! -f release-key.jks ]; then
             keytool -genkeypair -v -keystore release-key.jks -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname 'CN=Android Debug,O=Android,C=US'
           fi
 
-      - name: Build signed release APK
+      - name: Build Release APK
         run: gradle assembleRelease --no-daemon
 
-      - name: Upload release APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: muslim-ummah-release-apk
