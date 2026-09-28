@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
         EditText q=new EditText(this); q.setHint("Search words, topics or phrases"); q.setSingleLine(true); content.addView(q,new LinearLayout.LayoutParams(-1,-2));
         Button go=new Button(this); go.setText("Search"); go.setAllCaps(false); content.addView(go,new LinearLayout.LayoutParams(-1,-2));
         LinearLayout results=new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); content.addView(results);
-        go.setOnClickListener(v->{
+        go.setOnClickListener(goView->{
             String query=q.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
             results.removeAllViews();
             if(query.length()<2){results.addView(text("Enter at least 2 characters.",14,Color.GRAY,false));return;}
@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
                     for(QuranNativeData.Ayah a:matches){
                         LinearLayout row=card(); QuranData.Surah s=QuranData.SURAHS[a.surah-1];
                         row.addView(text(s.name+" • Ayah "+a.number,16,green,true)); row.addView(text(a.text,16,Color.rgb(20,24,20),false));
-                        row.setOnClickListener(v->openReader(s,"english")); results.addView(row);
+                        row.setOnClickListener(rowView->openReader(s,"english")); results.addView(row);
                     }
                 });
             }).start();
