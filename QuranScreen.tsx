@@ -81,6 +81,8 @@ function getBookmarkKey(
   return `${surahNumber}:${ayahNumber}`;
 }
 
+type MushafPageAyah = { surahNumber: number; ayah: QuranSurah['ayahs'][number] };
+
 export default function QuranScreen({
   onBack,
   initialSurah,
@@ -124,7 +126,7 @@ export default function QuranScreen({
   const [fullQuranVisible, setFullQuranVisible] = useState(false);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const pageAudioEndRef = useRef<number | null>(null);
-  const [pageMap, setPageMap] = useState<Record<number, number>>({});
+  const [pageMap, setPageMap] = useState<Record<string, number>>({});
   const [pageLoading, setPageLoading] = useState(false);
   const [audioAyahIndex, setAudioAyahIndex] = useState<number | null>(null);
   const audioCompletionRef = useRef(false);
@@ -256,51 +258,44 @@ export default function QuranScreen({
   }, [language]);
 
   useEffect(() => {
-    if (!selectedSurah) {
-      setPageMap({});
-      return;
-    }
-
+    if (!selectedSurah) { setPageMap({}); return; }
     let cancelled = false;
-
     async function loadPageMap() {
       try {
         setPageLoading(true);
-        const response = await fetch(
-          `https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${selectedSurah}`,
-          { cache: 'no-store' }
-        );
-        if (!response.ok) {
-          throw new Error(`Quran page metadata returned ${response.status}`);
-        }
-
-        const data = await response.json();
-        const map: Record<number, number> = {};
-        for (const verse of data?.verses ?? []) {
-          const parts = String(verse?.verse_key ?? '').split(':');
-          const ayahNumber = Number(parts[1]);
-          const pageNumber = Number(verse?.page_number);
-          if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) {
-            map[ayahNumber] = pageNumber;
+        const chaptersResponse = await fetch('https://api.quran.com/api/v4/chapters?language=en', { cache: 'no-store' });
+        if (!chaptersResponse.ok) throw new Error(`Chapter metadata returned ${chaptersResponse.status}`);
+        const chapters = (await chaptersResponse.json())?.chapters ?? [];
+        const selectedMeta = chapters.find((chapter: any) => chapter.id === selectedSurah);
+        const selectedPages = selectedMeta?.pages;
+        if (!Array.isArray(selectedPages) || selectedPages.length < 2) throw new Error('Selected Surah page range unavailable');
+        const pageStart = Number(selectedPages[0]);
+        const pageEnd = Number(selectedPages[1]);
+        const overlapping = chapters.filter((chapter: any) => {
+          const pages = chapter?.pages;
+          return Array.isArray(pages) && pages.length >= 2 && Number(pages[0]) <= pageEnd && Number(pages[1]) >= pageStart;
+        }).map((chapter: any) => Number(chapter.id)).filter(Number.isFinite);
+        const maps = await Promise.all(overlapping.map(async (surahNumber: number) => {
+          const response = await fetch(`https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${surahNumber}`, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`Page metadata returned ${response.status}`);
+          const data = await response.json();
+          const result: Record<string, number> = {};
+          for (const verse of data?.verses ?? []) {
+            const parts = String(verse?.verse_key ?? '').split(':');
+            const ayahNumber = Number(parts[1]);
+            const pageNumber = Number(verse?.page_number);
+            if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) result[`${surahNumber}:${ayahNumber}`] = pageNumber;
           }
-        }
-        if (!cancelled) {
-          setPageMap(map);
-        }
+          return result;
+        }));
+        if (!cancelled) setPageMap(Object.assign({}, ...maps));
       } catch (err) {
         console.error('Quran page metadata load error:', err);
-        if (!cancelled) {
-          setPageMap({});
-            }
-      } finally {
-        if (!cancelled) setPageLoading(false);
-      }
+        if (!cancelled) setPageMap({});
+      } finally { if (!cancelled) setPageLoading(false); }
     }
-
     loadPageMap();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedSurah]);
 
   /*
@@ -1144,16 +1139,17 @@ export default function QuranScreen({
       surah.number === selectedSurah
   );
 
-  const pageGroups = useMemo(() => {
+  const pageGroups = useMemo<Array<[number, MushafPageAyah[]]>>(() => {
     if (!currentSurah) return [];
-    const groups = new Map<number, QuranSurah['ayahs']>();
-    for (const ayah of currentSurah.ayahs) {
-      const page = pageMap[ayah.number] ?? 0;
+    const groups = new Map<number, MushafPageAyah[]>();
+    for (const surah of quran) for (const ayah of surah.ayahs) {
+      const page = pageMap[`${surah.number}:${ayah.number}`];
+      if (!page) continue;
       if (!groups.has(page)) groups.set(page, []);
-      groups.get(page)!.push(ayah);
+      groups.get(page)!.push({ surahNumber: surah.number, ayah });
     }
-    return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
-  }, [currentSurah, pageMap]);
+    return Array.from(groups.entries()).filter(([, entries]) => entries.some((entry) => entry.surahNumber === currentSurah.number)).sort((a,b) => a[0]-b[0]);
+  }, [currentSurah, quran, pageMap]);
 
   useEffect(() => {
     if (
@@ -1170,7 +1166,7 @@ export default function QuranScreen({
     }
 
     const pageIndex = pageGroups.findIndex(([, ayahs]) =>
-      ayahs.some((ayah) => ayah.number === pending.ayahNumber)
+      ayahs.some((entry) => entry.surahNumber === pending.surahNumber && entry.ayah.number === pending.ayahNumber)
     );
 
     if (pageIndex < 0) return;
@@ -1200,7 +1196,7 @@ export default function QuranScreen({
 
     const currentAyahNumber = currentSurah?.ayahs[audioAyahIndex]?.number;
     const pageIndex = pageGroups.findIndex(([, ayahs]) =>
-      ayahs.some((ayah) => ayah.number === currentAyahNumber)
+      ayahs.some((entry) => entry.surahNumber === selectedSurah && entry.ayah.number === currentAyahNumber)
     );
 
     if (pageIndex >= 0 && pageIndex !== currentPageIndex) {
@@ -1531,24 +1527,25 @@ export default function QuranScreen({
                       </View>
                     </View>
                     <View style={styles.mushafArabicBlock}>
-                      {pageGroups[currentPageIndex][1].map((ayah) => (
-                        <View key={'page-ayah-' + ayah.number} style={[
+                      {pageGroups[currentPageIndex][1].map((entry) => (
+                        <View key={'page-ayah-' + entry.surahNumber + ':' + entry.ayah.number} style={[
                           styles.mushafAyahRow,
                           audioAyahIndex !== null &&
-                          currentSurah.ayahs[audioAyahIndex]?.number === ayah.number &&
+                          entry.surahNumber === currentSurah.number &&
+                          currentSurah.ayahs[audioAyahIndex]?.number === entry.ayah.number &&
                           audioStatus.playing && styles.mushafAyahActive,
                         ]}>
                           <View style={styles.mushafAyahTopRow}>
                             <Text style={[styles.mushafArabicText,{fontSize:readingSettings.fontSize,lineHeight:readingSettings.lineSpacing}]}>
-                              {ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text>
+                              {entry.ayah.text} <Text style={styles.ayahEndMarker}>{entry.ayah.number}</Text>
                             </Text>
                             <Pressable
                               style={styles.mushafBookmarkButton}
-                              onPress={() => handleBookmarkPress(currentSurah.number, ayah.number)}
+                              onPress={() => handleBookmarkPress(entry.surahNumber, entry.ayah.number)}
                               hitSlop={8}
                             >
                               <Ionicons
-                                name={bookmarkKeys.has(getBookmarkKey(currentSurah.number, ayah.number)) ? 'bookmark' : 'bookmark-outline'}
+                                name={bookmarkKeys.has(getBookmarkKey(entry.surahNumber, entry.ayah.number)) ? 'bookmark' : 'bookmark-outline'}
                                 size={16}
                                 color={bookmarkKeys.has(getBookmarkKey(currentSurah.number, ayah.number)) ? '#D8B36A' : '#8D91A3'}
                               />
@@ -1556,7 +1553,7 @@ export default function QuranScreen({
                           </View>
                           {readingSettings.showTranslation && language !== 'arabic' && (
                             <Text style={[styles.mushafTranslationText, language === 'urdu' && styles.urduTranslationText]}>
-                              {getTranslation(translation,currentSurah.number,ayah.number)}
+                              {getTranslation(translation,entry.surahNumber,entry.ayah.number)}
                             </Text>
                           )}
                         </View>
@@ -1564,7 +1561,7 @@ export default function QuranScreen({
                     </View>
                     <View style={styles.mushafPageFooter}>
                       <Text style={styles.mushafPageFooterText}>
-                        {currentSurah.englishName} • {currentSurah.number}
+                        Quran • Mushaf page
                       </Text>
                       <Text style={styles.mushafPageFooterText}>
                         {pageGroups[currentPageIndex][0]}
