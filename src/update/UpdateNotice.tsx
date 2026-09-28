@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CURRENT_VERSION = '1.0.0';
+const CURRENT_VERSION = '1.0.3';
 const UPDATE_URL =
   'https://aqiffarooqui-dot.github.io/muslim-ummah/update.json';
 const DISMISSED_KEY = 'muslim_ummah_update_dismissed';
