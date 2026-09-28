@@ -43,6 +43,8 @@ jobs:
 
       - name: Build production web bundle
         working-directory: .
+        env:
+          NATIVE_ANDROID_BUILD: 'true'
         run: npm run build:web
 
       - name: Package web app inside APK
