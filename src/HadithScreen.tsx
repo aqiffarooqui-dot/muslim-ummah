@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './themes/ThemeProvider';
 import { createThemedStyles } from './themes/themeStyleMapper';
 import { usePremium } from './premium/PremiumProvider';
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 type H = {
   id?: number;
@@ -225,7 +224,6 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
       .then(([arabicValue, englishValue, urduValue, romanSource]) => {
         if (cancelled) return;
 
-        const romanSource = arguments[0];
         const loaded = Array.isArray(arabicValue)
           ? arabicValue
           : Array.isArray(arabicValue?.hadiths)
@@ -354,6 +352,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
     setBi(result.bookIndex);
     setLevel('reader');
     setCh(1);
+    setResumePending(result.number);
     setSearch('');
 
     // Locate the exact section without changing the visual hierarchy.
