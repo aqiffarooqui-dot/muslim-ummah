@@ -388,7 +388,7 @@ public class MainActivity extends Activity {
             try(java.io.InputStream in=getAssets().open("hadith/the_9_books/"+rel)){
                 BufferedReader r=new BufferedReader(new InputStreamReader(in));
                 StringBuilder b=new StringBuilder(); String line;
-                while((line=r.readLine())!=null)b.append(line).append('\\n');
+                while((line=r.readLine())!=null)b.append(line).append('\n');
                 return new JSONObject(b.toString());
             }catch(Exception assetError){
                 // Fall back to network for data not bundled in the APK.
@@ -399,7 +399,7 @@ public class MainActivity extends Activity {
         try{
             BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));
             StringBuilder b=new StringBuilder(); String line;
-            while((line=r.readLine())!=null)b.append(line).append('\\n');
+            while((line=r.readLine())!=null)b.append(line).append('\n');
             return new JSONObject(b.toString());
         }finally{c.disconnect();}
     }
