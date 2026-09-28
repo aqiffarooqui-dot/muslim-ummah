@@ -1187,16 +1187,6 @@ export default function QuranScreen({
       groups.get(page)!.push({ surahNumber: surah.number, ayah });
     }
     return Array.from(groups.entries()).filter(([, entries]) => entries.some((entry) => entry.surahNumber === currentSurah.number)).sort((a,b) => a[0]-b[0]);
-  }, [currentSurah, quran, pageMap]);  const pageGroups = useMemo<Array<[number, MushafPageAyah[]]>>(() => {
-    if (!currentSurah) return [];
-    const groups = new Map<number, MushafPageAyah[]>();
-    for (const surah of quran) for (const ayah of surah.ayahs) {
-      const page = pageMap[`${surah.number}:${ayah.number}`];
-      if (!page) continue;
-      if (!groups.has(page)) groups.set(page, []);
-      groups.get(page)!.push({ surahNumber: surah.number, ayah });
-    }
-    return Array.from(groups.entries()).filter(([, entries]) => entries.some((entry) => entry.surahNumber === currentSurah.number)).sort((a,b) => a[0]-b[0]);
   }, [currentSurah, quran, pageMap]);
   const fullQuranPageGroups = useMemo<Array<[number, MushafPageAyah[]]>>(() => {
     const groups = new Map<number, MushafPageAyah[]>();
