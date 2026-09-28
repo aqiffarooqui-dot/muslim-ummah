@@ -7,6 +7,9 @@ on:
       - 'native-android/**'
       - '.github/workflows/android-native.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,18 +36,64 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release-key.jks
           test -s release-key.jks
 
-      - name: Build Release APK
+      - name: Build signed Release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Verify APK
+        run: |
+          test -s app/build/outputs/apk/release/app-release.apk
+          ls -lh app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: muslim-ummah-release-apk
           path: native-android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish signed APK release and OTA manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          APK="muslim-ummah-1.0.3.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
+
+          if gh release view v1.0.3 >/dev/null 2>&1; then
+            gh release upload v1.0.3 "$APK" --clobber
+          else
+            gh release create v1.0.3 "$APK"               --target "$GITHUB_SHA"               --title "Muslim Ummah 1.0.3"               --generate-notes
+          fi
+
+          cd ..
+          mkdir -p public
+          cat > public/update.json <<'EOF'
+{
+  "version": "1.0.3",
+  "versionCode": 4,
+  "title": "Muslim Ummah",
+  "mandatory": false,
+  "apkUrl": "https://github.com/aqiffarooqui-dot/muslim-ummah/releases/download/v1.0.3/muslim-ummah-1.0.3.apk",
+  "changes": [
+    "Signed Android release enabled.",
+    "Automatic OTA update checking enabled.",
+    "Quran page-group and runtime stability fixes included."
+  ]
+}
+EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/update.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish OTA manifest for v1.0.3"
+            git push origin HEAD:main
+          fi
