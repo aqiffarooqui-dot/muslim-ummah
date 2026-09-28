@@ -1538,9 +1538,22 @@ export default function QuranScreen({
                           currentSurah.ayahs[audioAyahIndex]?.number === ayah.number &&
                           audioStatus.playing && styles.mushafAyahActive,
                         ]}>
-                          <Text style={[styles.mushafArabicText,{fontSize:readingSettings.fontSize,lineHeight:readingSettings.lineSpacing}]}>
-                            {ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text>
-                          </Text>
+                          <View style={styles.mushafAyahTopRow}>
+                            <Text style={[styles.mushafArabicText,{fontSize:readingSettings.fontSize,lineHeight:readingSettings.lineSpacing}]}>
+                              {ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text>
+                            </Text>
+                            <Pressable
+                              style={styles.mushafBookmarkButton}
+                              onPress={() => handleBookmarkPress(currentSurah.number, ayah.number)}
+                              hitSlop={8}
+                            >
+                              <Ionicons
+                                name={bookmarkKeys.has(getBookmarkKey(currentSurah.number, ayah.number)) ? 'bookmark' : 'bookmark-outline'}
+                                size={16}
+                                color={bookmarkKeys.has(getBookmarkKey(currentSurah.number, ayah.number)) ? '#D8B36A' : '#8D91A3'}
+                              />
+                            </Pressable>
+                          </View>
                           {readingSettings.showTranslation && language !== 'arabic' && (
                             <Text style={[styles.mushafTranslationText, language === 'urdu' && styles.urduTranslationText]}>
                               {getTranslation(translation,currentSurah.number,ayah.number)}
@@ -1559,12 +1572,22 @@ export default function QuranScreen({
                     </View>
                   </View>
                   <View style={styles.pageNavigation}>
-                    <Pressable style={[styles.pageNavButton,currentPageIndex===0&&styles.pageNavDisabled]} disabled={currentPageIndex===0} onPress={()=>setCurrentPageIndex(v=>Math.max(0,v-1))}>
+                    <Pressable style={[styles.pageNavButton,currentPageIndex===0&&styles.pageNavDisabled]} disabled={currentPageIndex===0} onPress={() => {
+                        const nextIndex = Math.max(0, currentPageIndex - 1);
+                        setCurrentPageIndex(nextIndex);
+                        const firstAyah = pageGroups[nextIndex]?.[1]?.[0];
+                        if (firstAyah) saveQuranProgress(currentSurah.number, firstAyah.number).catch((err) => console.error('Quran page progress error:', err));
+                      }}>
                       <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
                       <Text style={styles.pageNavText}>Previous</Text>
                     </Pressable>
                     <Text style={styles.pageCountText}>{currentPageIndex+1} / {pageGroups.length}</Text>
-                    <Pressable style={[styles.pageNavButton,currentPageIndex===pageGroups.length-1&&styles.pageNavDisabled]} disabled={currentPageIndex===pageGroups.length-1} onPress={()=>setCurrentPageIndex(v=>Math.min(pageGroups.length-1,v+1))}>
+                    <Pressable style={[styles.pageNavButton,currentPageIndex===pageGroups.length-1&&styles.pageNavDisabled]} disabled={currentPageIndex===pageGroups.length-1} onPress={() => {
+                        const nextIndex = Math.min(pageGroups.length - 1, currentPageIndex + 1);
+                        setCurrentPageIndex(nextIndex);
+                        const firstAyah = pageGroups[nextIndex]?.[1]?.[0];
+                        if (firstAyah) saveQuranProgress(currentSurah.number, firstAyah.number).catch((err) => console.error('Quran page progress error:', err));
+                      }}>
                       <Text style={styles.pageNavText}>Next</Text>
                       <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
                     </Pressable>
@@ -2445,6 +2468,8 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   pagePlayButton: { flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:9, paddingVertical:6, borderRadius:10, backgroundColor:'#211F18' },
   pagePlayText: { color:'#D8B36A', fontSize:10, fontWeight:'800' },
   mushafAyahRow: { paddingVertical:6, borderBottomWidth:1, borderBottomColor:'#29251F' },
+  mushafAyahTopRow: { flexDirection:'row', alignItems:'flex-start', gap:8 },
+  mushafBookmarkButton: { width:28, height:28, borderRadius:8, alignItems:'center', justifyContent:'center', marginTop:2 },
   mushafAyahActive: { backgroundColor:'#211F18', borderRadius:8, paddingHorizontal:8 },
   ayahEndMarker: { color:'#D8B36A', fontSize:13 },
   pageNavigation: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:10 },
