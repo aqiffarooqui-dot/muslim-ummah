@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
 
     private static final String APP_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/";
     private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
-    private static final String CURRENT_VERSION = "1.0.2";
+    private static final String CURRENT_VERSION = "1.0.3";
 
     private WebView webView;
     private BroadcastReceiver downloadReceiver;
