@@ -112,8 +112,8 @@ public class MainActivity extends Activity {
         TextView body=text(a.text,lang.equals("arabic")?25:17,Color.rgb(20,24,20),false);
         if(lang.equals("arabic")) body.setGravity(Gravity.RIGHT); body.setTextIsSelectable(true); body.setPadding(4,12,4,12); c.addView(body);
         Button b=new Button(this); b.setText(isBookmarked(x.number,a.number)?"★ Bookmarked":"☆ Bookmark"); b.setAllCaps(false); b.setOnClickListener(v->{toggleBookmark(x.number,a.number);b.setText(isBookmarked(x.number,a.number)?"★ Bookmarked":"☆ Bookmark");}); c.addView(b);
+        c.setOnClickListener(v->getPreferences(MODE_PRIVATE).edit().putString("quran_progress",x.number+":"+a.number).apply());
         list.addView(c);
-        getPreferences(MODE_PRIVATE).edit().putString("quran_progress",x.number+":"+a.number).apply();
     }
     private void toggleBookmark(int s,int a){String k="quran_bookmark_"+s+"_"+a;android.content.SharedPreferences p=getPreferences(MODE_PRIVATE);p.edit().putBoolean(k,!p.getBoolean(k,false)).apply();}
     private boolean isBookmarked(int s,int a){return getPreferences(MODE_PRIVATE).getBoolean("quran_bookmark_"+s+"_"+a,false);}
