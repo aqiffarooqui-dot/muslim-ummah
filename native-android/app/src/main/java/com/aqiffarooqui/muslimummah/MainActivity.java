@@ -458,59 +458,69 @@ public class MainActivity extends Activity {
 
     private void showPrayer(){
         title.setText("Prayer");
-        addSection("Prayer Times","Today • Local calculation • Offline fallback");
-
+        addSection("Prayer Times","Calculated on-device • works offline after location is available");
         LinearLayout date=card();
         date.addView(text("TODAY",12,green,true));
         date.addView(text(new java.text.SimpleDateFormat("EEEE, dd MMMM yyyy",java.util.Locale.getDefault()).format(new java.util.Date()),18,Color.rgb(20,24,20),true));
-        date.addView(text("Prayer calculation will use your selected location and method.",13,Color.GRAY,false));
+        date.addView(text("Location is used only when you open Prayer/Location.",13,Color.GRAY,false));
         content.addView(date);
-
-        String[][] prayers={{"Fajr","Before sunrise"},{"Dhuhr","Midday"},{"Asr","Afternoon"},{"Maghrib","After sunset"},{"Isha","Night"}};
-        for(String[] p:prayers)addPrayerRow(p[0],"--:--",p[1]);
-
-        LinearLayout tools=card();
-        tools.addView(text("WORSHIP TOOLS",12,green,true));
-        addQuickButton(tools,"🧭  Qibla","Find the direction of the Kaaba",()->showQiblaPlaceholder());
+        String method=getPreferences(MODE_PRIVATE).getString("prayer_method","MWL • Muslim World League");
+        android.location.Location loc=getPrayerLocation();
+        if(loc!=null){
+            PrayerTimes.Result t=PrayerTimes.calculate(loc.getLatitude(),loc.getLongitude(),new java.util.Date(),method);
+            addPrayerRow("Fajr",t.fajr,"Dawn"); addPrayerRow("Dhuhr",t.dhuhr,"Midday");
+            addPrayerRow("Asr",t.asr,"Afternoon"); addPrayerRow("Maghrib",t.maghrib,"Sunset"); addPrayerRow("Isha",t.isha,"Night");
+        }else{
+            for(String[] p:new String[][]{{"Fajr","Dawn"},{"Dhuhr","Midday"},{"Asr","Afternoon"},{"Maghrib","Sunset"},{"Isha","Night"}})addPrayerRow(p[0],"--:--",p[1]);
+            addQuickButton(content,"Enable location","Allow location to calculate local prayer times",()->requestPrayerLocation());
+        }
+        LinearLayout tools=card(); tools.addView(text("WORSHIP TOOLS",12,green,true));
+        addQuickButton(tools,"🧭  Qibla","Find the direction of the Kaaba",()->showQibla());
         addQuickButton(tools,"🔔  Prayer notifications","Adhan & reminder settings",()->showPremiumRequired("Advanced prayer notifications"));
-        addQuickButton(tools,"📅  Prayer calendar","Daily prayer tracking",()->showPremiumRequired("Prayer calendar & tracking"));
-        content.addView(tools);
+        addQuickButton(tools,"📅  Prayer calendar","Daily prayer tracking",()->showPremiumRequired("Prayer calendar & tracking")); content.addView(tools);
+        LinearLayout settings=card(); settings.addView(text("PRAYER SETTINGS",12,green,true));
+        addQuickButton(settings,"Calculation method",method,()->showPrayerMethodDialog());
+        addQuickButton(settings,"Location","Refresh device location",()->requestPrayerLocation()); content.addView(settings);
+    }
 
-        LinearLayout settings=card();
-        settings.addView(text("PRAYER SETTINGS",12,green,true));
-        addQuickButton(settings,"Calculation method","Choose your preferred calculation method",()->showPrayerMethodDialog());
-        addQuickButton(settings,"Location","Use device location when permission is available",()->requestPrayerLocation());
-        content.addView(settings);
+    private android.location.Location getPrayerLocation(){
+        if(android.os.Build.VERSION.SDK_INT>=23 &&
+                checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED)return null;
+        android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE); if(lm==null)return null;
+        android.location.Location best=null;
+        try{if(lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER))best=lm.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);}catch(Exception ignored){}
+        try{android.location.Location n=lm.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);if(best==null||(n!=null&&n.getTime()>best.getTime()))best=n;}catch(Exception ignored){}
+        return best;
     }
 
     private void addPrayerRow(String name,String time,String sub){
-        LinearLayout c=card();
-        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout c=card(); LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
-        labels.addView(text(name,18,Color.rgb(20,24,20),true));
-        labels.addView(text(sub,12,Color.GRAY,false));
-        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
-        row.addView(text(time,22,green,true));
-        c.addView(row); content.addView(c);
+        labels.addView(text(name,18,Color.rgb(20,24,20),true)); labels.addView(text(sub,12,Color.GRAY,false));
+        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text(time,22,green,true)); c.addView(row); content.addView(c);
     }
 
-    private void showQiblaPlaceholder(){
-        new AlertDialog.Builder(this).setTitle("Qibla").setMessage("Qibla compass is the next prayer module. The native screen is ready for the compass/location implementation.").setPositiveButton("OK",null).show();
+    private void showQibla(){
+        android.location.Location loc=getPrayerLocation();
+        if(loc==null){new AlertDialog.Builder(this).setTitle("Qibla").setMessage("Location permission is needed to calculate the Qibla direction.").setPositiveButton("Allow",(d,w)->requestPrayerLocation()).setNegativeButton("Cancel",null).show();return;}
+        double a=Math.toRadians(loc.getLatitude()),b=Math.toRadians(loc.getLongitude()),c=Math.toRadians(21.422487),d=Math.toRadians(39.826206);
+        double bearing=Math.toDegrees(Math.atan2(Math.sin(d-b)*Math.cos(c),Math.cos(a)*Math.sin(c)-Math.sin(a)*Math.cos(c)*Math.cos(d-b)));
+        bearing=(bearing+360)%360; String dir=bearing<22.5||bearing>=337.5?"N":bearing<67.5?"NE":bearing<112.5?"E":bearing<157.5?"SE":bearing<202.5?"S":bearing<247.5?"SW":bearing<292.5?"W":"NW";
+        new AlertDialog.Builder(this).setTitle("Qibla Direction").setMessage(String.format(java.util.Locale.getDefault(),"%.0f° from North • %s\nKaaba: Makkah",bearing,dir)).setPositiveButton("OK",null).show();
     }
 
     private void showPrayerMethodDialog(){
         String[] methods={"MWL • Muslim World League","ISNA • North America","Egyptian General Authority","Karachi • University of Islamic Sciences","Umm al-Qura • Makkah"};
-        new AlertDialog.Builder(this).setTitle("Calculation Method").setSingleChoiceItems(methods,-1,(d,w)->{
-            getPreferences(MODE_PRIVATE).edit().putString("prayer_method",methods[w]).apply(); d.dismiss();
-        }).show();
+        new AlertDialog.Builder(this).setTitle("Calculation Method").setSingleChoiceItems(methods,-1,(d,w)->{getPreferences(MODE_PRIVATE).edit().putString("prayer_method",methods[w]).apply();d.dismiss();showPrayer();}).show();
     }
 
     private void requestPrayerLocation(){
-        if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},7001);
-        }else{
-            new AlertDialog.Builder(this).setTitle("Location").setMessage("Location permission is already available. Prayer calculation can use the device location.").setPositiveButton("OK",null).show();
-        }
+        if(android.os.Build.VERSION.SDK_INT>=23 &&
+                checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,android.Manifest.permission.ACCESS_COARSE_LOCATION},7001);
+        }else showPrayer();
     }
     private void showProfile(){
         title.setText("Profile");
