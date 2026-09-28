@@ -124,6 +124,9 @@ export default function QuranScreen({
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [bookmarksVisible, setBookmarksVisible] = useState(false);
   const [fullQuranVisible, setFullQuranVisible] = useState(false);
+  const [fullQuranPageIndex, setFullQuranPageIndex] = useState(0);
+  const [fullQuranPageMap, setFullQuranPageMap] = useState<Record<string, number>>({});
+  const [fullQuranPageLoading, setFullQuranPageLoading] = useState(false);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const pageAudioEndRef = useRef<number | null>(null);
   const [pageMap, setPageMap] = useState<Record<string, number>>({});
@@ -257,6 +260,41 @@ export default function QuranScreen({
     loadTranslation(language);
   }, [language]);
 
+
+  useEffect(() => {
+    if (!fullQuranVisible || quran.length === 0 || Object.keys(fullQuranPageMap).length > 0) return;
+    let cancelled = false;
+    async function loadFullQuranPages() {
+      try {
+        setFullQuranPageLoading(true);
+        const maps = await Promise.all(quran.map(async (surah) => {
+          const response = await fetch(
+            `https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${surah.number}`,
+            { cache: 'no-store' }
+          );
+          if (!response.ok) throw new Error(`Full Quran page metadata returned ${response.status}`);
+          const data = await response.json();
+          const result: Record<string, number> = {};
+          for (const verse of data?.verses ?? []) {
+            const parts = String(verse?.verse_key ?? '').split(':');
+            const ayahNumber = Number(parts[1]);
+            const pageNumber = Number(verse?.page_number);
+            if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) {
+              result[`${surah.number}:${ayahNumber}`] = pageNumber;
+            }
+          }
+          return result;
+        }));
+        if (!cancelled) setFullQuranPageMap(Object.assign({}, ...maps));
+      } catch (err) {
+        console.error('Full Quran page metadata load error:', err);
+      } finally {
+        if (!cancelled) setFullQuranPageLoading(false);
+      }
+    }
+    loadFullQuranPages();
+    return () => { cancelled = true; };
+  }, [fullQuranVisible, quran, fullQuranPageMap]);
   useEffect(() => {
     if (!selectedSurah) { setPageMap({}); return; }
     let cancelled = false;
@@ -1149,7 +1187,28 @@ export default function QuranScreen({
       groups.get(page)!.push({ surahNumber: surah.number, ayah });
     }
     return Array.from(groups.entries()).filter(([, entries]) => entries.some((entry) => entry.surahNumber === currentSurah.number)).sort((a,b) => a[0]-b[0]);
+  }, [currentSurah, quran, pageMap]);  const pageGroups = useMemo<Array<[number, MushafPageAyah[]]>>(() => {
+    if (!currentSurah) return [];
+    const groups = new Map<number, MushafPageAyah[]>();
+    for (const surah of quran) for (const ayah of surah.ayahs) {
+      const page = pageMap[`${surah.number}:${ayah.number}`];
+      if (!page) continue;
+      if (!groups.has(page)) groups.set(page, []);
+      groups.get(page)!.push({ surahNumber: surah.number, ayah });
+    }
+    return Array.from(groups.entries()).filter(([, entries]) => entries.some((entry) => entry.surahNumber === currentSurah.number)).sort((a,b) => a[0]-b[0]);
   }, [currentSurah, quran, pageMap]);
+
+  const fullQuranPageGroups = useMemo<Array<[number, MushafPageAyah[]]>>(() => {
+    const groups = new Map<number, MushafPageAyah[]>();
+    for (const surah of quran) for (const ayah of surah.ayahs) {
+      const page = fullQuranPageMap[`${surah.number}:${ayah.number}`];
+      if (!page) continue;
+      if (!groups.has(page)) groups.set(page, []);
+      groups.get(page)!.push({ surahNumber: surah.number, ayah });
+    }
+    return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
+  }, [quran, fullQuranPageMap]);
 
   useEffect(() => {
     if (
@@ -1762,32 +1821,55 @@ export default function QuranScreen({
             <View style={styles.fullQuranHeader}>
               <View>
                 <Text style={styles.settingsTitle}>Quran Book</Text>
-                <Text style={styles.settingsSubtitle}>Complete Quran • Mushaf reading</Text>
+                <Text style={styles.settingsSubtitle}>Mushaf • page by page</Text>
               </View>
               <Pressable onPress={() => setFullQuranVisible(false)} style={styles.settingsClose}>
                 <Ionicons name="close" size={18} color="#FFFFFF" />
               </Pressable>
             </View>
-            <ScrollView contentContainerStyle={styles.fullQuranContent}>
-              {quran.map((surah) => (
-                <View key={surah.number} style={styles.fullQuranSurah}>
-                  <View style={styles.fullQuranSurahHeader}>
-                    <Text style={styles.fullQuranSurahName}>{surah.arabicName}</Text>
-                    <Text style={styles.fullQuranSurahEnglish}>{surah.number}. {surah.englishName}</Text>
+            {fullQuranPageLoading ? (
+              <View style={styles.fullQuranLoading}>
+                <ActivityIndicator size="small" color="#D8B36A" />
+                <Text style={styles.fullQuranLoadingText}>Preparing the Mushaf pages…</Text>
+              </View>
+            ) : fullQuranPageGroups.length > 0 ? (
+              <View style={styles.fullQuranReader}>
+                <View style={styles.mushafPage}>
+                  <View style={styles.pageHeader}>
+                    <View style={styles.pageHeaderTop}>
+                      <Text style={styles.pageHeaderText}>MUSHAF • PAGE {fullQuranPageGroups[fullQuranPageIndex]?.[0]}</Text>
+                    </View>
                   </View>
-                  {surah.ayahs.map((ayah) => (
-                    <Pressable key={surah.number + ':' + ayah.number} onPress={() => { setFullQuranVisible(false); openExactAyah(surah.number, ayah.number); }}>
-                      <Text style={styles.fullQuranArabic}>{ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text></Text>
-                      {readingSettings.showTranslation && language !== 'arabic' && (
-                        <Text style={[styles.fullQuranTranslation, language === 'urdu' && styles.urduTranslationText]}>
-                          {getTranslation(translation, surah.number, ayah.number)}
+                  <View style={styles.mushafArabicBlock}>
+                    {fullQuranPageGroups[fullQuranPageIndex]?.[1].map((entry) => (
+                      <Pressable key={entry.surahNumber + ':' + entry.ayah.number} onPress={() => { setFullQuranVisible(false); openExactAyah(entry.surahNumber, entry.ayah.number); }} style={styles.mushafAyahRow}>
+                        <Text style={styles.mushafArabicText}>
+                          {entry.ayah.text} <Text style={styles.ayahEndMarker}>{entry.ayah.number}</Text>
                         </Text>
-                      )}
-                    </Pressable>
-                  ))}
+                        {readingSettings.showTranslation && language !== 'arabic' && (
+                          <Text style={[styles.mushafTranslationText, language === 'urdu' && styles.urduTranslationText]}>{getTranslation(translation, entry.surahNumber, entry.ayah.number)}</Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.mushafPageFooter}>
+                    <Text style={styles.mushafPageFooterText}>Quran • Mushaf</Text>
+                    <Text style={styles.mushafPageFooterText}>{fullQuranPageGroups[fullQuranPageIndex]?.[0]}</Text>
+                  </View>
                 </View>
-              ))}
-            </ScrollView>
+                <View style={styles.pageNavigation}>
+                  <Pressable style={styles.pageNavButton} disabled={fullQuranPageIndex === 0} onPress={() => setFullQuranPageIndex((value) => Math.max(0, value - 1))}>
+                    <Ionicons name="chevron-back" size={16} color="#FFFFFF" /><Text style={styles.pageNavText}>Previous</Text>
+                  </Pressable>
+                  <Text style={styles.pageCountText}>{fullQuranPageIndex + 1} / {fullQuranPageGroups.length}</Text>
+                  <Pressable style={styles.pageNavButton} disabled={fullQuranPageIndex >= fullQuranPageGroups.length - 1} onPress={() => setFullQuranPageIndex((value) => Math.min(fullQuranPageGroups.length - 1, value + 1))}>
+                    <Text style={styles.pageNavText}>Next</Text><Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.fullQuranLoading}><Text style={styles.fullQuranLoadingText}>Mushaf pages are unavailable right now.</Text></View>
+            )}
           </View>
         </Modal>
       </View>
@@ -2485,6 +2567,9 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   bookmarkRowArabic: { color:'#A9ADB8', fontSize:15, textAlign:'right', writingDirection:'rtl', marginTop:3 },
   fullQuranModal: { flex:1, backgroundColor:'#080A0F' },
   fullQuranHeader: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:18, paddingTop:18, paddingBottom:12, borderBottomWidth:1, borderBottomColor:'#252A36' },
+  fullQuranLoading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  fullQuranLoadingText: { color: '#8D91A3', fontSize: 13 },
+  fullQuranReader: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 },
   fullQuranContent: { padding:18, paddingBottom:50 },
   fullQuranSurah: { marginBottom:24, backgroundColor:'#10131A', borderRadius:18, padding:15, borderWidth:1, borderColor:'#252A36' },
   fullQuranSurahHeader: { alignItems:'center', paddingBottom:12, marginBottom:10, borderBottomWidth:1, borderBottomColor:'#252A36' },
