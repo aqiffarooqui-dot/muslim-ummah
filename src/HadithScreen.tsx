@@ -14,17 +14,17 @@ type SearchResult = { bookIndex: number; number: number; text: string };
 type Book = { id: string; name: string; shortName: string; chapters: number; englishEdition: string; urduEdition: string; cover: string };
 
 const B: Book[] = [
-  { id: 'bukhari', name: 'Sahih al-Bukhari', shortName: 'Bukhari', chapters: 97, englishEdition: 'eng-bukhari', urduEdition: 'urd-bukhari', cover: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20al-Bukhari.jpg' },
-  { id: 'muslim', name: 'Sahih Muslim', shortName: 'Muslim', chapters: 56, englishEdition: 'eng-muslim', urduEdition: 'urd-muslim', cover: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20Muslim.jpg' },
-  { id: 'abudawud', name: 'Sunan Abi Dawud', shortName: 'Abu Dawud', chapters: 43, englishEdition: 'eng-abudawud', urduEdition: 'urd-abudawud', cover: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20Abi%20Dawud.jpg' },
-  { id: 'tirmidhi', name: 'Jami at-Tirmidhi', shortName: 'Tirmidhi', chapters: 49, englishEdition: 'eng-tirmidhi', urduEdition: 'urd-tirmidhi', cover: 'https://commons.wikimedia.org/wiki/Special:FilePath/Jami%20at-Tirmidhi.jpg' },
-  { id: 'nasai', name: "Sunan an-Nasa'i", shortName: "Nasa'i", chapters: 52, englishEdition: 'eng-nasai', urduEdition: 'urd-nasai', cover: "https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20an-Nasa'i.jpg" },
-  { id: 'ibnmajah', name: 'Sunan Ibn Majah', shortName: 'Ibn Majah', chapters: 37, englishEdition: 'eng-ibnmajah', urduEdition: 'urd-ibnmajah', cover: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sunan%20Ibn%20Majah.jpg' },
+  { id: 'bukhari', name: 'Sahih al-Bukhari', shortName: 'Bukhari', chapters: 97, englishEdition: 'eng-bukhari', urduEdition: 'urd-bukhari', cover: './hadith-covers/bukhari.jpg' },
+  { id: 'muslim', name: 'Sahih Muslim', shortName: 'Muslim', chapters: 56, englishEdition: 'eng-muslim', urduEdition: 'urd-muslim', cover: './hadith-covers/muslim.jpg' },
+  { id: 'abudawud', name: 'Sunan Abi Dawud', shortName: 'Abu Dawud', chapters: 43, englishEdition: 'eng-abudawud', urduEdition: 'urd-abudawud', cover: './hadith-covers/abudawud.jpg' },
+  { id: 'tirmidhi', name: 'Jami at-Tirmidhi', shortName: 'Tirmidhi', chapters: 49, englishEdition: 'eng-tirmidhi', urduEdition: 'urd-tirmidhi', cover: './hadith-covers/tirmidhi.jpg' },
+  { id: 'nasai', name: "Sunan an-Nasa'i", shortName: "Nasa'i", chapters: 52, englishEdition: 'eng-nasai', urduEdition: 'urd-nasai', cover: './hadith-covers/nasai.jpg' },
+  { id: 'ibnmajah', name: 'Sunan Ibn Majah', shortName: 'Ibn Majah', chapters: 37, englishEdition: 'eng-ibnmajah', urduEdition: 'urd-ibnmajah', cover: './hadith-covers/ibnmajah.jpg' },
 ];
 
-const BASE = 'https://raw.githubusercontent.com/AhmedBaset/hadith-json/v1.2.0/db/by_chapter/the_9_books';
-const FAWAZ = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions';
-const TOON = 'https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions';
+const BASE = './offline-hadith/ahmed';
+const FAWAZ = './offline-hadith/fawaz';
+const TOON = './offline-hadith/toon';
 const PROGRESS_KEY = '@muslim_ummah_hadith_progress_v2';
 const BOOKMARKS_KEY = '@muslim_ummah_hadith_bookmarks_v2';
 
