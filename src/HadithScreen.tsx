@@ -532,7 +532,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
           </View>
 
           {isPremium ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.languageRow}>
+            <View style={s.languageRow}>
               {[
                 ['english', 'English'],
                 ['urdu', 'اردو'],
@@ -543,7 +543,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
                   <Text style={[s.languageText, language === id && s.languageActiveText]}>{label}</Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           ) : (
             <View style={s.freeLanguage}><Text style={s.freeLanguageText}>Arabic + English</Text></View>
           )}
@@ -674,7 +674,7 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   readerChapter: { color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 2 },
   readerCounter: { backgroundColor: '#12161E', borderRadius: 12, paddingHorizontal: 9, paddingVertical: 7 },
   readerCounterText: { color: '#8D948F', fontSize: 8, fontWeight: '800' },
-  languageRow: { gap: 7, paddingVertical: 7, paddingBottom: 12 },
+  languageRow: { flexDirection: 'column', alignItems: 'flex-start', gap: 5, paddingVertical: 5, paddingBottom: 10 },
   languagePill: { borderRadius: 999, borderWidth: 1, borderColor: '#252A35', backgroundColor: '#11141B', paddingHorizontal: 11, paddingVertical: 7, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   languageActive: { backgroundColor: '#211F18', borderColor: '#806B3D' },
   languageText: { color: '#858B99', fontSize: 10, fontWeight: '800' },
