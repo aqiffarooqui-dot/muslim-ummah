@@ -140,7 +140,16 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
       setBooks(rows.length ? rows : Array.from({ length: B[index].chapters }, (_, i) => ({ id: i + 1, name: 'Book ' + (i + 1) })));
     } catch { setBooks(Array.from({ length: B[index].chapters }, (_, i) => ({ id: i + 1, name: 'Book ' + (i + 1) }))); }
   };
-  const openBook = (number: number) => { setBookNo(number); setChapterKey(''); setSearch(''); setSearchResults([]); setLevel('chapters'); };
+  const openBook = (number: number) => {
+    setBookNo(number);
+    setChapterKey('');
+    setSearch('');
+    setSearchResults([]);
+    setChapters([]);
+    setItems([]);
+    setErr('');
+    setLevel('chapters');
+  };
   const openChapter = (key: string) => { setChapterKey(key); setSearch(''); setSearchResults([]); setLevel('reader'); };
   const backLevel = () => { if (level === 'reader') setLevel('chapters'); else if (level === 'chapters') setLevel('books'); else if (level === 'books') setLevel('collections'); else onBack(); };
 
