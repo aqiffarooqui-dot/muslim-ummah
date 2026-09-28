@@ -340,54 +340,5 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void openHadithSearchResult(int bookIndex,int bookNo,int hadithNo){
-        hadithBookIndex=bookIndex; hadithBookNo=bookNo;
-        content.removeAllViews(); title.setText("Hadith "+hadithNo);
-        addSection(HADITH_BOOKS[bookIndex].shortName+" • Book "+bookNo,"Search result • Hadith "+hadithNo);
-        TextView loading=text("Loading Hadith…",14,Color.GRAY,false); loading.setPadding(22,16,22,16); content.addView(loading);
-        new Thread(()->{
-            try{
-                JSONObject root=getJson(HADITH_BASE+"/"+HADITH_BOOKS[bookIndex].id+"/"+bookNo+".json");
-                org.json.JSONArray arr=root.optJSONArray("hadiths"); HadithItem found=null;
-                if(arr!=null) for(int i=0;i<arr.length();i++){JSONObject h=arr.optJSONObject(i); if(h==null)continue; int n=h.optInt("idInBook",h.optInt("id",i+1)); if(n!=hadithNo)continue; JSONObject en=h.optJSONObject("english"); String et=en!=null?en.optString("text",""):h.optString("text",""); String ch=h.optString("chapter_intro","").trim(); if(ch.isEmpty()){int id=h.optInt("chapterId",0); ch=id>0?"Chapter "+id:"Chapter";} found=new HadithItem(n,h.optString("arabic",""),et,ch); break;}
-                final HadithItem item=found; runOnUiThread(()->{content.removeView(loading); if(item==null){addRow("Hadith not found","This search result is no longer available.");}else{java.util.List<HadithItem> one=new java.util.ArrayList<>();one.add(item);renderHadithItems((LinearLayout)content,one);} });
-            }catch(Exception e){runOnUiThread(()->loading.setText("Unable to load this Hadith. Please check your connection."));}
-        }).start();
-        TextView back=text("‹  Back to Search",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showHadithSearch()); content.addView(back);
-    }
 
-    private void showHadithSearch(){
-        content.removeAllViews(); title.setText("Search Hadith"); EditText input=new EditText(this);input.setHint("Search words or Hadith number");input.setSingleLine(true);content.addView(input);Button go=new Button(this);go.setText("Search");go.setAllCaps(false);content.addView(go);LinearLayout results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);content.addView(results);go.setOnClickListener(v->{String q=input.getText().toString().trim().toLowerCase();if(q.isEmpty())return;results.removeAllViews();TextView l=text("Searching…",14,Color.GRAY,false);results.addView(l);new Thread(()->{int found=0;for(int bi=0;bi<HADITH_BOOKS.length&&found<30;bi++){for(int bn=1;bn<=HADITH_BOOKS[bi].books&&found<30;bn++){try{JSONObject root=getJson(HADITH_BASE+"/"+HADITH_BOOKS[bi].id+"/"+bn+".json");org.json.JSONArray arr=root.optJSONArray("hadiths");if(arr==null)continue;for(int j=0;j<arr.length()&&found<30;j++){JSONObject h=arr.optJSONObject(j);if(h==null)continue;String text=(h.optString("arabic","")+" "+h.optString("text","")+" "+h.optString("chapter_intro","")).toLowerCase();int n=h.optInt("idInBook",h.optInt("id",j+1));if(text.contains(q)||String.valueOf(n).equals(q)){final int fbi=bi,fbn=bn,fn=n;runOnUiThread(()->addActionRow(HADITH_BOOKS[fbi].shortName+" • Hadith "+fn,"Open Book "+fbn,()->openHadithBookNumber(fbi,fbn)));found++;}}}catch(Exception ignored){}}}final int total=found;runOnUiThread(()->{if(total==0)l.setText("No Hadith found.");else l.setText(total+" result(s) shown.");});}).start();});TextView back=text("‹  Back to Hadith",16,green,true);back.setPadding(22,18,22,18);back.setOnClickListener(v->showHadith());content.addView(back);
-    }
-
-    private JSONObject getJson(String url)throws Exception{HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection();c.setConnectTimeout(8000);c.setReadTimeout(12000);c.setRequestMethod("GET");try{BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line);return new JSONObject(s.toString());}finally{c.disconnect();}}
-    private void saveHadithBookmarks(){getPreferences(MODE_PRIVATE).edit().putStringSet("hadith_bookmarks",new java.util.HashSet<>(hadithBookmarks)).apply();}
-    private void loadHadithBookmarks(){java.util.Set<String> s=getPreferences(MODE_PRIVATE).getStringSet("hadith_bookmarks",null);if(s!=null)hadithBookmarks.addAll(s);}
-
-    private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
-    private void showProfile(){title.setText("Profile");addSection("Muslim Ummah","Your account, Premium status, bookmarks, settings and app updates.");addRow("Premium","Server-verified entitlement");addRow("Bookmarks","Qur'an & Hadith");addRow("Settings","Theme, language and preferences");addRow("App version",CURRENT_VERSION);}
-    private void addCard(String h,String body,String action){LinearLayout c=card();c.addView(text(h,20,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,14);c.addView(b);Button btn=new Button(this);btn.setText(action);btn.setAllCaps(false);btn.setTextColor(green);c.addView(btn);content.addView(c);}
-    private void addSection(String h,String body){LinearLayout c=card();c.addView(text(h,21,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,4);c.addView(b);content.addView(c);}
-    private void addRow(String h,String body){LinearLayout c=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.addView(text(h,17,Color.rgb(20,24,20),true));labels.addView(text(body,13,Color.GRAY,false));row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));row.addView(text("›",28,green,false));c.addView(row);content.addView(c);}
-    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(22,20,22,20);c.setBackgroundColor(Color.WHITE);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(16,10,16,10);c.setLayoutParams(p);return c;}
-    private TextView text(String s,int size,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);return v;}
-
-    private void registerDownloadReceiver(){downloadReceiver=new BroadcastReceiver(){public void onReceive(Context c,Intent i){if(i.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,-1L)!=downloadId)return;DownloadManager m=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);if(m==null)return;DownloadManager.Query q=new DownloadManager.Query().setFilterById(downloadId);android.database.Cursor cur=m.query(q);if(cur==null)return;try{if(cur.moveToFirst()&&cur.getInt(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))==DownloadManager.STATUS_SUCCESSFUL)install(Uri.parse(cur.getString(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))));}finally{cur.close();}}};IntentFilter f=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(Build.VERSION.SDK_INT>=33)registerReceiver(downloadReceiver,f,Context.RECEIVER_NOT_EXPORTED);else registerReceiver(downloadReceiver,f);}
-    private void checkForUpdate(){new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(UPDATE_URL+"?t="+System.currentTimeMillis()).openConnection();c.setConnectTimeout(5000);c.setReadTimeout(5000);BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line);r.close();JSONObject d=new JSONObject(s.toString());String v=d.optString("version",CURRENT_VERSION);if(newer(v,CURRENT_VERSION))runOnUiThread(()->updateDialog(v,d.optString("apkUrl","")));c.disconnect();}catch(Exception ignored){}}).start();}
-    private boolean newer(String a,String b){
-        try{
-            String[] x=a.replace("v","").split("[.]");
-            String[] y=b.replace("v","").split("[.]");
-            for(int i=0;i<Math.max(x.length,y.length);i++){
-                int p=i<x.length?Integer.parseInt(x[i]):0;
-                int q=i<y.length?Integer.parseInt(y[i]):0;
-                if(p!=q)return p>q;
-            }
-        }catch(Exception ignored){}
-        return false;
-    }
-    private void updateDialog(String v,String url){new AlertDialog.Builder(this).setTitle("Muslim Ummah update").setMessage("Version "+v+" is available.").setPositiveButton("Update",(d,w)->download(url)).setNegativeButton("Later",null).show();}
-    private void download(String url){if(Build.VERSION.SDK_INT>=26&&!getPackageManager().canRequestPackageInstalls()){startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));return;}try{DownloadManager m=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);DownloadManager.Request r=new DownloadManager.Request(Uri.parse(url));r.setTitle("Muslim Ummah Update").setMimeType("application/vnd.android.package-archive").setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);r.setDestinationInExternalFilesDir(this,Environment.DIRECTORY_DOWNLOADS,"muslim-ummah-update.apk");downloadId=m.enqueue(r);}catch(Exception ignored){}}
-    private void install(Uri uri){try{Intent i=new Intent(Intent.ACTION_VIEW).setDataAndType(uri,"application/vnd.android.package-archive");i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(i);}catch(Exception ignored){}}
-    @Override protected void onDestroy(){if(downloadReceiver!=null)try{unregisterReceiver(downloadReceiver);}catch(Exception ignored){}super.onDestroy();}
 }
