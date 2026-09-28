@@ -420,7 +420,62 @@ public class MainActivity extends Activity {
         TextView back=text("‹  Back to Hadith",16,green,true);back.setPadding(22,18,22,18);back.setOnClickListener(v->showHadith());content.addView(back);
     }
 
-    private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
+    private void showPrayer(){
+        title.setText("Prayer");
+        addSection("Prayer Times","Today • Local calculation • Offline fallback");
+
+        LinearLayout date=card();
+        date.addView(text("TODAY",12,green,true));
+        date.addView(text(new java.text.SimpleDateFormat("EEEE, dd MMMM yyyy",java.util.Locale.getDefault()).format(new java.util.Date()),18,Color.rgb(20,24,20),true));
+        date.addView(text("Prayer calculation will use your selected location and method.",13,Color.GRAY,false));
+        content.addView(date);
+
+        String[][] prayers={{"Fajr","Before sunrise"},{"Dhuhr","Midday"},{"Asr","Afternoon"},{"Maghrib","After sunset"},{"Isha","Night"}};
+        for(String[] p:prayers)addPrayerRow(p[0],"--:--",p[1]);
+
+        LinearLayout tools=card();
+        tools.addView(text("WORSHIP TOOLS",12,green,true));
+        addQuickButton(tools,"🧭  Qibla","Find the direction of the Kaaba",()->showQiblaPlaceholder());
+        addQuickButton(tools,"🔔  Prayer notifications","Adhan & reminder settings",()->showPremiumRequired("Advanced prayer notifications"));
+        addQuickButton(tools,"📅  Prayer calendar","Daily prayer tracking",()->showPremiumRequired("Prayer calendar & tracking"));
+        content.addView(tools);
+
+        LinearLayout settings=card();
+        settings.addView(text("PRAYER SETTINGS",12,green,true));
+        addQuickButton(settings,"Calculation method","Choose your preferred calculation method",()->showPrayerMethodDialog());
+        addQuickButton(settings,"Location","Use device location when permission is available",()->requestPrayerLocation());
+        content.addView(settings);
+    }
+
+    private void addPrayerRow(String name,String time,String sub){
+        LinearLayout c=card();
+        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text(name,18,Color.rgb(20,24,20),true));
+        labels.addView(text(sub,12,Color.GRAY,false));
+        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+        row.addView(text(time,22,green,true));
+        c.addView(row); content.addView(c);
+    }
+
+    private void showQiblaPlaceholder(){
+        new AlertDialog.Builder(this).setTitle("Qibla").setMessage("Qibla compass is the next prayer module. The native screen is ready for the compass/location implementation.").setPositiveButton("OK",null).show();
+    }
+
+    private void showPrayerMethodDialog(){
+        String[] methods={"MWL • Muslim World League","ISNA • North America","Egyptian General Authority","Karachi • University of Islamic Sciences","Umm al-Qura • Makkah"};
+        new AlertDialog.Builder(this).setTitle("Calculation Method").setSingleChoiceItems(methods,-1,(d,w)->{
+            getPreferences(MODE_PRIVATE).edit().putString("prayer_method",methods[w]).apply(); d.dismiss();
+        }).show();
+    }
+
+    private void requestPrayerLocation(){
+        if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},7001);
+        }else{
+            new AlertDialog.Builder(this).setTitle("Location").setMessage("Location permission is already available. Prayer calculation can use the device location.").setPositiveButton("OK",null).show();
+        }
+    }
     private void showProfile(){
         title.setText("Profile");
         addSection("Muslim Ummah","Account, Premium status, bookmarks, settings and app updates.");
