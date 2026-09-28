@@ -46,7 +46,33 @@ public class MainActivity extends Activity {
     }
     private void showTab(int tab){content.removeAllViews();if(tab==0)showHome();else if(tab==1)showQuran();else if(tab==2)showHadith();else if(tab==3)showPrayer();else showProfile();}
     private void showHome(){title.setText("Assalamu Alaikum");addCard("Today's Reminder","A beautiful reminder from the Qur'an & Sunnah.","Read reminder");addCard("Qur'an","Continue your reading and keep your daily progress.","Open Qur'an");addCard("Hadith","Browse books → chapters → hadiths in a native reader.","Open Hadith");addCard("Prayer","Your prayer times, Qibla and daily worship tools.","Prayer times");}
-    private void showQuran(){title.setText("Qur'an");addSection("Qur'an Reader","Native reader foundation. Surah list, Arabic text, translations, bookmarks and progress will live here.");addRow("Surah","Browse all 114 Surahs");addRow("Juz","Read by Juz");addRow("Bookmarks","Your saved Ayahs");addRow("Translations","Hindi • English • Urdu • Hinglish");}
+    private void showQuran(){
+        title.setText("Qur'an");
+        addSection("Qur'an Reader","114 Surahs • Arabic • translations • bookmarks • progress");
+        EditText search=new EditText(this); search.setHint("Search Surah"); search.setSingleLine(true); search.setPadding(22,12,22,12); content.addView(search,new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); content.addView(list,new LinearLayout.LayoutParams(-1,-2));
+        Runnable render=()->{ list.removeAllViews(); String q=search.getText().toString().trim().toLowerCase(); for(QuranData.Surah x:QuranData.SURAHS){ if(q.length()>0 && !(x.name.toLowerCase().contains(q)||x.englishName.toLowerCase().contains(q)||x.arabicName.contains(q)||String.valueOf(x.number).equals(q))) continue; addSurahRow(list,x); } };
+        search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){} public void onTextChanged(CharSequence s,int a,int b,int c){render.run();} public void afterTextChanged(android.text.Editable e){}});
+        render.run();
+    }
+    private void addSurahRow(LinearLayout list,QuranData.Surah x){
+        LinearLayout c=card(); c.setOnClickListener(v->showSurah(x));
+        LinearLayout row=new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView num=text(String.valueOf(x.number),15,green,true); num.setGravity(Gravity.CENTER); row.addView(num,new LinearLayout.LayoutParams(48,48));
+        LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL); labels.setPadding(12,0,8,0);
+        labels.addView(text(x.name+" • "+x.arabicName,17,Color.rgb(20,24,20),true));
+        labels.addView(text(x.englishName+" • "+x.revelation+" • "+x.ayahCount+" Ayahs",13,Color.GRAY,false));
+        row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text("›",28,green,false)); c.addView(row); list.addView(c);
+    }
+    private void showSurah(QuranData.Surah x){
+        content.removeAllViews(); title.setText(x.name);
+        addSection(x.arabicName+"  •  "+x.englishName,x.revelation+" • "+x.ayahCount+" Ayahs");
+        addRow("Read Surah","Open native Arabic reader");
+        addRow("Translations","Hindi • English • Urdu • Hinglish");
+        addRow("Bookmark","Save reading position / Ayah");
+        addRow("Reading progress","Continue from last position");
+        TextView back=text("‹  Back to Surahs",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showQuran()); content.addView(back);
+    }
     private void showHadith(){title.setText("Hadith");addSection("Hadith Library","Native nested navigation: Books → Chapters → Hadiths. Search and bookmarks will be integrated into the native reader.");addRow("Sahih al-Bukhari","Books and chapters");addRow("Sahih Muslim","Books and chapters");addRow("Abu Dawud","Books and chapters");addRow("Search Hadith","Search across the library");}
     private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
     private void showProfile(){title.setText("Profile");addSection("Muslim Ummah","Your account, Premium status, bookmarks, settings and app updates.");addRow("Premium","Server-verified entitlement");addRow("Bookmarks","Qur'an & Hadith");addRow("Settings","Theme, language and preferences");addRow("App version",CURRENT_VERSION);}
