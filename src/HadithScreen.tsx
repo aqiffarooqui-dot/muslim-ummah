@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -191,6 +191,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
   const [language, setLanguage] = useState<'arabic' | 'english' | 'urdu' | 'hinglish'>('english');
   const [progress, setProgress] = useState<Progress | null>(null);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);\n  const [resumePending, setResumePending] = useState<number | null>(null);
+  const readerRef = useRef<ScrollView>(null);
 
   const book = B[bi];
 
