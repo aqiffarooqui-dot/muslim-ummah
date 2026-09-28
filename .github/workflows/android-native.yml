@@ -48,12 +48,13 @@ jobs:
       - name: Package web app inside APK
         working-directory: .
         run: |
-          rm -rf native-android/app/src/main/assets/web
-          mkdir -p native-android/app/src/main/assets/web
-          cp -R dist/. native-android/app/src/main/assets/web/
-          test -f native-android/app/src/main/assets/web/index.html
-          test -s native-android/app/src/main/assets/web/offline-hadith/README.txt
-          test -d native-android/app/src/main/assets/web/hadith-covers
+          rm -rf native-android/app/src/main/assets/*
+          mkdir -p native-android/app/src/main/assets
+          cp -R dist/. native-android/app/src/main/assets/
+          test -f native-android/app/src/main/assets/index.html
+          test -s native-android/app/src/main/assets/offline-hadith/README.txt
+          test -d native-android/app/src/main/assets/hadith-covers
+          test -d native-android/app/src/main/assets/assets
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
