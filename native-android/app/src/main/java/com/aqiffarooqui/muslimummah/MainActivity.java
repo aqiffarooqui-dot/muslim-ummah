@@ -201,10 +201,12 @@ public class MainActivity extends Activity {
     }
 
     private void loadHadithCover(ImageView view,int index){
-        final String[] queries={
-            "Sahih al-Bukhari","Sahih Muslim","Sunan Abi Dawud","Jami at-Tirmidhi",
-            "Sunan an-Nasa'i","Sunan Ibn Majah","Muwatta Malik","Musnad Ahmad","Sunan al-Darimi"
-        };
+        final java.io.File cached=new java.io.File(getCacheDir(),"hadith-cover-"+index+".jpg");
+        if(cached.exists()){
+            Bitmap local=BitmapFactory.decodeFile(cached.getAbsolutePath());
+            if(local!=null){view.setImageBitmap(local);return;}
+        }
+        final String[] queries={"Sahih al-Bukhari","Sahih Muslim","Sunan Abi Dawud","Jami at-Tirmidhi","Sunan an-Nasa'i","Sunan Ibn Majah","Muwatta Malik","Musnad Ahmad","Sunan al-Darimi"};
         new Thread(()->{
             try{
                 String q=Uri.encode(queries[index]);
@@ -216,7 +218,10 @@ public class MainActivity extends Activity {
                     String u=images==null?"":images.optString("thumbnail","");
                     if(!u.isEmpty()){
                         Bitmap bm=BitmapFactory.decodeStream(new URL(u.replace("http://","https://")).openStream());
-                        if(bm!=null)runOnUiThread(()->view.setImageBitmap(bm));
+                        if(bm!=null){
+                            try(java.io.FileOutputStream out=new java.io.FileOutputStream(cached)){bm.compress(Bitmap.CompressFormat.JPEG,88,out);}catch(Exception ignored){}
+                            runOnUiThread(()->view.setImageBitmap(bm));
+                        }
                     }
                 }
             }catch(Exception ignored){}
@@ -420,7 +425,7 @@ public class MainActivity extends Activity {
     private void renderHadithItems(LinearLayout list,java.util.List<HadithItem> items){
         list.removeAllViews(); if(items.isEmpty()){addRow("No Hadith found","This chapter has no readable entries.");return;}
         for(HadithItem h:items){LinearLayout c=card(); c.addView(text(HADITH_BOOKS[hadithBookIndex].shortName+" • Hadith "+h.number,13,green,true)); if(!h.arabic.isEmpty()){TextView a=text(h.arabic,22,Color.rgb(20,24,20),false);a.setGravity(Gravity.RIGHT);a.setTextIsSelectable(true);a.setPadding(0,12,0,12);c.addView(a);}
-            String translated=h.english; String label="ENGLISH"; if("urdu".equals(hadithLanguage)){translated=hadithUrdu.get(h.number);label="URDU";}else if("hindi".equals(hadithLanguage)){translated=hadithHindi.get(h.number);label="HINDI";}else if("hinglish".equals(hadithLanguage)){translated=hadithRoman.get(h.number);label="HINGLISH / ROMAN URDU";}
+            String translated=h.english; String label="ENGLISH"; if("urdu".equals(hadithLanguage)){translated=hadithUrdu.get(h.number);label="URDU";}else if("hindi".equals(hadithLanguage)){translated=hadithHindi.get(h.number);label="HINDI";}else if("hinglish".equals(hadithLanguage)){translated=hadithRoman.get(h.number);label="HINGLISH / ROMAN URDU";} if(translated==null||translated.trim().isEmpty())translated=h.english;
             TextView l=text(label,11,green,true);l.setPadding(0,4,0,4);c.addView(l); TextView tr=text(translated==null||translated.isEmpty()?"Translation not available":translated,("urdu".equals(hadithLanguage)||"hindi".equals(hadithLanguage))?17:16,Color.rgb(35,40,35),false); if("urdu".equals(hadithLanguage))tr.setGravity(Gravity.RIGHT); tr.setTextIsSelectable(true); c.addView(tr);
             Button b=new Button(this);String k=hadithBookIndex+":"+hadithChapterId+":"+h.number;b.setText(hadithBookmarks.contains(k)?"★ Bookmarked":"☆ Bookmark");b.setAllCaps(false);b.setOnClickListener(v->{if(hadithBookmarks.contains(k))hadithBookmarks.remove(k);else hadithBookmarks.add(k);b.setText(hadithBookmarks.contains(k)?"★ Bookmarked":"☆ Bookmark");saveHadithBookmarks();});c.addView(b);list.addView(c);
         }
