@@ -1606,7 +1606,7 @@ export default function QuranScreen({
                               <Ionicons
                                 name={bookmarkKeys.has(getBookmarkKey(entry.surahNumber, entry.ayah.number)) ? 'bookmark' : 'bookmark-outline'}
                                 size={16}
-                                color={bookmarkKeys.has(getBookmarkKey(currentSurah.number, ayah.number)) ? '#D8B36A' : '#8D91A3'}
+                                color={bookmarkKeys.has(getBookmarkKey(entry.surahNumber, entry.ayah.number)) ? '#D8B36A' : '#8D91A3'}
                               />
                             </Pressable>
                           </View>
@@ -2488,11 +2488,11 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
     borderTopColor: '#D9C9AC',
   },
   mushafPageFooterText: { color: '#8D6B37', fontSize: 8, fontWeight: '800' },
-  mushafArabicBlock: { alignItems: 'stretch' },
+  mushafArabicBlock: { alignItems: 'stretch', minHeight: 520, justifyContent: 'space-between' },
   pageTranslationBlock: { marginTop: 8 },
   mushafArabicText: {
     color: '#17130E', textAlign: 'right', writingDirection: 'rtl',
-    fontWeight: '500', marginBottom: 6,
+    fontWeight: '500', marginBottom: 6, lineHeight: 42,
   },
   mushafTranslationText: {
     color: '#5B554C', fontSize: 14, lineHeight: 22, marginBottom: 12,
