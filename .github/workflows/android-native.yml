@@ -40,6 +40,18 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release-key.jks
           test -s release-key.jks
 
+      - name: Bundle offline Free content
+        run: |
+          set -e
+          mkdir -p app/src/main/assets/quran app/src/main/assets/hadith
+          cp ../src/data/quran-uthmani.txt app/src/main/assets/quran/quran_arabic.txt
+          curl -fsSL https://raw.githubusercontent.com/druvx13/Quran-data/cairo/data/ur.jalandhry.txt -o app/src/main/assets/quran/quran_urdu.txt
+          curl -fsSL https://raw.githubusercontent.com/druvx13/Quran-data/cairo/data/ur.romanmaududi.txt -o app/src/main/assets/quran/quran_hinglish.txt
+          curl -fsSL https://raw.githubusercontent.com/druvx13/Quran-data/cairo/data/en.sahih.txt -o app/src/main/assets/quran/quran_english.txt
+          rm -rf /tmp/hadith-json
+          git clone --depth 1 --branch v1.2.0 https://github.com/AhmedBaset/hadith-json.git /tmp/hadith-json
+          cp -R /tmp/hadith-json/db/by_chapter/the_9_books app/src/main/assets/hadith/the_9_books
+
       - name: Build signed Release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
