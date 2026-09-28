@@ -132,7 +132,10 @@ public class MainActivity extends Activity {
         new HadithBook("abudawud","Sunan Abi Dawud","Abu Dawud",43,"eng-abudawud"),
         new HadithBook("tirmidhi","Jami at-Tirmidhi","Tirmidhi",49,"eng-tirmidhi"),
         new HadithBook("nasai","Sunan an-Nasa'i","Nasa'i",52,"eng-nasai"),
-        new HadithBook("ibnmajah","Sunan Ibn Majah","Ibn Majah",37,"eng-ibnmajah")
+        new HadithBook("ibnmajah","Sunan Ibn Majah","Ibn Majah",37,"eng-ibnmajah"),
+        new HadithBook("malik","Muwatta Malik","Malik",61,"eng-malik"),
+        new HadithBook("ahmad","Musnad Ahmad","Ahmad",8,"eng-ahmad"),
+        new HadithBook("darimi","Sunan al-Darimi","Darimi",23,"eng-darimi")
     };
     private int hadithBookIndex=0,hadithBookNo=1; private String hadithChapter="";
     private String hadithLanguage="english";
