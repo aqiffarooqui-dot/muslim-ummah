@@ -175,20 +175,10 @@ public class MainActivity extends Activity {
 
     private void loadHadithBooks(int index){
         final LinearLayout list=new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); content.addView(list,1);
-        TextView loading=text("Loading books…",14,Color.GRAY,false); list.addView(loading);
-        new Thread(()->{
-            try{
-                JSONObject d=getJson(HADITH_FA+"/"+HADITH_BOOKS[index].edition+".json");
-                java.util.List<String> names=new java.util.ArrayList<>();
-                JSONObject sections=d.optJSONObject("metadata")!=null?d.getJSONObject("metadata").optJSONObject("sections"):null;
-                if(sections!=null){java.util.Iterator<String> it=sections.keys(); while(it.hasNext()){String k=it.next(); names.add(k+"|"+sections.optString(k));}}
-                runOnUiThread(()->{
-                    list.removeAllViews();
-                    for(String row:names){String[] p=row.split("\\|",2); int no; try{no=Integer.parseInt(p[0]);}catch(Exception e){continue;} final int n=no; addActionRow("Book "+no+(p.length>1?" • "+p[1]:""),"Open chapters",()->openHadithBookNumber(index,n));}
-                    if(names.isEmpty()) for(int n=1;n<=HADITH_BOOKS[index].books;n++){final int no=n;addActionRow("Book "+n,"Open chapters",()->openHadithBookNumber(index,no));}
-                });
-            }catch(Exception e){runOnUiThread(()->{loading.setText("Books could not load. Check internet and try again.");});}
-        }).start();
+        for(int n=1;n<=HADITH_BOOKS[index].books;n++){
+            final int no=n;
+            addActionRow("Book "+n,"Open chapters",()->openHadithBookNumber(index,no));
+        }
     }
 
     private void openHadithBookNumber(int index,int bookNo){
@@ -301,7 +291,21 @@ public class MainActivity extends Activity {
         content.removeAllViews(); title.setText("Search Hadith"); EditText input=new EditText(this);input.setHint("Search words or Hadith number");input.setSingleLine(true);content.addView(input);Button go=new Button(this);go.setText("Search");go.setAllCaps(false);content.addView(go);LinearLayout results=new LinearLayout(this);results.setOrientation(LinearLayout.VERTICAL);content.addView(results);go.setOnClickListener(v->{String q=input.getText().toString().trim().toLowerCase();if(q.isEmpty())return;results.removeAllViews();TextView l=text("Searching…",14,Color.GRAY,false);results.addView(l);new Thread(()->{int found=0;for(int bi=0;bi<HADITH_BOOKS.length&&found<30;bi++){for(int bn=1;bn<=HADITH_BOOKS[bi].books&&found<30;bn++){try{JSONObject root=getJson(HADITH_BASE+"/"+HADITH_BOOKS[bi].id+"/"+bn+".json");org.json.JSONArray arr=root.optJSONArray("hadiths");if(arr==null)continue;for(int j=0;j<arr.length()&&found<30;j++){JSONObject h=arr.optJSONObject(j);if(h==null)continue;String text=(h.optString("arabic","")+" "+h.optString("text","")+" "+h.optString("chapter_intro","")).toLowerCase();int n=h.optInt("idInBook",h.optInt("id",j+1));if(text.contains(q)||String.valueOf(n).equals(q)){final int fbi=bi,fbn=bn,fn=n;runOnUiThread(()->addActionRow(HADITH_BOOKS[fbi].shortName+" • Hadith "+fn,"Open Hadith",()->openHadithSearchResult(fbi,fbn,fn)));found++;}}}catch(Exception ignored){}}}final int total=found;runOnUiThread(()->{if(total==0)l.setText("No Hadith found.");else l.setText(total+" result(s) shown.");});}).start();});TextView back=text("‹  Back to Hadith",16,green,true);back.setPadding(22,18,22,18);back.setOnClickListener(v->showHadith());content.addView(back);
     }
 
-    private JSONObject getJson(String url)throws Exception{HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection();c.setConnectTimeout(8000);c.setReadTimeout(12000);c.setRequestMethod("GET");try{BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line);return new JSONObject(s.toString());}finally{c.disconnect();}}
+    private JSONObject getJson(String url)throws Exception{
+        if(url.startsWith(HADITH_BASE)){
+            String key=url.substring((HADITH_BASE+"/").length());
+            try(BufferedReader r=new BufferedReader(new InputStreamReader(getAssets().open("hadith/the_9_books/"+key),"UTF-8"))){
+                StringBuilder s=new StringBuilder(); String line; while((line=r.readLine())!=null)s.append(line);
+                return new JSONObject(s.toString());
+            }
+        }
+        HttpURLConnection c=(HttpURLConnection)new URL(url).openConnection();
+        c.setConnectTimeout(8000); c.setReadTimeout(12000); c.setRequestMethod("GET");
+        try(BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream(),"UTF-8"))){
+            StringBuilder s=new StringBuilder(); String line; while((line=r.readLine())!=null)s.append(line);
+            return new JSONObject(s.toString());
+        }finally{c.disconnect();}
+    }
     private void saveHadithBookmarks(){getPreferences(MODE_PRIVATE).edit().putStringSet("hadith_bookmarks",new java.util.HashSet<>(hadithBookmarks)).apply();}
     private void loadHadithBookmarks(){java.util.Set<String> s=getPreferences(MODE_PRIVATE).getStringSet("hadith_bookmarks",null);if(s!=null)hadithBookmarks.addAll(s);}
 
