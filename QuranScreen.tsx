@@ -6,7 +6,6 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -122,8 +121,11 @@ export default function QuranScreen({
   const [readingSettings, setReadingSettings] =
     useState<QuranReadingSettings>(DEFAULT_QURAN_READING_SETTINGS);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [bookmarksVisible, setBookmarksVisible] = useState(false);
+  const [fullQuranVisible, setFullQuranVisible] = useState(false);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const pageAudioEndRef = useRef<number | null>(null);
   const [pageMap, setPageMap] = useState<Record<number, number>>({});
-  const [pageImageMap, setPageImageMap] = useState<Record<number, string>>({});
   const [pageLoading, setPageLoading] = useState(false);
   const [audioAyahIndex, setAudioAyahIndex] = useState<number | null>(null);
   const audioCompletionRef = useRef(false);
@@ -229,19 +231,15 @@ export default function QuranScreen({
         console.error('Quran reading settings load error:', err)
       );
 
-    if (!isPremium) {
-      return;
-    }
-
     Promise.all([
-      getQuranInsights(),
       getQuranReadingHistory(30),
       getQuranReadingSummary(),
+      isPremium ? getQuranInsights() : Promise.resolve(null),
     ])
-      .then(([insights, history, summary]) => {
-        setQuranInsights(insights);
+      .then(([history, summary, insights]) => {
         setReadingHistory(history);
         setReadingSummary(summary);
+        setQuranInsights(insights);
       })
       .catch((err) =>
         console.error('Quran premium tools load error:', err)
@@ -261,7 +259,6 @@ export default function QuranScreen({
   useEffect(() => {
     if (!selectedSurah) {
       setPageMap({});
-      setPageImageMap({});
       return;
     }
 
@@ -280,7 +277,6 @@ export default function QuranScreen({
 
         const data = await response.json();
         const map: Record<number, number> = {};
-        const imageMap: Record<number, string> = {};
         for (const verse of data?.verses ?? []) {
           const parts = String(verse?.verse_key ?? '').split(':');
           const ayahNumber = Number(parts[1]);
@@ -288,19 +284,16 @@ export default function QuranScreen({
           const imageUrl = String(verse?.image_url ?? '').trim();
           if (Number.isFinite(ayahNumber) && Number.isFinite(pageNumber)) {
             map[ayahNumber] = pageNumber;
-            if (imageUrl && !imageMap[pageNumber]) imageMap[pageNumber] = imageUrl.startsWith('//') ? 'https:' + imageUrl : imageUrl;
           }
         }
         if (!cancelled) {
           setPageMap(map);
-          setPageImageMap(imageMap);
         }
       } catch (err) {
         console.error('Quran page metadata load error:', err);
         if (!cancelled) {
           setPageMap({});
-          setPageImageMap({});
-        }
+            }
       } finally {
         if (!cancelled) setPageLoading(false);
       }
@@ -434,6 +427,7 @@ export default function QuranScreen({
    */
   useEffect(() => {
     ayahOffsetsRef.current = {};
+    setCurrentPageIndex(0);
 
     if (progressSaveTimeoutRef.current) {
       clearTimeout(
@@ -809,6 +803,22 @@ export default function QuranScreen({
     }
   }
 
+  function openExactAyah(surahNumber: number, ayahNumber: number) {
+    pendingNavigationRef.current = { surahNumber, ayahNumber };
+    exactNavigationActiveRef.current = true;
+    ayahOffsetsRef.current = {};
+    lastNavigationKeyRef.current = 'direct:' + surahNumber + ':' + ayahNumber;
+    setSelectedJuz(null);
+    setSelectedSurah(surahNumber);
+    saveQuranProgress(surahNumber, ayahNumber).catch((err) =>
+      console.error('Quran exact navigation save error:', err)
+    );
+  }
+
+  function openBookmarks() {
+    setBookmarksVisible(true);
+  }
+
   async function handleBookmarkPress(
     surahNumber: number,
     ayahNumber: number
@@ -1036,6 +1046,7 @@ export default function QuranScreen({
   function playAyahAudio(ayahNumber: number) {
     if (!isPremium || !currentSurah) return;
 
+    pageAudioEndRef.current = null;
     const index = currentSurah.ayahs.findIndex(
       (ayah) => ayah.number === ayahNumber
     );
@@ -1047,6 +1058,16 @@ export default function QuranScreen({
       `https://everyayah.com/data/Alafasy_128kbps/${String(currentSurah.number).padStart(3, '0')}${String(ayahNumber).padStart(3, '0')}.mp3`
     );
     audioPlayer.play();
+  }
+
+  function playPageAudio() {
+    if (!isPremium || !currentSurah || pageGroups.length === 0) return;
+    const page = pageGroups[currentPageIndex];
+    if (!page) return;
+    pageAudioEndRef.current = currentSurah.ayahs.findIndex(
+      (ayah) => ayah.number === page[1][page[1].length - 1].number
+    );
+    playAyahAudio(page[1][0].number);
   }
 
   function updateReadingSettings(next: QuranReadingSettings) {
@@ -1062,6 +1083,9 @@ export default function QuranScreen({
         ? getTranslation(translation, currentSurah?.number ?? 0, ayah.number)
         : '';
     const bookmarkKey = getBookmarkKey(currentSurah?.number ?? 0, ayah.number);
+    const isPlaying = audioAyahIndex !== null &&
+      currentSurah?.ayahs[audioAyahIndex]?.number === ayah.number &&
+      audioStatus.playing;
 
     return (
       <View
@@ -1080,9 +1104,11 @@ export default function QuranScreen({
           onBookmarkPress={() =>
             handleBookmarkPress(currentSurah?.number ?? 0, ayah.number)
           }
+          onBookPress={() => setFullQuranVisible(true)}
           onPlayAyah={() => playAyahAudio(ayah.number)}
           fontSize={readingSettings.fontSize}
           lineSpacing={readingSettings.lineSpacing}
+          isPlaying={isPlaying}
         />
       </View>
     );
@@ -1117,6 +1143,15 @@ export default function QuranScreen({
 
     audioCompletionRef.current = true;
     const nextIndex = audioAyahIndex + 1;
+
+    if (
+      pageAudioEndRef.current !== null &&
+      nextIndex > pageAudioEndRef.current
+    ) {
+      pageAudioEndRef.current = null;
+      setAudioAyahIndex(null);
+      return;
+    }
 
     if (nextIndex >= currentSurah.ayahs.length) {
       setAudioAyahIndex(null);
@@ -1378,6 +1413,9 @@ export default function QuranScreen({
                 {readingSettings.viewMode === 'page' ? 'Page View' : 'Ayah View'}
               </Text>
             </View>
+            <Pressable style={styles.fullBookButton} onPress={() => setFullQuranVisible(true)} hitSlop={8}>
+              <Ionicons name="book-outline" size={18} color="#FFFFFF" />
+            </Pressable>
             <Pressable
               style={styles.readerSettingsButton}
               onPress={() => setSettingsVisible(true)}
@@ -1386,11 +1424,6 @@ export default function QuranScreen({
               <Ionicons name="settings-outline" size={18} color="#FFFFFF" />
             </Pressable>
           </View>
-
-          <QuranLanguageSelector
-            selectedLanguage={language}
-            onLanguageChange={setLanguage}
-          />
 
           {translationLoading &&
             language !== 'arabic' && (
@@ -1414,39 +1447,56 @@ export default function QuranScreen({
             )}
           {readingSettings.viewMode === 'page' ? (
             <View style={styles.pageView}>
-              {pageLoading && (
+              {pageGroups.length > 0 ? (
+                <>
+                  <View style={styles.mushafPage}>
+                    <View style={styles.pageHeader}>
+                      <Text style={styles.pageHeaderText}>
+                        {'PAGE ' + pageGroups[currentPageIndex][0]}
+                      </Text>
+                      <Pressable style={styles.pagePlayButton} onPress={playPageAudio} disabled={!isPremium}>
+                        <Ionicons name={audioStatus.playing ? 'pause-circle' : 'play-circle'} size={22} color="#D8B36A" />
+                        <Text style={styles.pagePlayText}>{audioStatus.playing ? 'Playing' : 'Play page'}</Text>
+                      </Pressable>
+                    </View>
+                    <View style={styles.mushafArabicBlock}>
+                      {pageGroups[currentPageIndex][1].map((ayah) => (
+                        <View key={'page-ayah-' + ayah.number} style={[
+                          styles.mushafAyahRow,
+                          audioAyahIndex !== null &&
+                          currentSurah.ayahs[audioAyahIndex]?.number === ayah.number &&
+                          audioStatus.playing && styles.mushafAyahActive,
+                        ]}>
+                          <Text style={[styles.mushafArabicText,{fontSize:readingSettings.fontSize,lineHeight:readingSettings.lineSpacing}]}>
+                            {ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text>
+                          </Text>
+                          {readingSettings.showTranslation && language !== 'arabic' && (
+                            <Text style={[styles.mushafTranslationText, language === 'urdu' && styles.urduTranslationText]}>
+                              {getTranslation(translation,currentSurah.number,ayah.number)}
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                  <View style={styles.pageNavigation}>
+                    <Pressable style={[styles.pageNavButton,currentPageIndex===0&&styles.pageNavDisabled]} disabled={currentPageIndex===0} onPress={()=>setCurrentPageIndex(v=>Math.max(0,v-1))}>
+                      <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
+                      <Text style={styles.pageNavText}>Previous</Text>
+                    </Pressable>
+                    <Text style={styles.pageCountText}>{currentPageIndex+1} / {pageGroups.length}</Text>
+                    <Pressable style={[styles.pageNavButton,currentPageIndex===pageGroups.length-1&&styles.pageNavDisabled]} disabled={currentPageIndex===pageGroups.length-1} onPress={()=>setCurrentPageIndex(v=>Math.min(pageGroups.length-1,v+1))}>
+                      <Text style={styles.pageNavText}>Next</Text>
+                      <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
                 <View style={styles.pageLoading}>
                   <ActivityIndicator size="small" />
-                  <Text style={styles.translationLoadingText}>Preparing Mushaf page layout...</Text>
+                  <Text style={styles.translationLoadingText}>Preparing Mushaf page...</Text>
                 </View>
               )}
-              {pageGroups.map(([pageNumber, ayahs]) => (
-                <View key={`page-${pageNumber}`} style={styles.mushafPage}>
-                  <View style={styles.pageHeader}>
-                    <Text style={styles.pageHeaderText}>{pageNumber > 0 ? `PAGE ${pageNumber}` : 'QURAN PAGE'}</Text>
-                  </View>
-                  {pageImageMap[pageNumber] ? (
-                    <Image source={{ uri: pageImageMap[pageNumber] }} style={styles.mushafPageImage} resizeMode="contain" />
-                  ) : (
-                    <View style={styles.mushafArabicBlock}>
-                      {ayahs.map((ayah) => (
-                        <Text key={`page-${pageNumber}-ayah-${ayah.number}`} style={[styles.mushafArabicText,{fontSize: readingSettings.fontSize,lineHeight: readingSettings.lineSpacing}]}>
-                          {ayah.text}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                  {readingSettings.showTranslation && language !== 'arabic' && (
-                    <View style={styles.pageTranslationBlock}>
-                      {ayahs.map((ayah) => (
-                        <Text key={`translation-${pageNumber}-${ayah.number}`} style={[styles.mushafTranslationText,language === 'urdu' && styles.urduTranslationText]}>
-                          {getTranslation(translation, currentSurah.number, ayah.number)}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ))}
             </View>
           ) : (
             currentSurah.ayahs.map(renderAyahCard)
@@ -1574,6 +1624,73 @@ export default function QuranScreen({
             </Pressable>
           </Pressable>
         </Modal>
+
+        <Modal visible={bookmarksVisible} transparent animationType="fade" onRequestClose={() => setBookmarksVisible(false)}>
+          <Pressable style={styles.settingsBackdrop} onPress={() => setBookmarksVisible(false)}>
+            <Pressable style={styles.settingsSheet} onPress={() => {}}>
+              <View style={styles.settingsHeader}>
+                <View>
+                  <Text style={styles.settingsTitle}>Bookmarks</Text>
+                  <Text style={styles.settingsSubtitle}>Saved Ayahs • tap to open exactly</Text>
+                </View>
+                <Pressable onPress={() => setBookmarksVisible(false)} style={styles.settingsClose}>
+                  <Ionicons name="close" size={18} color="#FFFFFF" />
+                </Pressable>
+              </View>
+              <ScrollView style={styles.bookmarksScroll}>
+                {getBookmarks().length === 0 ? <Text style={styles.emptyBookmarks}>No bookmarks yet.</Text> :
+                  getBookmarks().map((bookmark) => {
+                    const surah = SURAHS[bookmark.surahNumber - 1];
+                    const ayah = quran.find((s) => s.number === bookmark.surahNumber)?.ayahs.find((a) => a.number === bookmark.ayahNumber);
+                    return (
+                      <Pressable key={bookmark.surahNumber + ':' + bookmark.ayahNumber} style={styles.bookmarkRow} onPress={() => { setBookmarksVisible(false); openExactAyah(bookmark.surahNumber, bookmark.ayahNumber); }}>
+                        <View style={styles.bookmarkRowNumber}><Text style={styles.bookmarkRowNumberText}>{bookmark.surahNumber}:{bookmark.ayahNumber}</Text></View>
+                        <View style={styles.bookmarkRowText}>
+                          <Text style={styles.bookmarkRowTitle}>{surah?.englishName ?? 'Quran'}</Text>
+                          <Text style={styles.bookmarkRowArabic} numberOfLines={1}>{ayah?.text ?? 'Saved Ayah'}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#7F8492" />
+                      </Pressable>
+                    );
+                  })}
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={fullQuranVisible} animationType="slide" onRequestClose={() => setFullQuranVisible(false)}>
+          <View style={styles.fullQuranModal}>
+            <View style={styles.fullQuranHeader}>
+              <View>
+                <Text style={styles.settingsTitle}>Quran Book</Text>
+                <Text style={styles.settingsSubtitle}>Complete Quran • Mushaf reading</Text>
+              </View>
+              <Pressable onPress={() => setFullQuranVisible(false)} style={styles.settingsClose}>
+                <Ionicons name="close" size={18} color="#FFFFFF" />
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={styles.fullQuranContent}>
+              {quran.map((surah) => (
+                <View key={surah.number} style={styles.fullQuranSurah}>
+                  <View style={styles.fullQuranSurahHeader}>
+                    <Text style={styles.fullQuranSurahName}>{surah.arabicName}</Text>
+                    <Text style={styles.fullQuranSurahEnglish}>{surah.number}. {surah.englishName}</Text>
+                  </View>
+                  {surah.ayahs.map((ayah) => (
+                    <Pressable key={surah.number + ':' + ayah.number} onPress={() => { setFullQuranVisible(false); openExactAyah(surah.number, ayah.number); }}>
+                      <Text style={styles.fullQuranArabic}>{ayah.text} <Text style={styles.ayahEndMarker}>{ayah.number}</Text></Text>
+                      {readingSettings.showTranslation && language !== 'arabic' && (
+                        <Text style={[styles.fullQuranTranslation, language === 'urdu' && styles.urduTranslationText]}>
+                          {getTranslation(translation, surah.number, ayah.number)}
+                        </Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -1601,24 +1718,10 @@ export default function QuranScreen({
 
         <Pressable
           style={styles.continueCard}
-          onPress={() => {
-            const surahNumber =
-              quranProgress?.surahNumber ?? 1;
-            const ayahNumber =
-              quranProgress?.ayahNumber ?? 1;
-
-            setSelectedSurah(surahNumber);
-
-            saveQuranProgress(
-              surahNumber,
-              ayahNumber
-            ).catch((err) => {
-              console.error(
-                'Quran progress save error:',
-                err
-              );
-            });
-          }}
+          onPress={() => openExactAyah(
+            quranProgress?.surahNumber ?? 1,
+            quranProgress?.ayahNumber ?? 1
+          )}
         >
           <View style={styles.continueIcon}>
             <Ionicons
@@ -1673,104 +1776,42 @@ export default function QuranScreen({
                 <Text style={styles.premiumBadgeText}>PREMIUM</Text>
               </View>
             </View>
-
             <Text style={styles.premiumToolsText}>
-              Advanced reading controls, Quran insights and reading history.
+              Advanced reading controls, Tafsir, Quran audio, insights and immersive Mushaf reading.
             </Text>
-
-            <Text style={styles.premiumControlLabel}>
-              Arabic text size · {readingSettings.fontSize}px
-            </Text>
-            <View style={styles.row}>
-              <Pressable
-                style={styles.premiumAction}
-                onPress={async () => {
-                  const next = {
-                    ...readingSettings,
-                    fontSize: Math.max(20, readingSettings.fontSize - 2),
-                  };
-                  await saveQuranReadingSettings(next);
-                  setReadingSettings(next);
-                }}
-              >
-                <Text style={styles.premiumActionText}>A−</Text>
-              </Pressable>
-              <View style={styles.premiumValue}>
-                <Text style={styles.premiumValueText}>{readingSettings.fontSize}px</Text>
-              </View>
-              <Pressable
-                style={styles.premiumAction}
-                onPress={async () => {
-                  const next = {
-                    ...readingSettings,
-                    fontSize: Math.min(36, readingSettings.fontSize + 2),
-                  };
-                  await saveQuranReadingSettings(next);
-                  setReadingSettings(next);
-                }}
-              >
-                <Text style={styles.premiumActionText}>A+</Text>
-              </Pressable>
-            </View>
-
-            <Text style={styles.premiumControlLabel}>
-              Reading mode
-            </Text>
-            <View style={styles.row}>
-              {(['comfortable', 'compact'] as const).map((mode) => (
-                <Pressable
-                  key={mode}
-                  style={[
-                    styles.premiumMode,
-                    readingSettings.mode === mode && styles.premiumModeActive,
-                  ]}
-                  onPress={async () => {
-                    const next = { ...readingSettings, mode };
-                    await saveQuranReadingSettings(next);
-                    setReadingSettings(next);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.premiumModeText,
-                      readingSettings.mode === mode && styles.premiumModeTextActive,
-                    ]}
-                  >
-                    {mode === 'comfortable' ? 'Comfortable' : 'Compact'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {quranInsights && readingSummary && (
-              <>
-                <View style={styles.premiumStatsRow}>
-                  <View style={styles.premiumStat}>
-                    <Text style={styles.premiumStatValue}>{quranInsights.currentStreak}</Text>
-                    <Text style={styles.premiumStatLabel}>Streak</Text>
-                  </View>
-                  <View style={styles.premiumStat}>
-                    <Text style={styles.premiumStatValue}>{readingSummary.last7Days}</Text>
-                    <Text style={styles.premiumStatLabel}>7 Days</Text>
-                  </View>
-                  <View style={styles.premiumStat}>
-                    <Text style={styles.premiumStatValue}>{readingSummary.last30Days}</Text>
-                    <Text style={styles.premiumStatLabel}>30 Days</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.premiumHistoryTitle}>Reading History</Text>
-                <View style={styles.premiumHistory}>
-                  {readingHistory.slice(-14).map((day) => (
-                    <View key={day.date} style={styles.compactHistoryItem}>
-                      <Text style={styles.compactHistoryCount}>{day.count}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
           </View>
         )}
+
+        <View style={styles.compactHistoryCard}>
+          <View style={styles.compactHistoryHeader}>
+            <View>
+              <Text style={styles.compactHistoryTitle}>Reading History</Text>
+              <Text style={styles.compactHistorySubtitle}>
+                {readingSummary ? readingSummary.last7Days + ' sessions in the last 7 days' : 'Your recent Quran reading'}
+              </Text>
+            </View>
+            <Ionicons name="time-outline" size={20} color="#D8B36A" />
+          </View>
+          <View style={styles.historyDots}>
+            {readingHistory.slice(-14).map((day) => (
+              <View key={day.date} style={styles.historyDotItem}>
+                <Text style={styles.historyDotCount}>{day.count || 0}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <Pressable style={styles.bookmarksCard} onPress={openBookmarks}>
+          <View style={styles.continueIcon}>
+            <Ionicons name="bookmark" size={22} color="#FFFFFF" />
+          </View>
+          <View style={styles.continueTextContainer}>
+            <Text style={styles.continueLabel}>SAVED AYAHS</Text>
+            <Text style={styles.continueTitle}>{bookmarkKeys.size} Bookmarks</Text>
+            <Text style={styles.continueMeta}>Open an exact saved Ayah</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
+        </Pressable>
 
         <View style={styles.searchContainer}>
           <Ionicons
@@ -1782,7 +1823,7 @@ export default function QuranScreen({
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search Surah..."
+            placeholder="Search Ayah or reference (e.g. 2:255)..."
             placeholderTextColor="#777B8A"
             style={styles.searchInput}
           />
@@ -1848,7 +1889,7 @@ export default function QuranScreen({
         )}
 
         <Text style={styles.sectionTitle}>
-          30 Paras / Juz
+          Quran Para
         </Text>
 
         <View style={styles.juzList}>
@@ -1881,88 +1922,6 @@ export default function QuranScreen({
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>
-          All Surahs
-        </Text>
-
-        <View style={styles.surahList}>
-          {filteredSurahs.map((surah) => (
-            <Pressable
-              key={surah.number}
-              style={styles.surahCard}
-              onPress={() => {
-                setSelectedSurah(
-                  surah.number
-                );
-
-                saveQuranProgress(
-                  surah.number,
-                  1
-                ).catch((err) => {
-                  console.error(
-                    'Quran progress save error:',
-                    err
-                  );
-                });
-              }}
-            >
-              <View
-                style={styles.surahNumberBox}
-              >
-                <Text
-                  style={
-                    styles.surahNumberText
-                  }
-                >
-                  {surah.number}
-                </Text>
-              </View>
-
-              <View style={styles.surahInfo}>
-                <Text
-                  style={styles.surahName}
-                >
-                  {surah.name}
-                </Text>
-
-                <Text
-                  style={
-                    styles.surahEnglish
-                  }
-                >
-                  {surah.englishName}
-                </Text>
-
-                <Text
-                  style={
-                    styles.surahDetails
-                  }
-                >
-                  {surah.revelation} •{' '}
-                  {surah.ayahCount} Ayahs
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.surahArabicContainer
-                }
-              >
-                <Text
-                  style={styles.surahArabic}
-                >
-                  {surah.arabicName}
-                </Text>
-
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color="#6F7382"
-                />
-              </View>
-            </Pressable>
-          ))}
-        </View>
       </ScrollView>
     </View>
   );
@@ -2352,7 +2311,7 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   settingsBackdrop: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.58)', justifyContent: 'flex-end', padding: 12,
   },
-  settingsSheet: {
+  settingsSheet: { maxWidth:420, maxHeight:'72%', alignSelf:'center', width:'92%', marginTop:'auto', marginBottom:'auto',
     backgroundColor: '#11141B', borderRadius: 24, padding: 16,
     borderWidth: 1, borderColor: '#2A303C', maxHeight: '82%',
   },
@@ -2386,6 +2345,42 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
   settingsHint: { color: '#6F7482', fontSize: 9, lineHeight: 14, marginTop: 7 },
   juzFooterHint: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
   juzFooterHintText: { color: '#777D8B', fontSize: 10 },
+  compactHistoryCard: { backgroundColor:'#11141B', borderRadius:18, padding:14, marginBottom:12, borderWidth:1, borderColor:'#252A36' },
+  compactHistoryHeader: { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
+  compactHistoryTitle: { color:'#FFFFFF', fontSize:15, fontWeight:'800' },
+  compactHistorySubtitle: { color:'#777B8A', fontSize:11, marginTop:3 },
+  historyDots: { flexDirection:'row', gap:5, marginTop:12 },
+  historyDotItem: { minWidth:22, height:22, borderRadius:7, backgroundColor:'#1C2029', alignItems:'center', justifyContent:'center' },
+  historyDotCount: { color:'#D8B36A', fontSize:9, fontWeight:'800' },
+  bookmarksCard: { flexDirection:'row', alignItems:'center', backgroundColor:'#11141B', borderRadius:19, padding:14, marginBottom:4, borderWidth:1, borderColor:'#252A36' },
+  pagePlayButton: { flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:9, paddingVertical:6, borderRadius:10, backgroundColor:'#211F18' },
+  pagePlayText: { color:'#D8B36A', fontSize:10, fontWeight:'800' },
+  mushafAyahRow: { paddingVertical:6, borderBottomWidth:1, borderBottomColor:'#29251F' },
+  mushafAyahActive: { backgroundColor:'#211F18', borderRadius:8, paddingHorizontal:8 },
+  ayahEndMarker: { color:'#D8B36A', fontSize:13 },
+  pageNavigation: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:10 },
+  pageNavButton: { flexDirection:'row', alignItems:'center', gap:4, paddingHorizontal:12, paddingVertical:9, borderRadius:12, backgroundColor:'#151922' },
+  pageNavDisabled: { opacity:0.35 },
+  pageNavText: { color:'#FFFFFF', fontSize:11, fontWeight:'700' },
+  pageCountText: { color:'#8D91A3', fontSize:11, fontWeight:'700' },
+  fullBookButton: { width:38, height:38, borderRadius:12, backgroundColor:'#151922', alignItems:'center', justifyContent:'center', marginRight:6 },
+  bookmarksScroll: { maxHeight:520 },
+  emptyBookmarks: { color:'#8D91A3', textAlign:'center', paddingVertical:30 },
+  bookmarkRow: { flexDirection:'row', alignItems:'center', gap:10, paddingVertical:11, borderBottomWidth:1, borderBottomColor:'#252A36' },
+  bookmarkRowNumber: { width:48, height:38, borderRadius:10, backgroundColor:'#1C2029', alignItems:'center', justifyContent:'center' },
+  bookmarkRowNumberText: { color:'#D8B36A', fontSize:10, fontWeight:'900' },
+  bookmarkRowText: { flex:1 },
+  bookmarkRowTitle: { color:'#FFFFFF', fontSize:13, fontWeight:'800' },
+  bookmarkRowArabic: { color:'#A9ADB8', fontSize:15, textAlign:'right', writingDirection:'rtl', marginTop:3 },
+  fullQuranModal: { flex:1, backgroundColor:'#080A0F' },
+  fullQuranHeader: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:18, paddingTop:18, paddingBottom:12, borderBottomWidth:1, borderBottomColor:'#252A36' },
+  fullQuranContent: { padding:18, paddingBottom:50 },
+  fullQuranSurah: { marginBottom:24, backgroundColor:'#10131A', borderRadius:18, padding:15, borderWidth:1, borderColor:'#252A36' },
+  fullQuranSurahHeader: { alignItems:'center', paddingBottom:12, marginBottom:10, borderBottomWidth:1, borderBottomColor:'#252A36' },
+  fullQuranSurahName: { color:'#F2EBDD', fontSize:23, fontWeight:'800' },
+  fullQuranSurahEnglish: { color:'#8D91A3', fontSize:11, marginTop:4 },
+  fullQuranArabic: { color:'#F2EBDD', fontSize:24, lineHeight:46, textAlign:'right', writingDirection:'rtl', paddingVertical:4 },
+  fullQuranTranslation: { color:'#BFC3CD', fontSize:14, lineHeight:23, paddingBottom:8 },
   compactHistoryItem: { width: 48, minHeight: 48, borderRadius: 12, backgroundColor: '#151922', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#252A35' },
 
   sourceTitle: {
