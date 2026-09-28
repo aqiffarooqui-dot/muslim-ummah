@@ -1,6 +1,5 @@
 package com.aqiffarooqui.muslimummah;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
@@ -8,284 +7,60 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.view.Gravity;
+import android.widget.*;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class MainActivity extends Activity {
-
-    private static final String APP_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/";
-    private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
-    private static final String CURRENT_VERSION = "1.0.3";
-
-    private WebView webView;
+    private static final String UPDATE_URL="https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
+    private static final String CURRENT_VERSION="1.0.3";
+    private LinearLayout content;
+    private TextView title;
+    private final int green=Color.rgb(22,163,74);
+    private long downloadId=-1L;
     private BroadcastReceiver downloadReceiver;
-    private long downloadId = -1L;
 
-    @SuppressLint("SetJavaScriptEnabled")
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    @Override public void onCreate(Bundle state){super.onCreate(state);buildApp();registerDownloadReceiver();checkForUpdate();}
 
-        webView = new WebView(this);
-        setContentView(webView);
-
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setDatabaseEnabled(true);
-        webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(false);
-        webView.getSettings().setBuiltInZoomControls(false);
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
-                    if (uri.toString().startsWith(APP_URL)) {
-                        return false;
-                    }
-                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        registerDownloadReceiver();
-        webView.loadUrl(APP_URL);
-        checkForUpdate();
+    private void buildApp(){
+        LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.rgb(248,250,248));
+        title=text("Muslim Ummah",28,Color.rgb(20,24,20),true); title.setPadding(24,26,24,8); root.addView(title,new LinearLayout.LayoutParams(-1,-2));
+        content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
+        ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.addView(content); root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        LinearLayout nav=new LinearLayout(this); nav.setGravity(Gravity.CENTER); nav.setBackgroundColor(Color.WHITE);
+        String[] labels={"Home","Quran","Hadith","Prayer","Profile"};
+        for(int i=0;i<labels.length;i++){final int tab=i;TextView b=text(labels[i],13,Color.DKGRAY,false);b.setGravity(Gravity.CENTER);b.setPadding(4,18,4,18);b.setOnClickListener(v->showTab(tab));nav.addView(b,new LinearLayout.LayoutParams(0,-2,1));}
+        root.addView(nav);setContentView(root);showTab(0);
     }
+    private void showTab(int tab){content.removeAllViews();if(tab==0)showHome();else if(tab==1)showQuran();else if(tab==2)showHadith();else if(tab==3)showPrayer();else showProfile();}
+    private void showHome(){title.setText("Assalamu Alaikum");addCard("Today's Reminder","A beautiful reminder from the Qur'an & Sunnah.","Read reminder");addCard("Qur'an","Continue your reading and keep your daily progress.","Open Qur'an");addCard("Hadith","Browse books → chapters → hadiths in a native reader.","Open Hadith");addCard("Prayer","Your prayer times, Qibla and daily worship tools.","Prayer times");}
+    private void showQuran(){title.setText("Qur'an");addSection("Qur'an Reader","Native reader foundation. Surah list, Arabic text, translations, bookmarks and progress will live here.");addRow("Surah","Browse all 114 Surahs");addRow("Juz","Read by Juz");addRow("Bookmarks","Your saved Ayahs");addRow("Translations","Hindi • English • Urdu • Hinglish");}
+    private void showHadith(){title.setText("Hadith");addSection("Hadith Library","Native nested navigation: Books → Chapters → Hadiths. Search and bookmarks will be integrated into the native reader.");addRow("Sahih al-Bukhari","Books and chapters");addRow("Sahih Muslim","Books and chapters");addRow("Abu Dawud","Books and chapters");addRow("Search Hadith","Search across the library");}
+    private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
+    private void showProfile(){title.setText("Profile");addSection("Muslim Ummah","Your account, Premium status, bookmarks, settings and app updates.");addRow("Premium","Server-verified entitlement");addRow("Bookmarks","Qur'an & Hadith");addRow("Settings","Theme, language and preferences");addRow("App version",CURRENT_VERSION);}
+    private void addCard(String h,String body,String action){LinearLayout c=card();c.addView(text(h,20,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,14);c.addView(b);Button btn=new Button(this);btn.setText(action);btn.setAllCaps(false);btn.setTextColor(green);c.addView(btn);content.addView(c);}
+    private void addSection(String h,String body){LinearLayout c=card();c.addView(text(h,21,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,4);c.addView(b);content.addView(c);}
+    private void addRow(String h,String body){LinearLayout c=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.addView(text(h,17,Color.rgb(20,24,20),true));labels.addView(text(body,13,Color.GRAY,false));row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));row.addView(text("›",28,green,false));c.addView(row);content.addView(c);}
+    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(22,20,22,20);c.setBackgroundColor(Color.WHITE);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(16,10,16,10);c.setLayoutParams(p);return c;}
+    private TextView text(String s,int size,int color,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);return v;}
 
-    private void registerDownloadReceiver() {
-        downloadReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L);
-                if (id != downloadId) return;
-
-                DownloadManager manager =
-                        (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-                if (manager == null) return;
-
-                DownloadManager.Query query = new DownloadManager.Query();
-                query.setFilterById(downloadId);
-
-                android.database.Cursor cursor = manager.query(query);
-                if (cursor == null) return;
-
-                try {
-                    if (cursor.moveToFirst()) {
-                        int status = cursor.getInt(
-                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
-                        );
-
-                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                            String uriString = cursor.getString(
-                                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI)
-                            );
-                            installDownloadedApk(Uri.parse(uriString));
-                        } else {
-                            showMessage("Update download failed. Please try again.");
-                        }
-                    }
-                } finally {
-                    cursor.close();
-                }
-            }
-        };
-
-        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(downloadReceiver, filter);
-        }
-    }
-
-    private void checkForUpdate() {
-        new Thread(() -> {
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(UPDATE_URL + "?t=" + System.currentTimeMillis());
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-                connection.setRequestMethod("GET");
-
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(connection.getInputStream())
-                );
-
-                StringBuilder body = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    body.append(line);
-                }
-                reader.close();
-
-                JSONObject data = new JSONObject(body.toString());
-                String latestVersion = data.optString("version", CURRENT_VERSION);
-
-                if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
-                    JSONArray changes = data.optJSONArray("changes");
-                    StringBuilder message = new StringBuilder();
-
-                    if (changes != null) {
-                        for (int i = 0; i < changes.length(); i++) {
-                            message.append("• ")
-                                    .append(changes.optString(i))
-                                    .append("\n");
-                        }
-                    }
-
-                    String apkUrl = data.optString("apkUrl", "");
-
-                    runOnUiThread(() -> showUpdateDialog(
-                            latestVersion,
-                            message.toString().trim(),
-                            apkUrl
-                    ));
-                }
-            } catch (Exception ignored) {
-                // Update checking must never prevent the app from opening.
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-        }).start();
-    }
-
-    private boolean isNewerVersion(String latest, String current) {
-        try {
-            String[] a = latest.replace("v", "").split("\\.");
-            String[] b = current.replace("v", "").split("\\.");
-
-            int max = Math.max(a.length, b.length);
-            for (int i = 0; i < max; i++) {
-                int ai = i < a.length ? Integer.parseInt(a[i]) : 0;
-                int bi = i < b.length ? Integer.parseInt(b[i]) : 0;
-
-                if (ai > bi) return true;
-                if (ai < bi) return false;
-            }
-        } catch (Exception ignored) {
-        }
-        return false;
-    }
-
-    private void showUpdateDialog(String version, String changes, String apkUrl) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Muslim Ummah Update Available");
-        builder.setMessage("Version " + version + "\n\nWhat's New:\n" +
-                (changes.isEmpty() ? "New improvements and fixes." : changes));
-
-        if (!apkUrl.isEmpty()) {
-            builder.setPositiveButton("Update Now", (dialog, which) -> downloadAndInstall(apkUrl));
-        }
-
-        builder.setNegativeButton("Later", null);
-        builder.setCancelable(true);
-        builder.show();
-    }
-
-    private void downloadAndInstall(String apkUrl) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                && !getPackageManager().canRequestPackageInstalls()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Allow app updates")
-                    .setMessage("Please allow Muslim Ummah to install updates, then tap Update again.")
-                    .setPositiveButton("Open Settings", (dialog, which) -> {
-                        Intent intent = new Intent(
-                                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                Uri.parse("package:" + getPackageName())
-                        );
-                        startActivity(intent);
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-            return;
-        }
-
-        DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-        if (manager == null) {
-            showMessage("Download service is unavailable.");
-            return;
-        }
-
-        try {
-            Uri uri = Uri.parse(apkUrl);
-            DownloadManager.Request request = new DownloadManager.Request(uri);
-            request.setTitle("Muslim Ummah Update");
-            request.setDescription("Downloading the latest Muslim Ummah update");
-            request.setMimeType("application/vnd.android.package-archive");
-            request.setNotificationVisibility(
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-            );
-            request.setDestinationInExternalFilesDir(
-                    this,
-                    Environment.DIRECTORY_DOWNLOADS,
-                    "muslim-ummah-update.apk"
-            );
-
-            downloadId = manager.enqueue(request);
-            showMessage("Update download started. Installation will open when ready.");
-        } catch (Exception e) {
-            showMessage("Could not start the update download.");
-        }
-    }
-
-    private void installDownloadedApk(Uri apkUri) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(intent);
-        } catch (Exception e) {
-            showMessage("The APK downloaded, but Android could not open the installer.");
-        }
-    }
-
-    private void showMessage(String message) {
-        runOnUiThread(() ->
-                new AlertDialog.Builder(this)
-                        .setMessage(message)
-                        .setPositiveButton("OK", null)
-                        .show()
-        );
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (downloadReceiver != null) {
-            try {
-                unregisterReceiver(downloadReceiver);
-            } catch (Exception ignored) {
-            }
-        }
-        super.onDestroy();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
+    private void registerDownloadReceiver(){downloadReceiver=new BroadcastReceiver(){public void onReceive(Context c,Intent i){if(i.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,-1L)!=downloadId)return;DownloadManager m=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);if(m==null)return;DownloadManager.Query q=new DownloadManager.Query().setFilterById(downloadId);android.database.Cursor cur=m.query(q);if(cur==null)return;try{if(cur.moveToFirst()&&cur.getInt(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))==DownloadManager.STATUS_SUCCESSFUL)install(Uri.parse(cur.getString(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))));}finally{cur.close();}}};IntentFilter f=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(Build.VERSION.SDK_INT>=33)registerReceiver(downloadReceiver,f,Context.RECEIVER_NOT_EXPORTED);else registerReceiver(downloadReceiver,f);}
+    private void checkForUpdate(){new Thread(()->{try{HttpURLConnection c=(HttpURLConnection)new URL(UPDATE_URL+"?t="+System.currentTimeMillis()).openConnection();c.setConnectTimeout(5000);c.setReadTimeout(5000);BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder s=new StringBuilder();String line;while((line=r.readLine())!=null)s.append(line);r.close();JSONObject d=new JSONObject(s.toString());String v=d.optString("version",CURRENT_VERSION);if(newer(v,CURRENT_VERSION))runOnUiThread(()->updateDialog(v,d.optString("apkUrl","")));c.disconnect();}catch(Exception ignored){}}).start();}
+    private boolean newer(String a,String b){try{String[] x=a.replace("v","").split("\."),y=b.replace("v","").split("\.");for(int i=0;i<Math.max(x.length,y.length);i++){int p=i<x.length?Integer.parseInt(x[i]):0,q=i<y.length?Integer.parseInt(y[i]):0;if(p!=q)return p>q;}}catch(Exception ignored){}return false;}
+    private void updateDialog(String v,String url){new AlertDialog.Builder(this).setTitle("Muslim Ummah update").setMessage("Version "+v+" is available.").setPositiveButton("Update",(d,w)->download(url)).setNegativeButton("Later",null).show();}
+    private void download(String url){if(Build.VERSION.SDK_INT>=26&&!getPackageManager().canRequestPackageInstalls()){startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));return;}try{DownloadManager m=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);DownloadManager.Request r=new DownloadManager.Request(Uri.parse(url));r.setTitle("Muslim Ummah Update").setMimeType("application/vnd.android.package-archive").setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);r.setDestinationInExternalFilesDir(this,Environment.DIRECTORY_DOWNLOADS,"muslim-ummah-update.apk");downloadId=m.enqueue(r);}catch(Exception ignored){}}
+    private void install(Uri uri){try{Intent i=new Intent(Intent.ACTION_VIEW).setDataAndType(uri,"application/vnd.android.package-archive");i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(i);}catch(Exception ignored){}}
+    @Override protected void onDestroy(){if(downloadReceiver!=null)try{unregisterReceiver(downloadReceiver);}catch(Exception ignored){}super.onDestroy();}
 }
