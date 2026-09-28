@@ -1,17 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type QuranReadingMode = 'comfortable' | 'compact';
+export type QuranReaderViewMode = 'ayah' | 'page';
+export type QuranAudioMode = 'ayah' | 'continuous';
 
 export type QuranReadingSettings = {
   fontSize: number;
   lineSpacing: number;
   mode: QuranReadingMode;
+  viewMode: QuranReaderViewMode;
+  audioMode: QuranAudioMode;
+  showTranslation: boolean;
 };
 
 export const DEFAULT_QURAN_READING_SETTINGS: QuranReadingSettings = {
   fontSize: 25,
   lineSpacing: 48,
   mode: 'comfortable',
+  viewMode: 'ayah',
+  audioMode: 'ayah',
+  showTranslation: true,
 };
 
 const STORAGE_KEY = 'muslim_ummah_quran_reading_settings_v1';
@@ -37,6 +45,14 @@ export async function getQuranReadingSettings(): Promise<QuranReadingSettings> {
           : DEFAULT_QURAN_READING_SETTINGS.lineSpacing,
       mode:
         parsed.mode === 'compact' ? 'compact' : 'comfortable',
+      viewMode:
+        parsed.viewMode === 'page' ? 'page' : 'ayah',
+      audioMode:
+        parsed.audioMode === 'continuous' ? 'continuous' : 'ayah',
+      showTranslation:
+        typeof parsed.showTranslation === 'boolean'
+          ? parsed.showTranslation
+          : DEFAULT_QURAN_READING_SETTINGS.showTranslation,
     };
   } catch {
     return DEFAULT_QURAN_READING_SETTINGS;
