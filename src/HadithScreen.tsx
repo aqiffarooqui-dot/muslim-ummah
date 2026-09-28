@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './themes/ThemeProvider';
@@ -95,6 +95,28 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
   const book = B[bi];
 
   useEffect(() => { (async () => { setBookmarks(await getStored(BOOKMARKS_KEY, [])); })(); }, []);
+
+  useEffect(() => {
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (level === 'reader') {
+        setLevel('chapters');
+        return true;
+      }
+      if (level === 'chapters') {
+        setLevel('books');
+        return true;
+      }
+      if (level === 'books') {
+        setLevel('collections');
+        return true;
+      }
+      onBack();
+      return true;
+    });
+    return () => handler.remove();
+  }, [level, onBack]);
+
+
 
   useEffect(() => {
     if (level !== 'chapters' && level !== 'reader') return;
@@ -198,7 +220,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
   };
 
   const runSearch = async () => {
-    const term = search.trim().toLowerCase(); if (!term || !isPremium) return;
+    const term = search.trim().toLowerCase(); if (!term) return;
     setSearching(true); const results: SearchResult[] = [];
     for (let i = 0; i < B.length && results.length < 30; i += 1) {
       try {
@@ -229,7 +251,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
       </View>
       <View style={s.searchBox}>
         <Ionicons name="search" size={18} color="#8C938E" />
-        <TextInput value={search} onChangeText={setSearch} onSubmitEditing={runSearch} placeholder={isPremium ? 'Search any Hadith, number or words…' : 'Search in current chapter…'} placeholderTextColor="#68716D" style={s.searchInput} returnKeyType="search" autoCapitalize="none" autoCorrect={false} />
+        <TextInput value={search} onChangeText={setSearch} onSubmitEditing={runSearch} placeholder="Search any Hadith, number or words…" placeholderTextColor="#68716D" style={s.searchInput} returnKeyType="search" autoCapitalize="none" autoCorrect={false} />
         {search.length > 0 ? <Pressable onPress={() => { setSearch(''); setSearchResults([]); }}><Ionicons name="close-circle" size={18} color="#747C77" /></Pressable> : null}
       </View>
 
@@ -237,7 +259,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
           <Text style={s.sectionTitle}>Hadith Collections</Text><Text style={s.sectionSub}>Choose a collection to browse Books → Chapters → Hadiths.</Text>
           <View style={s.bookGrid}>{B.map((item, index) => <Pressable key={item.id} onPress={() => openCollection(index)} style={s.bookCard}>
-            {isPremium ? <Image source={{ uri: item.cover }} style={s.cover} resizeMode="cover" /> : <View style={s.freeBookIcon}><Ionicons name="book" size={32} color="#D9C77A" /></View>}
+            <Image source={{ uri: item.cover }} style={s.cover} resizeMode="cover" />
             <View style={s.bookCardBody}><Text style={s.bookName}>{item.name}</Text><Text style={s.bookMeta}>{item.chapters} Books</Text><View style={s.openRow}><Text style={s.openText}>Open collection</Text><Ionicons name="arrow-forward" size={15} color="#D9C77A" /></View></View>
           </Pressable>)}</View>
           {searchResults.length > 0 ? <View style={s.resultsBox}><Text style={s.resultsTitle}>Search results</Text>{searchResults.map((result, index) => <Pressable key={index} style={s.resultRow} onPress={() => { setBi(result.bookIndex); setBookNo(1); setChapterKey(''); setLevel('reader'); }}><View style={s.resultNumber}><Text style={s.resultNumberText}>{result.number}</Text></View><View style={{ flex: 1 }}><Text style={s.resultBook}>{B[result.bookIndex].name}</Text><Text style={s.resultText} numberOfLines={2}>{result.text}</Text></View><Ionicons name="chevron-forward" size={18} color="#7F8792" /></Pressable>)}</View> : null}
@@ -251,7 +273,7 @@ export default function HadithScreen({ onBack }: { onBack: () => void }) {
         </ScrollView>
       ) : level === 'chapters' ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
-          <View style={s.collectionHero}>{isPremium ? <Image source={{ uri: book.cover }} style={s.heroCover} /> : <View style={s.heroIcon}><Ionicons name="library" size={30} color="#D9C77A" /></View>}<View style={{ flex: 1 }}><Text style={s.eyebrow}>BOOK {bookNo}</Text><Text style={s.heroTitle}>{books.find((x) => x.id === bookNo)?.name || 'Book ' + bookNo}</Text><Text style={s.heroSub}>Select a chapter.</Text></View></View>
+          <View style={s.collectionHero}><Image source={{ uri: book.cover }} style={s.heroCover} resizeMode="cover" /><View style={{ flex: 1 }}><Text style={s.eyebrow}>BOOK {bookNo}</Text><Text style={s.heroTitle}>{books.find((x) => x.id === bookNo)?.name || 'Book ' + bookNo}</Text><Text style={s.heroSub}>Select a chapter.</Text></View></View>
           {busy ? <View style={s.centerInline}><ActivityIndicator color="#D9C77A" /><Text style={s.muted}>Loading chapters…</Text></View> : err ? <Text style={s.err}>{err}</Text> : null}
           <View style={s.chapterList}>{chapters.map((item, index) => <Pressable key={item.key} onPress={() => openChapter(item.key)} style={s.chapterCard}><View style={s.chapterNo}><Text style={s.chapterNoText}>{String(index + 1).padStart(2, '0')}</Text></View><View style={{ flex: 1 }}><Text style={s.chapterTitle}>{item.title}</Text><Text style={s.chapterSub}>{item.hadithNumbers.length} Hadiths</Text></View><Ionicons name="chevron-forward" size={20} color="#7E877F" /></Pressable>)}</View>
         </ScrollView>
