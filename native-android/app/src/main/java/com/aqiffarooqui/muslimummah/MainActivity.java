@@ -378,7 +378,36 @@ public class MainActivity extends Activity {
     }
 
     private void showPrayer(){title.setText("Prayer");addSection("Prayer Times","Native prayer screen foundation. Location, calculation method, Qibla and local caching will be connected next.");addRow("Fajr","--:--");addRow("Dhuhr","--:--");addRow("Asr","--:--");addRow("Maghrib","--:--");addRow("Isha","--:--");}
-    private void showProfile(){title.setText("Profile");addSection("Muslim Ummah","Your account, Premium status, bookmarks, settings and app updates.");addRow("Premium","Server-verified entitlement");addRow("Bookmarks","Qur'an & Hadith");addRow("Settings","Theme, language and preferences");addRow("App version",CURRENT_VERSION);}
+    private void showProfile(){
+        title.setText("Profile");
+        addSection("Muslim Ummah","Account, Premium status, bookmarks, settings and app updates.");
+        LinearLayout premium=card();
+        premium.addView(text(PremiumManager.isPremium(this)?"PREMIUM ACTIVE":"PREMIUM",20,PremiumManager.isPremium(this)?green:Color.rgb(20,24,20),true));
+        premium.addView(text(PremiumManager.isPremium(this)?"All unlocked Premium features are available.":"Unlock translations, advanced Quran/Hadith tools, audio, AI, personalization and more.",14,Color.DKGRAY,false));
+        Button pbtn=new Button(this);pbtn.setText(PremiumManager.isPremium(this)?"View Premium features":"Explore Premium");pbtn.setAllCaps(false);
+        pbtn.setOnClickListener(v->showPremiumFeatures());premium.addView(pbtn);content.addView(premium);
+        addRow("Bookmarks","Qur'an & Hadith");
+        addRow("Settings","Theme, language and preferences");
+        addRow("App version",CURRENT_VERSION);
+    }
+
+    private void showPremiumFeatures(){
+        content.removeAllViews(); title.setText("Premium");
+        addSection("Muslim Ummah Premium","One place for all Premium tools. Access is controlled by verified entitlement.");
+        String[] groups={
+                "Qur'an • Translations • Tafsir • Word-by-word • Advanced Search • Notes • Khatm",
+                "Audio • Multiple Qaris • Background Playback • Repeat • Offline Audio",
+                "Hadith • Translations • Advanced Search • Collections • Notes • Highlights",
+                "AI • Qur'an/Hadith references • Topic Search • Smart explanations",
+                "Themes • Fonts • Mushaf Styles • Wallpapers • AMOLED • Custom Home",
+                "Prayer • Advanced Notifications • Custom Adhan • Calendar • Tracking",
+                "Qibla • Advanced Compass • AR • Mosque Finder • Travel Mode",
+                "Dhikr • Goals • Streaks • Spiritual Stats • Worship Dashboard",
+                "Cloud Sync • Smart Reminders • Widgets • Ramadan Mode"
+        };
+        for(String g:groups)addRow("Premium",g);
+        TextView back=text("‹  Back to Profile",16,green,true);back.setPadding(22,18,22,18);back.setOnClickListener(v->showProfile());content.addView(back);
+    }
     private void addCard(String h,String body,String action){LinearLayout c=card();c.addView(text(h,20,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,14);c.addView(b);Button btn=new Button(this);btn.setText(action);btn.setAllCaps(false);btn.setTextColor(green);c.addView(btn);content.addView(c);}
     private void addSection(String h,String body){LinearLayout c=card();c.addView(text(h,21,Color.rgb(20,24,20),true));TextView b=text(body,15,Color.DKGRAY,false);b.setPadding(0,8,0,4);c.addView(b);content.addView(c);}
     private void addRow(String h,String body){LinearLayout c=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.addView(text(h,17,Color.rgb(20,24,20),true));labels.addView(text(body,13,Color.GRAY,false));row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));row.addView(text("›",28,green,false));c.addView(row);content.addView(c);}
