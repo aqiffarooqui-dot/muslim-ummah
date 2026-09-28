@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
         content.removeAllViews(); title.setText(x.name);
         addSection(x.arabicName+"  •  "+x.englishName,x.revelation+" • "+x.ayahCount+" Ayahs");
         addActionRow("Read Surah","Arabic • offline after first load",()->openReader(x,"arabic"));
-        addActionRow("Translations","Hindi/English/Urdu/Hinglish",()->openReader(x,"english"));
+        addActionRow("Translations","Premium • Hindi/English/Urdu/Hinglish",()->openPremiumTranslationReader(x));
         addActionRow("Bookmark","Open saved Ayah",()->openBookmarked(x));
         TextView back=text("‹  Back to Surahs",16,green,true); back.setPadding(22,18,22,18); back.setOnClickListener(v->showQuran()); content.addView(back);
     }
@@ -82,6 +82,22 @@ public class MainActivity extends Activity {
         labels.addView(text(h,17,Color.rgb(20,24,20),true)); labels.addView(text(body,13,Color.GRAY,false));
         row.addView(labels,new LinearLayout.LayoutParams(0,-2,1)); row.addView(text("›",28,green,false)); c.addView(row); content.addView(c);
     }
+    private void openPremiumTranslationReader(QuranData.Surah x){
+        if(!PremiumManager.isFeatureUnlocked(this,PremiumFeatures.TRANSLATIONS)){
+            showPremiumRequired("Qur'an translations");
+            return;
+        }
+        openReader(x,"english");
+    }
+
+    private void showPremiumRequired(String feature){
+        new AlertDialog.Builder(this)
+                .setTitle("Premium Feature")
+                .setMessage(feature+" is available with Premium. Your free Arabic reading remains available offline.")
+                .setPositiveButton("OK",null)
+                .show();
+    }
+
     private void openReader(QuranData.Surah x,String lang){
         content.removeAllViews(); title.setText(x.name+" • "+(lang.equals("arabic")?"Arabic":"Translation"));
         LinearLayout controls=new LinearLayout(this); controls.setGravity(Gravity.CENTER_VERTICAL);
@@ -252,7 +268,7 @@ public class MainActivity extends Activity {
         String[] labels={"English","اردو","हिन्दी","Hinglish"}; String[] keys={"english","urdu","hindi","hinglish"};
         for(int i=0;i<labels.length;i++){
             final String key=keys[i]; Button btn=new Button(this); btn.setText(labels[i]); btn.setAllCaps(false);
-            btn.setOnClickListener(v->{hadithLanguage=key;renderHadithItems(hadithReaderList,hadithReaderItems);});
+            btn.setOnClickListener(v->{ if(!"english".equals(key) && !PremiumManager.isFeatureUnlocked(this,PremiumFeatures.HADITH_TRANSLATIONS)){showPremiumRequired("Hadith translations");return;} hadithLanguage=key;renderHadithItems(hadithReaderList,hadithReaderItems);});
             languageRow.addView(btn,new LinearLayout.LayoutParams(0,-2,1));
         }
         content.addView(languageRow);
