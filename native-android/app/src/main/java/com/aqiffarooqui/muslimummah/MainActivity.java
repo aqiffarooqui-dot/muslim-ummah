@@ -28,7 +28,7 @@ import java.net.URL;
 
 public class MainActivity extends Activity {
 
-    private static final String APP_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/";
+    private static final String APP_URL = "file:///android_asset/web/index.html";
     private static final String UPDATE_URL = "https://aqiffarooqui-dot.github.io/muslim-ummah/update.json";
     private static final String CURRENT_VERSION = "1.0.3";
 
@@ -47,15 +47,15 @@ public class MainActivity extends Activity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setDatabaseEnabled(true);
-        webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(false);
+        webView.getSettings().setAllowFileAccess(true);
+        webView.getSettings().setAllowContentAccess(true);
         webView.getSettings().setBuiltInZoomControls(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
-                    if (uri.toString().startsWith(APP_URL)) {
+                    if (uri.toString().startsWith("file:///android_asset/")) {
                         return false;
                     }
                     startActivity(new Intent(Intent.ACTION_VIEW, uri));
