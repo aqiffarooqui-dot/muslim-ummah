@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: native-android
@@ -30,13 +29,18 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Create signing key
+      - name: Restore permanent signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ ! -f release-key.jks ]; then
-            keytool -genkeypair -v -keystore release-key.jks -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname 'CN=Android Debug,O=Android,C=US'
-          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release-key.jks
+          test -s release-key.jks
 
       - name: Build Release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle assembleRelease --no-daemon
 
       - name: Upload APK
