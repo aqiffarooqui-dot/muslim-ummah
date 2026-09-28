@@ -59,12 +59,12 @@ function parseCsvLine(line: string): string[] {
   values.push(current); return values;
 }
 function parseToonRows(source: string): Record<string, string>[] {
-  const match = source.match(/^[A-Za-z_]+\\[(?:count|\\d+)\\]\\{([^}]+)\\}:\\s*/m);
+  const match = source.match(/^[A-Za-z_]+\[(?:count|\d+)\]\{([^}]+)\}:\s*/m);
   if (!match || match.index === undefined) return [];
   const columns = match[1].split(',').map((x) => x.trim());
   const body = source.slice(match.index + match[0].length);
   const rows: Record<string, string>[] = []; let current = ''; let quoted = false;
-  body.split('\\n').forEach((line) => {
+  body.split(/\r?\n/).forEach((line) => {
     if (!line.trim()) return;
     current += (current ? '\\n' : '') + line;
     const quoteCount = (line.replace(/""/g, '').match(/"/g) || []).length;
