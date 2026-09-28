@@ -54,7 +54,6 @@ import {
   type QuranReadingSummary,
 } from './src/quranProgress';
 
-import QuranLanguageSelector from './src/QuranLanguageSelector';
 import QuranAyahCard from './src/QuranAyahCard';
 
 import {
@@ -1061,12 +1060,22 @@ export default function QuranScreen({
 
   function playPageAudio() {
     if (!isPremium || !currentSurah || pageGroups.length === 0) return;
+    if (audioStatus.playing && pageAudioEndRef.current !== null) {
+      audioPlayer.pause();
+      return;
+    }
+
     const page = pageGroups[currentPageIndex];
     if (!page) return;
-    pageAudioEndRef.current = currentSurah.ayahs.findIndex(
+
+    const endIndex = currentSurah.ayahs.findIndex(
       (ayah) => ayah.number === page[1][page[1].length - 1].number
     );
+
+    if (endIndex < 0) return;
+
     playAyahAudio(page[1][0].number);
+    pageAudioEndRef.current = endIndex;
   }
 
   function updateReadingSettings(next: QuranReadingSettings) {
@@ -1131,9 +1140,69 @@ export default function QuranScreen({
 
   useEffect(() => {
     if (
+      readingSettings.viewMode !== 'page' ||
+      !pendingNavigationRef.current ||
+      pageGroups.length === 0
+    ) {
+      return;
+    }
+
+    const pending = pendingNavigationRef.current;
+    if (pending.surahNumber !== selectedSurah) {
+      return;
+    }
+
+    const pageIndex = pageGroups.findIndex(([, ayahs]) =>
+      ayahs.some((ayah) => ayah.number === pending.ayahNumber)
+    );
+
+    if (pageIndex < 0) return;
+
+    setCurrentPageIndex(pageIndex);
+    pendingNavigationRef.current = null;
+    exactNavigationActiveRef.current = false;
+    lastSavedProgressRef.current =
+      pending.surahNumber + ':' + pending.ayahNumber;
+
+    saveQuranProgress(
+      pending.surahNumber,
+      pending.ayahNumber
+    ).catch((err) => {
+      console.error('Quran page navigation progress error:', err);
+    });
+  }, [readingSettings.viewMode, pageGroups, selectedSurah]);
+
+  useEffect(() => {
+    if (
+      readingSettings.viewMode !== 'page' ||
+      audioAyahIndex === null ||
+      pageGroups.length === 0
+    ) {
+      return;
+    }
+
+    const currentAyahNumber = currentSurah?.ayahs[audioAyahIndex]?.number;
+    const pageIndex = pageGroups.findIndex(([, ayahs]) =>
+      ayahs.some((ayah) => ayah.number === currentAyahNumber)
+    );
+
+    if (pageIndex >= 0 && pageIndex !== currentPageIndex) {
+      setCurrentPageIndex(pageIndex);
+    }
+  }, [
+    readingSettings.viewMode,
+    audioAyahIndex,
+    currentPageIndex,
+    pageGroups,
+    currentSurah,
+  ]);
+
+  useEffect(() => {
+    if (
       !audioStatus.didJustFinish ||
-      readingSettings.audioMode !== 'continuous' ||
       !currentSurah ||
+      (readingSettings.audioMode !== 'continuous' &&
+        pageAudioEndRef.current === null) ||
       audioAyahIndex === null ||
       audioCompletionRef.current
     ) {
@@ -1240,32 +1309,6 @@ export default function QuranScreen({
               </Text>
             </View>
 
-            <QuranLanguageSelector
-              selectedLanguage={language}
-              onLanguageChange={setLanguage}
-            />
-
-            {translationLoading && language !== 'arabic' && (
-              <View style={styles.translationLoading}>
-                <ActivityIndicator size="small" />
-                <Text style={styles.translationLoadingText}>
-                  Loading translation...
-                </Text>
-              </View>
-            )}
-
-            {translationError && language !== 'arabic' && (
-              <View style={styles.translationNotice}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#F4C76B"
-                />
-                <Text style={styles.translationNoticeText}>
-                  {translationError}
-                </Text>
-              </View>
-            )}
 
             {juzSurahs.map((surah) => (
               <Pressable
@@ -1450,13 +1493,25 @@ export default function QuranScreen({
                 <>
                   <View style={styles.mushafPage}>
                     <View style={styles.pageHeader}>
-                      <Text style={styles.pageHeaderText}>
-                        {'PAGE ' + pageGroups[currentPageIndex][0]}
-                      </Text>
-                      <Pressable style={styles.pagePlayButton} onPress={playPageAudio} disabled={!isPremium}>
-                        <Ionicons name={audioStatus.playing ? 'pause-circle' : 'play-circle'} size={22} color="#D8B36A" />
-                        <Text style={styles.pagePlayText}>{audioStatus.playing ? 'Playing' : 'Play page'}</Text>
-                      </Pressable>
+                      <View style={styles.pageHeaderTop}>
+                        <Text style={styles.pageHeaderText}>
+                          {'MUSHAF • PAGE ' + pageGroups[currentPageIndex][0]}
+                        </Text>
+                        <Pressable
+                          style={styles.pagePlayButton}
+                          onPress={playPageAudio}
+                          disabled={!isPremium}
+                        >
+                          <Ionicons
+                            name={audioStatus.playing && pageAudioEndRef.current !== null ? 'pause-circle' : 'play-circle'}
+                            size={22}
+                            color="#8D6B37"
+                          />
+                          <Text style={styles.pagePlayText}>
+                            {audioStatus.playing && pageAudioEndRef.current !== null ? 'Pause' : 'Play page'}
+                          </Text>
+                        </Pressable>
+                      </View>
                     </View>
                     <View style={styles.mushafArabicBlock}>
                       {pageGroups[currentPageIndex][1].map((ayah) => (
@@ -1476,6 +1531,14 @@ export default function QuranScreen({
                           )}
                         </View>
                       ))}
+                    </View>
+                    <View style={styles.mushafPageFooter}>
+                      <Text style={styles.mushafPageFooterText}>
+                        {currentSurah.englishName} • {currentSurah.number}
+                      </Text>
+                      <Text style={styles.mushafPageFooterText}>
+                        {pageGroups[currentPageIndex][0]}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.pageNavigation}>
@@ -2293,10 +2356,20 @@ const createLegacyStyles = (theme: any) => createThemedStyles(theme, {
     backgroundColor: '#F7F0E2', borderRadius: 10, paddingHorizontal: 18,
     paddingVertical: 18, marginBottom: 16, borderWidth: 1, borderColor: '#D9C9AC',
   },
-  pageHeader: { alignItems: 'center', marginBottom: 10 },
-  pageHeaderText: { color: '#8D6B37', fontSize: 9, fontWeight: '900', letterSpacing: 1.6 },
+  pageHeader: { marginBottom: 10 },
+  pageHeaderTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  pageHeaderText: { color: '#8D6B37', fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  mushafPageFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#D9C9AC',
+  },
+  mushafPageFooterText: { color: '#8D6B37', fontSize: 8, fontWeight: '800' },
   mushafArabicBlock: { alignItems: 'stretch' },
-  mushafPageImage: { width: '100%', height: 430, marginBottom: 10 },
   pageTranslationBlock: { marginTop: 8 },
   mushafArabicText: {
     color: '#17130E', textAlign: 'right', writingDirection: 'rtl',
