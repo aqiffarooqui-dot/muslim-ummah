@@ -13,6 +13,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'app.config.js'
+      - 'scripts/**'
 
 permissions:
   contents: write
