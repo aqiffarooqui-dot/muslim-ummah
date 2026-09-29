@@ -17,9 +17,9 @@ download() {
     test -s "$out"
   elif [ "$required" = "required" ]; then
     echo "Required download failed: $url" >&2
-    exit 1
+    return 1
   else
-    : > "$out"
+    rm -f "$out"
   fi
 }
 
@@ -30,17 +30,15 @@ for i in "${!BOOKS[@]}"; do
   eng="${ENGLISH[$i]}"
   urd="${URDU[$i]}"
 
-  # Whole English editions are used for the offline collection list and global search.
   download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${eng}.json" "$ROOT/fawaz/${eng}.json" required &
   download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${eng}.min.json" "$ROOT/fawaz/${eng}.min.json" required &
-  # Whole Urdu editions are kept for the chapter reader.
   download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urd}.json" "$ROOT/fawaz/${urd}.json" required &
 
   for n in $(seq 1 "$max"); do
     download "https://raw.githubusercontent.com/AhmedBaset/hadith-json/v1.2.0/db/by_chapter/the_9_books/${book}/${n}.json" "$ROOT/ahmed/${book}/${n}.json" required &
-    download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${eng}/sections/${n}.json" "$ROOT/fawaz/${eng}/sections/${n}.json" required &
-    download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urd}/sections/${n}.json" "$ROOT/fawaz/${urd}/sections/${n}.json" required &
-    download "https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions/${book}/sections/${n}.toon" "$ROOT/toon/${book}/sections/${n}.toon" required &
+    download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${eng}/sections/${n}.json" "$ROOT/fawaz/${eng}/sections/${n}.json" optional &
+    download "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${urd}/sections/${n}.json" "$ROOT/fawaz/${urd}/sections/${n}.json" optional &
+    download "https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions/${book}/sections/${n}.toon" "$ROOT/toon/${book}/sections/${n}.toon" optional &
     download "https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions/${book}/translations/hi/sections/${n}.toon" "$ROOT/toon/${book}/translations/hi/sections/${n}.toon" optional &
     download "https://cdn.jsdelivr.net/gh/HsnSaboor/hadith-api-toon@main/editions/${book}/translations/roman-ur/sections/${n}.toon" "$ROOT/toon/${book}/translations/roman-ur/sections/${n}.toon" optional &
     jobs=$((jobs + 6))
@@ -49,7 +47,6 @@ for i in "${!BOOKS[@]}"; do
 done
 wait
 
-# Book artwork is also bundled so the Hadith tab works without network.
 declare -a COVER_URLS=(
   "https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20al-Bukhari.jpg"
   "https://commons.wikimedia.org/wiki/Special:FilePath/Sahih%20Muslim.jpg"
@@ -62,6 +59,5 @@ for i in "${!BOOKS[@]}"; do
   download "${COVER_URLS[$i]}" "public/hadith-covers/${BOOKS[$i]}.jpg" optional
 done
 
-# A deterministic marker lets CI verify that the offline package really exists.
-printf '%s\n' "Muslim Ummah offline Hadith bundle: 6 collections, Arabic/English/Urdu + Hindi/Hinglish where upstream provides them." > "$ROOT/README.txt"
+printf '%s\n' "Muslim Ummah offline Hadith bundle: 6 collections with offline English/Urdu editions and chapter Arabic data; optional Hindi/Hinglish enrichments are bundled when upstream provides them." > "$ROOT/README.txt"
 du -sh "$ROOT" public/hadith-covers
