@@ -124,7 +124,7 @@ jobs:
           test -f native-android/app/src/main/assets/index.html
           test -s native-android/app/src/main/assets/offline-hadith/README.txt
           test -d native-android/app/src/main/assets/hadith-covers
-          test -d native-android/app/src/main/assets/assets
+          test -d native-android/app/src/main/assets/_expo
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
