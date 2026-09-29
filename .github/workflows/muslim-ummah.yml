@@ -61,28 +61,35 @@ jobs:
           test -d dist/hadith-covers
           test -s dist/offline-hadith/README.txt
 
+      - name: Create portable web bundle archive
+        run: tar -czf muslim-ummah-web-bundle.tar.gz -C dist .
+
       - name: Upload web bundle
         uses: actions/upload-artifact@v4
         with:
           name: muslim-ummah-web-bundle
-          path: dist
+          path: muslim-ummah-web-bundle.tar.gz
           if-no-files-found: error
-          include-hidden-files: true
           retention-days: 7
 
   pages:
     name: Deploy GitHub Pages
     needs: web
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download web bundle
         uses: actions/download-artifact@v4
         with:
           name: muslim-ummah-web-bundle
-          path: dist
+          path: bundle
+
+      - name: Extract web bundle
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          tar -xzf bundle/muslim-ummah-web-bundle.tar.gz -C dist
+          test -s dist/index.html
+          test -d dist/_expo
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
@@ -114,7 +121,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: muslim-ummah-web-bundle
-          path: dist
+          path: bundle
+
+      - name: Extract web bundle
+        working-directory: .
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          tar -xzf bundle/muslim-ummah-web-bundle.tar.gz -C dist
+          test -s dist/index.html
+          test -d dist/_expo
 
       - name: Package web app inside APK
         working-directory: .
