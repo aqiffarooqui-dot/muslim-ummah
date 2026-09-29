@@ -48,6 +48,21 @@ jobs:
           NATIVE_ANDROID_BUILD: 'true'
         run: npm run build:web
 
+      - name: Validate generated web asset paths
+        working-directory: .
+        run: |
+          echo "=== dist/index.html ==="
+          cat dist/index.html
+          echo "=== local web bundle files ==="
+          find dist -maxdepth 4 -type f | sort | head -200
+          echo "=== referenced Expo files ==="
+          grep -oE '([./_a-zA-Z0-9-]+/)?_expo/[^"'"'"' ]+' dist/index.html || true
+          echo "=== referenced absolute asset files ==="
+          grep -oE '(/assets/|/[^"'"'"' ]+\.(js|css|png|jpg|jpeg|webp|svg|ico))' dist/index.html || true
+          test -s dist/index.html
+          test -d dist/_expo
+          test -f dist/_expo/static/js/web/index-b6e3dd7694445ece234513a1208b0927.js || true
+
       - name: Package web app inside APK
         working-directory: .
         run: |
